@@ -281,7 +281,7 @@ LS_API void tube_get_id(tube *t, spud_tube_id *id)
 {
     spud_copy_id(&t->id, id);
 }
-
+/*
 static unsigned int hash_id(const void *id) {
     // treat the 8 bytes of tube ID like a long long.
     uint64_t key = *(uint64_t *)id;
@@ -295,9 +295,38 @@ static unsigned int hash_id(const void *id) {
     key = key + (key << 6);
     key = key ^ (key >> 22);
     return (unsigned int) key;
-}
+}*/
 
+unsigned int tube_hash_tuple(const void *t) {
+    // currently only id and remote sockaddr are taken into consideration
+    const tuple *tup = t;
+    const struct sockaddr_in6 * p_in6 = (const struct sockaddr_in6 *) &tup->peer;
+    uint64_t key = (uint64_t)tup->id + (uint64_t)(*(uint64_t *)p_in6);
+
+    // from
+    // https://gist.github.com/badboy/6267743#64-bit-to-32-bit-hash-functions
+    key = (~key) + (key << 18);
+    key = key ^ (key >> 31);
+    key = key * 21;
+    key = key ^ (key >> 11);
+    key = key + (key << 6);
+    key = key ^ (key >> 22);
+    return (unsigned int) key;
+}
+/*
 static int compare_id(const void *key1, const void *key2) {
+    int ret = 0;
+    uint64_t k1 = *(uint64_t *)key1;
+    uint64_t k2 = *(uint64_t *)key2;
+    if (k1<k2) {
+        ret = -1;
+    } else {
+        ret = (k1==k2) ? 0 : 1;
+    }
+    return ret;
+}*/
+
+int tube_compare_tuple(const void *key1, const void *key2) {
     int ret = 0;
     uint64_t k1 = *(uint64_t *)key1;
     uint64_t k2 = *(uint64_t *)key2;
@@ -327,7 +356,7 @@ LS_API bool tube_manager_create(int buckets,
     if (buckets <= 0) {
         buckets = DEFAULT_HASH_SIZE;
     }
-    if (!ls_htable_create(buckets, hash_id, compare_id, &ret->tubes, err)) {
+    if (!ls_htable_create(buckets, tube_hash_tuple, tube_compare_tuple, &ret->tubes, err)) {
         goto cleanup;
     }
 

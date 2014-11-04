@@ -36,6 +36,12 @@ typedef struct _tube_manager tube_manager;
 
 typedef struct _tube tube;
 
+typedef struct _tuple
+{
+    uint64_t id;
+    struct sockaddr peer;
+} tuple;
+
 typedef ssize_t (*tube_sendmsg_func)(int socket,
                                      const struct msghdr *message,
                                      int flags);
@@ -102,3 +108,6 @@ LS_API void tube_get_id(tube *t, spud_tube_id *id);
 
 LS_API void tube_set_socket_functions(tube_sendmsg_func send,
                                       tube_recvmsg_func recv);
+
+unsigned int tube_hash_tuple(const void *t);
+int tube_compare_tuple(const void *key1, const void *key2);
