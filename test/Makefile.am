@@ -4,7 +4,7 @@ if CHECK
   MY_LDFLAGS_1 = -lcheck
   TESTS = check_spudlib
   check_PROGRAMS = check_spudlib
-  check_spudlib_SOURCES = 
+  check_spudlib_SOURCES = spud_test.c testmain.c ../src/spudlib.c
 
 if GCOV
   MY_CFLAGS_3 =  -fprofile-arcs -ftest-coverage

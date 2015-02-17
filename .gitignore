@@ -81,3 +81,15 @@ build-aux/install-sh
 build-aux/missing
 
 build-aux/test-driver
+
+src/.deps/.dirstamp
+
+*.Po
+
+src/.dirstamp
+
+*.trs
+
+test/check_spudlib
+
+*.c~
