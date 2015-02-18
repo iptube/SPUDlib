@@ -9,7 +9,9 @@ before_install:
 # Change this to your needs
 script: 
   - ./bootstrap.sh
-  - ./configure --with-check --enable-gcov && make && make check
+  - ./configure --with-check && make && make check
 
+#coveralls, how to do this with only gcc?
 after_success:
+  - ./configure --with-check --enable-gcov && make && make check
   - coveralls --exclude-pattern ".+?\.h" --exclude-pattern "\w+/test" --exclude samplecode --gcov-options '\-lp'
