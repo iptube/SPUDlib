@@ -4,10 +4,12 @@ compiler:
   - clang
 before_install:
  - sudo apt-get install check
+ - sudo pip install cpp-coveralls
 
 # Change this to your needs
 script: 
   - ./bootstrap.sh
-  - ./configure --with-check && make && make check
+  - ./configure --with-check --enable-gcov && make && make check
 
-
+after_success:
+  - coveralls --exclude-pattern ".+?\.h" --exclude-pattern "\w+/test" --exclude samplecode --gcov-options '\-lp'
