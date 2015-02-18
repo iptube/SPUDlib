@@ -6,13 +6,11 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-#define SPUD_MAGIC_COOKIE_ARRAY         {0xd8, 0x00, 0x00, 0xd8}
-
 #define SPUD_MSG_ID_SIZE                7
 
+#define SPUD_MAGIC_COOKIE_ARRAY         {0xd8, 0x00, 0x00, 0xd8}
 static const uint8_t SpudMagicCookie[]   = SPUD_MAGIC_COOKIE_ARRAY;
-static const size_t  SpudMagicCookieSize = sizeof(SpudMagicCookie)/sizeof(SpudMagicCookie[0]);
-
+#define SPUD_MAGIC_COOKIE_SIZE sizeof(SpudMagicCookie)/sizeof(SpudMagicCookie[0])
 
 /*
  *  0                   1                   2                   3
@@ -33,7 +31,7 @@ static const size_t  SpudMagicCookieSize = sizeof(SpudMagicCookie)/sizeof(SpudMa
 
 
 struct SpudMagicCookie {
-    uint8_t cookie[SpudMagicCookieSize];
+    uint8_t cookie[SPUD_MAGIC_COOKIE_SIZE];
 };
 
 
