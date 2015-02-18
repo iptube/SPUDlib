@@ -83,6 +83,7 @@ AC_CHECK_FUNCS([memset])
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile
-                 test/Makefile])
+                 test/Makefile
+                 samplecode/Makefile])
 
 AC_OUTPUT
