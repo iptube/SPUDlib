@@ -1,7 +1,7 @@
 language: c
 compiler:
-  - gcc
   - clang
+  - gcc
 before_install:
  - sudo apt-get install check
  - sudo pip install cpp-coveralls
