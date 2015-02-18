@@ -2,6 +2,18 @@ language: c
 compiler:
   - clang
   - gcc
+
+env:
+  - COVERAGE=true
+  - COVERAGE=false;
+
+matrix:
+  exclude:
+    - compiler: clang 
+      env: COVERAGE=false
+    - compiler: gcc
+      env: COVERAGE=true
+
 before_install:
  - sudo apt-get install check
  - sudo pip install cpp-coveralls
@@ -13,4 +25,5 @@ script:
 
 after_success:
 - ./run_coveralls.sh
+
  
