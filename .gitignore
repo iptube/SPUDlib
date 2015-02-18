@@ -90,3 +90,4 @@ src/.dirstamp
 test/check_spudlib
 
 *.c~
+samplecode/spudtest
