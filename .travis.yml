@@ -24,6 +24,6 @@ script:
   - ./configure --with-check && make && make check
 
 after_success:
-- ./run_coveralls.sh
+- . ./run_coveralls.sh
 
  
