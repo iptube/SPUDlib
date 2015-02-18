@@ -24,7 +24,9 @@ script:
   - ./configure --with-check && make && make check
 
 after_success:
-- if [[ $COVERAGE == 'true' ]]; then ./run_coveralls.sh ; fi
-
-
+- if [[ $COVERAGE == 'true' ]]; 
+  then 
+  - ./configure --with-check --enable-gcov && make && make check;
+  coveralls --exclude-pattern ".+?\.h" --exclude-pattern "\w+/test" --gcov-options '\-lp';   
+  fi
  
