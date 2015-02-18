@@ -13,5 +13,7 @@ script:
 
 #coveralls, how to do this with only gcc?
 after_success:
-  - ./configure --with-check --enable-gcov && make && make check
-  - coveralls --exclude-pattern ".+?\.h" --exclude-pattern "\w+/test" --exclude samplecode --gcov-options '\-lp'
+- test $CC = gcc \
+  && ./run_coveralls.sh \
+  && echo "Not GCC ignoring coverage test" \
+ 
