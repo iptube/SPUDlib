@@ -28,56 +28,34 @@
 *.x86_64
 *.hex
 
+#Automake with driends
 *.m4
-
 build-aux/*
-
-
 *.guess
-
 config.h
-
 config.h.in
-
 *.log
-
 *.status
-
 configure
-
-*.ac~
-
 libtool
-
 Makefile
-
 *.in
+stamp-h1
+autom4te.cache/*
+
+
+#tmp files
+*~
+*#
+
+
 
 *.Plo
 
 *.lai
 
-*.am~
-
-stamp-h1
-
-*.0
-
-*.1
-
-*.2
-
-autom4te.cache/requests
 
 *.sub
-
-build-aux/depcomp
-
-build-aux/install-sh
-
-build-aux/missing
-
-build-aux/test-driver
 
 src/.deps/.dirstamp
 
@@ -89,5 +67,5 @@ src/.dirstamp
 
 test/check_spudlib
 
-*.c~
+
 samplecode/spudtest
