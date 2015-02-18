@@ -24,7 +24,7 @@ script:
   - ./configure --with-check && make && make check
 
 after_success:
-- echo $COVERAGE
-- . ./run_coveralls.sh
+- if [[ $COVERAGE == 'true' ]]; then ./run_coveralls.sh ; fi
+
 
  
