@@ -10,9 +10,9 @@ env:
 matrix:
   exclude:
     - compiler: clang 
-      env: COVERAGE=false
-    - compiler: gcc
       env: COVERAGE=true
+    - compiler: gcc
+      env: COVERAGE=false
 
 before_install:
  - sudo apt-get install check
