@@ -30,9 +30,8 @@
 
 *.m4
 
-build-aux/ar-lib
+build-aux/*
 
-build-aux/compile
 
 *.guess
 
