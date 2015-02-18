@@ -47,7 +47,7 @@ START_TEST (is_spud)
 
     struct SpudMsg msg;
     //should this be in init() instead?
-    memcpy(msg.msgHdr.magic.cookie, SpudMagicCookie, SpudMagicCookieSize);
+    memcpy(msg.msgHdr.magic.cookie, SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE);
 
     //copy the whole spud msg into the buffer..
     memcpy(buf, &msg, sizeof msg);
