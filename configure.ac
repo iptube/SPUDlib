@@ -81,6 +81,10 @@ AC_TYPE_UINT8_T
 # Checks for library functions.
 AC_CHECK_FUNCS([memset])
 
+AC_CHECK_LIB(pthread, pthread_create,,
+             [AC_MSG_ERROR([required library pthread missing])])
+
+
 AC_CONFIG_FILES([Makefile
                  src/Makefile
                  test/Makefile
