@@ -61,4 +61,11 @@ struct SpudMsg
 
 bool spud_isSpud(const uint8_t *payload, uint16_t length);
 
+bool spud_createId(struct SpudMsgId *id);
+
+bool spud_isIdEqual(const struct SpudMsgId *a,const struct SpudMsgId *b);
+
+bool spud_setId(struct SpudMsg *msg,const struct SpudMsgId *id);
+
+char* spud_idToString(char* buf, size_t len, const struct SpudMsgId *id);
 #endif

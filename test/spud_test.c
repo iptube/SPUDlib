@@ -60,6 +60,57 @@ START_TEST (is_spud)
 }
 END_TEST
 
+START_TEST (createId)
+{
+    int len = 1024;
+    unsigned char buf[len];
+    char idStr[len];
+
+    struct SpudMsg msg;
+    //should this be in init() instead?
+    memcpy(msg.msgHdr.magic.cookie, SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE);
+    //Create ID
+    spud_createId(&msg.msgHdr.id);
+
+    printf("ID: %s\n", spud_idToString(idStr, len, &msg.msgHdr.id));
+
+    fail_if( spud_isSpud((const uint8_t *)&buf,len),
+                 "isSpud() failed");
+ 
+
+    //copy the whole spud msg into the buffer..
+    memcpy(buf, &msg, sizeof msg);
+
+    fail_unless( spud_isSpud((const uint8_t *)&buf,len),
+                 "isSpud() failed");
+
+
+
+}
+END_TEST
+
+START_TEST (isIdEqual)
+{
+    struct SpudMsg msgA;
+    struct SpudMsg msgB;//Equal to A
+    struct SpudMsg msgC;//New random
+    
+    //should this be in init() instead?
+    memcpy(msgA.msgHdr.magic.cookie, SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE);
+    memcpy(msgB.msgHdr.magic.cookie, SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE);
+    memcpy(msgC.msgHdr.magic.cookie, SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE);
+    
+    //Create ID
+    spud_createId(&msgA.msgHdr.id);
+    spud_setId(&msgB, &msgA.msgHdr.id);
+    spud_createId(&msgC.msgHdr.id);
+    
+    fail_unless( spud_isIdEqual(&msgA.msgHdr.id, &msgB.msgHdr.id));
+    fail_if( spud_isIdEqual(&msgA.msgHdr.id, &msgC.msgHdr.id));
+    fail_if( spud_isIdEqual(&msgB.msgHdr.id, &msgC.msgHdr.id));
+}
+END_TEST
+
 
 
 Suite * spudlib_suite (void)
@@ -71,6 +122,9 @@ Suite * spudlib_suite (void)
       tcase_add_checked_fixture (tc_core, spudlib_setup, spudlib_teardown);
       tcase_add_test (tc_core, empty);
       tcase_add_test (tc_core, is_spud);
+      tcase_add_test (tc_core, createId);
+      tcase_add_test (tc_core, isIdEqual);
+      
       suite_add_tcase (s, tc_core);
   }
 
