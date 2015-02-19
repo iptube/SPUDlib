@@ -113,9 +113,10 @@ static void *socketListen(void *ptr){
                         printf(" \r Spud ID: %s", spud_idToString(idStr, SPUD_MSG_ID_SIZE+1, &sMsg->msgHdr.id ));
                         config->data_handler(config, (struct sockaddr *)&their_addr, NULL, buf+sizeof(*sMsg), numbytes-sizeof(*sMsg));
                     }
-                    
-                    config->data_handler(config, (struct sockaddr *)&their_addr, NULL, buf, numbytes);
-                }
+                    else{
+		      config->data_handler(config, (struct sockaddr *)&their_addr, NULL, buf, numbytes);
+		    }
+		}
             }
         }
     }
