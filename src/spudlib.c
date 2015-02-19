@@ -48,12 +48,12 @@ char* spud_idToString(char* buf, size_t len, const struct SpudMsgId *id)
 {
     size_t i;
 
-    if(len < SPUD_MSG_ID_SIZE){
+    if(len < SPUD_MSG_ID_SIZE*2+1){
         return NULL;
     }
     
     for(i=0;i<SPUD_MSG_ID_SIZE;i++){
-        sprintf(buf+i,"%02x",id->octet[i]);
+        sprintf(buf+2*i,"%02x",id->octet[i]);
     }
     return buf;
 }
