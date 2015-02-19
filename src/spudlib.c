@@ -12,13 +12,14 @@ bool spud_isSpud(const uint8_t *payload, uint16_t length)
 bool spud_createId(struct SpudMsgId *id)
 {
     FILE *rfile = fopen("/dev/random", "r");
-    
+    size_t i;
+
     if (!rfile) {
         perror("Error opening /dev/random");
         //Do something else?
         return false;
     }
-    size_t i;
+    
     for (i=0; i<sizeof(*id); i++) {
         id->octet[i] |= fgetc(rfile);
     }
@@ -45,10 +46,12 @@ bool spud_isIdEqual(const struct SpudMsgId *a,const struct SpudMsgId *b)
 
 char* spud_idToString(char* buf, size_t len, const struct SpudMsgId *id)
 {
+    size_t i;
+
     if(len < SPUD_MSG_ID_SIZE){
         return NULL;
     }
-    size_t i;
+    
     for(i=0;i<SPUD_MSG_ID_SIZE;i++){
         sprintf(buf+i,"%02x",id->octet[i]);
     }
