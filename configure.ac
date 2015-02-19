@@ -79,7 +79,8 @@ AC_TYPE_UINT64_T
 AC_TYPE_UINT8_T
 
 # Checks for library functions.
-AC_CHECK_FUNCS([memset])
+AC_CHECK_FUNCS([memset arc4random])
+AC_CHECK_FILES([/dev/urandom])
 
 AC_CHECK_LIB(pthread, pthread_create,,
              [AC_MSG_ERROR([required library pthread missing])])
