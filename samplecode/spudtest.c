@@ -139,9 +139,9 @@ static void *sendData(struct test_config *config)
         
         memcpy(buf, &msg, sizeof msg);
         for(i=0;i<6;i++){
-            int len = sizeof msg +(13*i);
+            int len = sizeof msg +(14*i);
 
-            memcpy(buf+len, s1+(config->numSentPkts%13)+(13*i), 13);
+            memcpy(buf+len, s1+(config->numSentPkts%14)+(14*i), 14);
         }
 
         sendPacket(config->sockfd,
@@ -188,8 +188,6 @@ static void *socketListen(void *ptr){
                                                  (struct sockaddr *)&their_addr, &addr_len)) == -1) {
                             LOGE("recvfrom (data)");
                     }
-                    
-                    printf("hhheheheheeeheheheheheeheh\n");
                     config->data_handler(config, (struct sockaddr *)&their_addr, buf, numbytes);
                 
                    
@@ -254,6 +252,8 @@ int spudtest(int argc, char **argv)
     
     //Just wait a bit
     sleep(5);
+    pthread_cancel(sendDataThread);
+    sleep(1);
     done();
     //done exits...
     return 0;
