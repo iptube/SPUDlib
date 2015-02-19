@@ -17,8 +17,10 @@
 
 #include <poll.h>
 
+#include "spudlib.h"
 #include "iphelper.h"
 #include "sockethelper.h"
+
 
 #define MYPORT "1402"    // the port users will be connecting to
 #define MAXBUFLEN 2048
@@ -48,13 +50,14 @@ void teardown()
 
 void dataHandler(struct listenConfig *config, struct sockaddr *from_addr, void *cb, unsigned char *buf, int bufLen)
 {
-  printf(".");
-  sendPacket(config->sockfd,
-             buf,
-             bufLen,
-             from_addr,
-             false,
-             0);
+    printf(" %s", buf);
+    fflush(stdout);
+    sendPacket(config->sockfd,
+               buf,
+               bufLen,
+               from_addr,
+               false,
+               0);
 }
 
 
@@ -95,14 +98,23 @@ static void *socketListen(void *ptr){
         } else {
             for(i=0;i<numSockets;i++){
                 if (ufds[i].revents & POLLIN) {
-                    if(i == 0){
-                        if ((numbytes = recvfrom(config->sockfd, buf, 
-                                                 MAXBUFLEN , 0, 
-                                                 (struct sockaddr *)&their_addr, &addr_len)) == -1) {
-                            printf("recvfrom (data)");
-                        }
-                        config->data_handler(config, (struct sockaddr *)&their_addr, NULL, buf, numbytes);
+                    
+                    if ((numbytes = recvfrom(config->sockfd, buf, 
+                                             MAXBUFLEN , 0, 
+                                             (struct sockaddr *)&their_addr, &addr_len)) == -1) {
+                        printf("recvfrom (data)");
                     }
+                    if( spud_isSpud(buf, numbytes) ){
+                        struct SpudMsg *sMsg;
+                        
+                        sMsg = (struct SpudMsg *)buf;
+                        
+                        char idStr[SPUD_MSG_ID_SIZE+1];
+                        printf(" \r Spud ID: %s", spud_idToString(idStr, SPUD_MSG_ID_SIZE+1, &sMsg->msgHdr.id ));
+                        config->data_handler(config, (struct sockaddr *)&their_addr, NULL, buf+sizeof(*sMsg), numbytes-sizeof(*sMsg));
+                    }
+                    
+                    config->data_handler(config, (struct sockaddr *)&their_addr, NULL, buf, numbytes);
                 }
             }
         }
@@ -137,7 +149,7 @@ int main(void)
     pthread_create( &socketListenThread, NULL, socketListen, (void*)&listenConfig);
 
     while(1) {
-        printf("stunserver: waiting to recvfrom...\n");
+        printf("spudecho: waiting to recvfrom...\n");
 
         sleep(1000);
     }

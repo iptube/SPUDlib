@@ -64,6 +64,9 @@
 
 int lines; //Just to gracefully handle SIGINT
 
+static const char* s1 = "º¤ø,¸¸,ø¤º°`°º¤ø,¸¸,ø¤º°`°º¤ø,¸¸,ø¤º°`°º¤ø,¸¸,ø¤º°`°º¤ø,¸¸,ø¤º°`°º¤ø,¸¸,ø¤º°`° ";
+
+
 struct test_config{
     
     struct sockaddr_storage remoteAddr;
@@ -86,7 +89,7 @@ static void data_handler(struct test_config *config, struct sockaddr *saddr,
                          unsigned char *buf, int len){
 
     config->numRcvdPkts++;
-    LOGI("\r " ESC_7C " RX: %i ", config->numRcvdPkts);
+    LOGI("\r " ESC_7C " RX: %i  %s", config->numRcvdPkts, buf);
 }
 
 
@@ -114,14 +117,18 @@ static void *sendData(struct test_config *config)
     struct timespec remaining;
     int len = 1024;
     unsigned char buf[len];
-    char * data = "Tuber is cooool\0";
+    //char * data = "Tuber is cooool\0";
     struct SpudMsg msg;
+    int i;
 
     //How fast? Pretty fast..
     timer.tv_sec = 0;
-    //timer.tv_nsec = 50000000;
-    timer.tv_nsec = 5000000;
+    timer.tv_nsec = 50000000;
     
+    //Create SPUD message
+    memcpy(msg.msgHdr.magic.cookie, SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE);
+    spud_createId(&msg.msgHdr.id);
+
     for(;;) {
         nanosleep(&timer, &remaining);
         config->numSentPkts++;
@@ -129,15 +136,17 @@ static void *sendData(struct test_config *config)
         LOGI("\rTX: %i", config->numSentPkts);
         fflush(stdout);
 #endif
-        //Create SPUD message
-        memcpy(msg.msgHdr.magic.cookie, SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE);
-
+        
         memcpy(buf, &msg, sizeof msg);
-        memcpy(buf+sizeof msg, data, strlen(data));
+        for(i=0;i<6;i++){
+            int len = sizeof msg +(13*i);
+
+            memcpy(buf+len, s1+(config->numSentPkts%13)+(13*i), 13);
+        }
 
         sendPacket(config->sockfd,
                    (uint8_t *)buf,
-                   sizeof msg + strlen(data),
+                   sizeof msg + strlen(s1),
                    (struct sockaddr *)&config->remoteAddr,
                    false,
                    0);
@@ -157,20 +166,12 @@ static void *socketListen(void *ptr){
     int keyLen = 16;
     char md5[keyLen];
 
-    const int dataSock = 0;
-    const int icmpSock = 1;
-
+        
     //Normal send/recieve RTP socket..
-    ufds[dataSock].fd = config->sockfd;
-    ufds[dataSock].events = POLLIN | POLLERR;
+    ufds[0].fd = config->sockfd;
+    ufds[0].events = POLLIN | POLLERR;
     numSockets++;
 
-    //Listen on the ICMP socket if it exists
-    if(config->icmpSocket != 0){
-        ufds[icmpSock].fd = config->icmpSocket;
-        ufds[icmpSock].events = POLLIN | POLLERR;
-        numSockets++;
-    }
     addr_len = sizeof their_addr;
     
     while(1){
@@ -182,74 +183,18 @@ static void *socketListen(void *ptr){
         } else {
             for(i=0;i<numSockets;i++){
                 if (ufds[i].revents & POLLIN) {
-                    if(i == 0){
-                        if ((numbytes = recvfrom(config->sockfd, buf, 
+                    if ((numbytes = recvfrom(config->sockfd, buf, 
                                                  MAXBUFLEN , 0, 
                                                  (struct sockaddr *)&their_addr, &addr_len)) == -1) {
                             LOGE("recvfrom (data)");
-                        }
-                        config->data_handler(config, (struct sockaddr *)&their_addr, buf, numbytes);
                     }
-                    if(i == icmpSock){//This is the ICMP socket
-                        struct ip *ip_packet, *inner_ip_packet;
-                        struct icmp *icmp_packet;
-                        
-                        if ((numbytes = recvfrom(config->icmpSocket, buf, 
-                                                 MAXBUFLEN , 0, 
-                                                 (struct sockaddr *)&their_addr, &addr_len)) == -1) {
-                            LOGE("recvfrom (icmp)");
-                            exit(1);
-                        }
-                        //Try to get something out of the potential ICMP packet
-                        ip_packet = (struct ip *) &buf;
-                        icmp_packet = (struct icmp *) (buf + (ip_packet->ip_hl << 2));
-                        inner_ip_packet = &icmp_packet->icmp_ip;
-                                                
-                        config->icmp_handler(config, (struct sockaddr *)&ip_packet->ip_src, icmp_packet->icmp_type);
-                    }
+                    
+                    printf("hhheheheheeeheheheheheeheh\n");
+                    config->data_handler(config, (struct sockaddr *)&their_addr, buf, numbytes);
+                
+                   
                 }
-#if defined(__linux) || defined(ANDROID)
-                if (ufds[dataSock].revents & POLLERR) {
-                    //Do stuff with msghdr
-                    struct msghdr msg;
-                    struct sockaddr_in response;		// host answered IP_RECVERR
-                    char control_buf[1500];
-                    struct iovec iov;
-                    char buf[1500];
-                    struct cmsghdr *cmsg;
 
-                    memset(&msg, 0, sizeof(msg));
-                    msg.msg_name = &response;			// host
-                    msg.msg_namelen = sizeof(response);
-                    msg.msg_control = control_buf;
-                    msg.msg_controllen = sizeof(control_buf);
-                    iov.iov_base = buf;
-                    iov.iov_len = sizeof(buf);
-                    msg.msg_iov = &iov;
-                    msg.msg_iovlen = 1;
-               
-                    if (recvmsg(config->sockfd, &msg, MSG_ERRQUEUE ) == -1) {
-			//Ignore for now. Will get it later..
-                        continue;
-                    }    
-                    for (cmsg = CMSG_FIRSTHDR(&msg); cmsg != NULL;
-                         cmsg = CMSG_NXTHDR(&msg,cmsg)) {
-                        if (cmsg->cmsg_level == IPPROTO_IP && cmsg->cmsg_type == IP_RECVERR){
-                            struct sock_extended_err *ee;
-                            ee = (struct sock_extended_err *) CMSG_DATA(cmsg);
-                            
-                            if (ee->ee_origin == SO_EE_ORIGIN_ICMP) {
-                                //Have mercy.. Must fix this
-                                struct sockaddr_in *addr = &((struct sockaddr_in*)SO_EE_OFFENDER(ee))->sin_addr;
-                                
-                                config->icmp_handler(config, 
-                                                     (struct sockaddr*)addr,
-                                                     ee->ee_type);
-                            }
-                        }
-                    }
-                }
-#endif
             }
         }
     }
@@ -299,35 +244,6 @@ int spudtest(int argc, char **argv)
     /* Setting up UDP socket and a ICMP sockhandle */
     config.sockfd = createLocalUDPSocket(config.remoteAddr.ss_family, (struct sockaddr *)&config.localAddr, 0);
 
-#ifndef ANDROID
-    if(config.remoteAddr.ss_family == AF_INET)
-        config.icmpSocket=socket(config.remoteAddr.ss_family, SOCK_DGRAM, IPPROTO_ICMP);
-    else
-        config.icmpSocket=socket(config.remoteAddr.ss_family, SOCK_DGRAM, IPPROTO_ICMPV6);
-#else
-	config.icmpSocket = -1;
-#endif		
-
-    if (config.icmpSocket < 0) {
-		LOGI("Try to create raw socket or go with RECVRR.");
-#if defined(__linux) || defined(ANDROID)
-        config.icmpSocket=socket(config.remoteAddr.ss_family, SOCK_RAW, IPPROTO_ICMP);
-        if (config.icmpSocket < 0) {
-            //No privileges to run raw sockets. Use old socket and recieve ICMP with POLLERR
-            //Warning: Remeber to get them out of the queue with readmsg() otherwise kernel
-            //will close down socket?
-            int val = 1;
-            if (setsockopt (config.sockfd, SOL_IP, IP_RECVERR, &val, sizeof (val)) < 0){
-                LOGE("setsockopt IP_RECVERR");
-                exit(1);
-            }
-        }
-#else
-        LOGE("ICMP socket");
-        exit(1);
-#endif
-    }
-    
     //Start and listen to the sockets.
     pthread_create(&listenThread, NULL, (void *)socketListen, &config);
     
