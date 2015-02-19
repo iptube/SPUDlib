@@ -64,8 +64,11 @@
 
 int lines; //Just to gracefully handle SIGINT
 
-static const char* s1 = "º¤ø,¸¸,ø¤º°`°º¤ø,¸¸,ø¤º°`°º¤ø,¸¸,ø¤º°`°º¤ø,¸¸,ø¤º°`°º¤ø,¸¸,ø¤º°`°º¤ø,¸¸,ø¤º°`° ";
+//static const int numChar = 13;
+//static const char* s1 = "º¤ø,¸¸,ø¤º°`°º¤ø,¸¸,ø¤º°`°º¤ø,¸¸,ø¤º°`°º¤ø,¸¸,ø¤º°`°º¤ø,¸¸,ø¤º°`°º¤ø,¸¸,ø¤º°`° ";
 
+static const int numChar = 53;
+static const char* s1= "[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~";
 
 struct test_config{
     
@@ -138,10 +141,10 @@ static void *sendData(struct test_config *config)
 #endif
         
         memcpy(buf, &msg, sizeof msg);
-        for(i=0;i<6;i++){
-            int len = sizeof msg +(14*i);
+        for(i=0;i<1;i++){
+            int len = sizeof msg +(numChar*i);
 
-            memcpy(buf+len, s1+(config->numSentPkts%14)+(14*i), 14);
+            memcpy(buf+len, s1+(config->numSentPkts%numChar)+(numChar*i), numChar);
         }
 
         sendPacket(config->sockfd,
