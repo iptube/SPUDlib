@@ -109,8 +109,8 @@ static void *socketListen(void *ptr){
                         
                         sMsg = (struct SpudMsg *)buf;
                         
-                        char idStr[SPUD_MSG_ID_SIZE+1];
-                        printf(" \r Spud ID: %s", spud_idToString(idStr, SPUD_MSG_ID_SIZE+1, &sMsg->msgHdr.id ));
+                        char idStr[SPUD_MSG_ID_SIZE*2+1];
+                        printf(" \r Spud ID: %s", spud_idToString(idStr, sizeof idStr, &sMsg->msgHdr.id ));
                         config->data_handler(config, (struct sockaddr *)&their_addr, NULL, buf+sizeof(*sMsg), numbytes-sizeof(*sMsg));
                     }
                     else{
