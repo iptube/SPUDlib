@@ -13,6 +13,11 @@ int createLocalUDPSocket(int ai_family,
                          const struct sockaddr *localIp,
                          uint16_t port);
 
+int createSocket(char host[], char port[], 
+                 int ai_flags, 
+                 struct addrinfo *servinfo, 
+                 struct addrinfo **p);
+
 void sendPacket(int sockHandle,
                 const uint8_t *buf,
                 int bufLen,

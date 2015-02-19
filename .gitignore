@@ -69,3 +69,5 @@ test/check_spudlib
 
 
 samplecode/spudtest
+
+samplecode/spudecho

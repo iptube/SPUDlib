@@ -283,7 +283,7 @@ int spudtest(int argc, char **argv)
 	
     if(!getRemoteIpAddr((struct sockaddr *)&config.remoteAddr, 
                             argv[2], 
-                        3478)){
+                        1402)){
         LOGI("Error getting remote IPaddr");
         exit(1);
         }

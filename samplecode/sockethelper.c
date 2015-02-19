@@ -72,6 +72,46 @@ int createLocalUDPSocket(int ai_family,
     return sockfd;
 }
 
+int createSocket(char host[], char port[], 
+                 int ai_flags, 
+                 struct addrinfo *servinfo, 
+                 struct addrinfo **p)
+{
+    struct addrinfo hints;
+    int rv, sockfd;
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_INET6;
+    hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_flags = ai_flags; // use my IP if not 0
+
+    if ((rv = getaddrinfo(host, port, &hints, &servinfo)) != 0) {
+        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
+        return -1;
+    }
+
+    // loop through all the results and bind to the first we can
+    for((*p) = servinfo; (*p) != NULL; (*p) = (*p)->ai_next) {
+        if ((sockfd = socket((*p)->ai_family, (*p)->ai_socktype,
+                (*p)->ai_protocol)) == -1) {
+            perror("socket");
+            continue;
+        }
+        
+        if (ai_flags != 0 && bind(sockfd, (*p)->ai_addr, (*p)->ai_addrlen) == -1) {
+            close(sockfd);
+            perror("bind");
+            continue;
+        }
+        break;
+    }
+    if ((*p) == NULL) {
+        fprintf(stderr, "failed to bind socket\n");
+        return -2;
+    }
+    return sockfd;
+}
+
+
 
 void sendPacket(int sockHandle,
                 const uint8_t *buf,
