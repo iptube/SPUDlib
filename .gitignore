@@ -42,11 +42,12 @@ Makefile
 *.in
 stamp-h1
 autom4te.cache/*
-
+.libs
 
 #tmp files
 *~
 *#
+.#*
 
 
 
