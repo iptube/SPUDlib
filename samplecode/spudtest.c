@@ -75,17 +75,12 @@ struct test_config{
     struct sockaddr_storage remoteAddr;
     struct sockaddr_storage localAddr;
     int sockfd;
-    int icmpSocket;
 
     int numSentPkts;
     int numRcvdPkts;
     int numSentProbe;
-    int numRcvdICMP;
     void (*data_handler)(struct test_config *, struct sockaddr *,
                          unsigned char *, int);
-
-    void (*icmp_handler)(struct test_config *, struct sockaddr *,
-                         int);
 };
 
 static void data_handler(struct test_config *config, struct sockaddr *saddr,
@@ -93,25 +88,6 @@ static void data_handler(struct test_config *config, struct sockaddr *saddr,
 
     config->numRcvdPkts++;
     LOGI("\r " ESC_7C " RX: %i  %s", config->numRcvdPkts, buf);
-}
-
-
-static void icmp_handler(struct test_config *config,
-                         struct sockaddr *saddr,
-                         int icmpType){
-
-    char src_str[INET6_ADDRSTRLEN];
-
-    config->numRcvdICMP++;
-    LOGI("\r " ESC_35C " RX ICMP: %i ",config->numRcvdICMP);
-    LOGI(ESC_iB,config->numRcvdICMP-1);
-    LOGI("\n  <-  %s (ICMP type:%i)" ESC_K,
-           inet_ntop(AF_INET, saddr, src_str,INET_ADDRSTRLEN),
-           icmpType);
-    LOGI(ESC_iA,config->numRcvdICMP);
-
-    //For graefull SIGINT
-    lines = config->numRcvdICMP;
 }
 
 static void *sendData(struct test_config *config)
@@ -216,6 +192,11 @@ int spudtest(int argc, char **argv)
     pthread_t sendDataThread;
     pthread_t listenThread;
 
+    if (argc < 2) {
+        fprintf(stderr, "spudtest <destination>\n");
+        exit(64);
+    }
+
     int i;
 #ifndef ANDROID
     signal(SIGINT, done);
@@ -223,27 +204,36 @@ int spudtest(int argc, char **argv)
 	LOGI("entering spudtest");
 
     memset(&config, 0, sizeof(config));
-    config.icmp_handler = icmp_handler;
     config.data_handler = data_handler;
 
-
     if(!getRemoteIpAddr((struct sockaddr *)&config.remoteAddr,
-                            argv[2],
-                        1402)){
+                        argv[1],
+                        1402)) {
         LOGI("Error getting remote IPaddr");
-        exit(1);
-        }
-
-    if(!getLocalInterFaceAddrs( (struct sockaddr *)&config.localAddr,
-                                argv[1],
-                                config.remoteAddr.ss_family,
-                                IPv6_ADDR_NORMAL,
-                                false)){
-        LOGI("Error local getting IPaddr on %s\n", argv[1]);
-        exit(1);
+        return 1;
     }
-    /* Setting up UDP socket and a ICMP sockhandle */
-    config.sockfd = createLocalUDPSocket(config.remoteAddr.ss_family, (struct sockaddr *)&config.localAddr, 0);
+
+    if (config.remoteAddr.ss_family == AF_INET) {
+        config.sockfd = socket(PF_INET, SOCK_DGRAM, 0);
+        sockaddr_initAsIPv4Any((struct sockaddr_in *)&config.localAddr, 0);
+    }
+    else if (config.remoteAddr.ss_family == AF_INET6) {
+        config.sockfd = socket(PF_INET6, SOCK_DGRAM, 0);
+        sockaddr_initAsIPv6Any((struct sockaddr_in6 *)&config.localAddr, 0);
+    }
+    else {
+        LOGI("Invalid address family\n");
+        return 1;
+    }
+    char buf[1024];
+    printf("local: %s\n", sockaddr_toString((struct sockaddr *)&config.localAddr, buf, sizeof(buf), true));
+
+    if (bind(config.sockfd,
+             (struct sockaddr *)&config.localAddr,
+             config.localAddr.ss_len) != 0) {
+        perror("bind");
+        return 1;
+    }
 
     //Start and listen to the sockets.
     pthread_create(&listenThread, NULL, (void *)socketListen, &config);
@@ -265,18 +255,15 @@ int spudtest(int argc, char **argv)
 #ifdef ANDROID
 int traceroute(const char* hostname, int port)
 {
-	char *argv[3];
-	int argc = 3;
+	char *argv[2];
+	int argc = 2;
 
 	argv[1] = (char*)malloc(1024);
-	argv[2] = (char*)malloc(1024);
-	strcpy(argv[1], "wlan0");
-	strcpy(argv[2], hostname);
+	strcpy(argv[1], hostname);
 
 	spudtest(argc, argv);
 
 	free(argv[1]);
-	free(argv[2]);
 	return 0;
 }
 

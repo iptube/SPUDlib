@@ -1,28 +1,28 @@
 /*
-Copyright 2014 Cisco. All rights reserved. 
+Copyright 2014 Cisco. All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification, are 
-permitted provided that the following conditions are met: 
+Redistribution and use in source and binary forms, with or without modification, are
+permitted provided that the following conditions are met:
 
-   1. Redistributions of source code must retain the above copyright notice, this list of 
-      conditions and the following disclaimer. 
+   1. Redistributions of source code must retain the above copyright notice, this list of
+      conditions and the following disclaimer.
 
-   2. Redistributions in binary form must reproduce the above copyright notice, this list 
-      of conditions and the following disclaimer in the documentation and/or other materials 
-      provided with the distribution. 
+   2. Redistributions in binary form must reproduce the above copyright notice, this list
+      of conditions and the following disclaimer in the documentation and/or other materials
+      provided with the distribution.
 
-THIS SOFTWARE IS PROVIDED BY CISCO ''AS IS'' AND ANY EXPRESS OR IMPLIED 
-WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND 
-FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL OR CONTRIBUTORS BE 
-LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, 
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
-WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING 
-IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH 
-DAMAGE. 
+THIS SOFTWARE IS PROVIDED BY CISCO ''AS IS'' AND ANY EXPRESS OR IMPLIED
+WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+DAMAGE.
 
-The views and conclusions contained in the software and documentation are those of the 
-authors and should not be interpreted as representing official policies, either expressed 
+The views and conclusions contained in the software and documentation are those of the
+authors and should not be interpreted as representing official policies, either expressed
 or implied, of Cisco.
 */
 
@@ -58,21 +58,22 @@ void sockaddr_reset(struct sockaddr_storage * sa)
     sa->ss_family = AF_UNSPEC;
 }
 
-void sockaddr_initAsIPv4Any(struct sockaddr_in * sa)
+void sockaddr_initAsIPv4Any(struct sockaddr_in * sa, int port)
 {
+    memset(sa, 0, sizeof(*sa));
+    sa->sin_len = sizeof(*sa);
     sa->sin_family = AF_INET;
-    sa->sin_port = htons(0);
+    sa->sin_port = htons(port);
     sa->sin_addr.s_addr = INADDR_ANY;
 }
 
-void sockaddr_initAsIPv6Any(struct sockaddr_in6 * sa)
+void sockaddr_initAsIPv6Any(struct sockaddr_in6 * sa, int port)
 {
-    struct in6_addr ipv6any = IN6ADDR_ANY_INIT;
-
+    memset(sa, 0, sizeof(*sa));
     sa->sin6_family = AF_INET6;
-    sa->sin6_port = htons(0);
-    memcpy( &(sa->sin6_addr.s6_addr), &ipv6any,
-            sizeof(struct in6_addr));
+    sa->sin6_addr = in6addr_any;
+    sa->sin6_len = sizeof(*sa);
+    sa->sin6_port = htons(port);
 }
 
 bool sockaddr_initFromIPv6String(struct sockaddr_in6 *sa,
@@ -373,10 +374,10 @@ int sockaddr_getIPv6Flags(const struct sockaddr * sa, const char* ifa_name, int 
     struct sockaddr_in6 *sin;
     struct in6_ifreq ifr6;
     int s6;
-    
+
     sin = (struct sockaddr_in6 *)sa;
     strncpy(ifr6.ifr_name, ifa_name, ifa_len);
-    
+
     if ((s6 = socket(AF_INET6, SOCK_DGRAM, 0)) < 0) {
         return 0;
     }
@@ -385,7 +386,7 @@ int sockaddr_getIPv6Flags(const struct sockaddr * sa, const char* ifa_name, int 
         close(s6);
         return 0;
     }
-    
+
     return ifr6.ifr_ifru.ifru_flags6;
 #else
 return 0;
@@ -402,10 +403,10 @@ bool sockaddr_isAddrTemporary(const struct sockaddr * sa, const char* ifa_name, 
         return false;
     }else if (sa->sa_family == AF_INET6) {
         flags6 = sockaddr_getIPv6Flags(sa, ifa_name,ifa_len);
-            
+
         if(flags6 == 0)
             return false;
-        
+
         if ((flags6 & IN6_IFF_TEMPORARY) != 0){
             return true;
         }
@@ -426,10 +427,10 @@ bool sockaddr_isAddrDeprecated(const struct sockaddr * sa, const char* ifa_name,
         return false;
     }else if (sa->sa_family == AF_INET6) {
         flags6 = sockaddr_getIPv6Flags(sa, ifa_name,ifa_len);
-            
+
         if(flags6 == 0)
             return false;
-        
+
         if ((flags6 & IN6_IFF_DEPRECATED) != 0){
             return true;
         }
