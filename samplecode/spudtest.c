@@ -71,7 +71,7 @@ static const int numChar = 53;
 static const char* s1= "[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~";
 
 struct test_config{
-    
+
     struct sockaddr_storage remoteAddr;
     struct sockaddr_storage localAddr;
     int sockfd;
@@ -81,14 +81,14 @@ struct test_config{
     int numRcvdPkts;
     int numSentProbe;
     int numRcvdICMP;
-    void (*data_handler)(struct test_config *, struct sockaddr *, 
+    void (*data_handler)(struct test_config *, struct sockaddr *,
                          unsigned char *, int);
 
-    void (*icmp_handler)(struct test_config *, struct sockaddr *, 
+    void (*icmp_handler)(struct test_config *, struct sockaddr *,
                          int);
 };
 
-static void data_handler(struct test_config *config, struct sockaddr *saddr, 
+static void data_handler(struct test_config *config, struct sockaddr *saddr,
                          unsigned char *buf, int len){
 
     config->numRcvdPkts++;
@@ -96,10 +96,10 @@ static void data_handler(struct test_config *config, struct sockaddr *saddr,
 }
 
 
-static void icmp_handler(struct test_config *config, 
-                         struct sockaddr *saddr, 
+static void icmp_handler(struct test_config *config,
+                         struct sockaddr *saddr,
                          int icmpType){
-    
+
     char src_str[INET6_ADDRSTRLEN];
 
     config->numRcvdICMP++;
@@ -127,10 +127,10 @@ static void *sendData(struct test_config *config)
     //How fast? Pretty fast..
     timer.tv_sec = 0;
     timer.tv_nsec = 50000000;
-    
+
     //Create SPUD message
-    memcpy(msg.msgHdr.magic.cookie, SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE);
-    spud_createId(&msg.msgHdr.id);
+    memcpy(msg.msgHdr.magic, SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE);
+    spud_createId(&msg.msgHdr.flags_id);
 
     for(;;) {
         nanosleep(&timer, &remaining);
@@ -139,7 +139,7 @@ static void *sendData(struct test_config *config)
         LOGI("\rTX: %i", config->numSentPkts);
         fflush(stdout);
 #endif
-        
+
         memcpy(buf, &msg, sizeof msg);
         for(i=0;i<1;i++){
             int len = sizeof msg +(numChar*i);
@@ -169,14 +169,14 @@ static void *socketListen(void *ptr){
     int keyLen = 16;
     char md5[keyLen];
 
-        
+
     //Normal send/recieve RTP socket..
     ufds[0].fd = config->sockfd;
     ufds[0].events = POLLIN | POLLERR;
     numSockets++;
 
     addr_len = sizeof their_addr;
-    
+
     while(1){
         rv = poll(ufds, numSockets, -1);
         if (rv == -1) {
@@ -186,24 +186,24 @@ static void *socketListen(void *ptr){
         } else {
             for(i=0;i<numSockets;i++){
                 if (ufds[i].revents & POLLIN) {
-                    if ((numbytes = recvfrom(config->sockfd, buf, 
-                                                 MAXBUFLEN , 0, 
+                    if ((numbytes = recvfrom(config->sockfd, buf,
+                                                 MAXBUFLEN , 0,
                                                  (struct sockaddr *)&their_addr, &addr_len)) == -1) {
                             LOGE("recvfrom (data)");
                     }
                     config->data_handler(config, (struct sockaddr *)&their_addr, buf, numbytes);
-                
-                   
+
+
                 }
 
             }
         }
     }
  }
-    
-    
-    
-    
+
+
+
+
 void done(){
     LOGI(ESC_iB,lines);
     LOGI("\nDONE!\n");
@@ -226,18 +226,18 @@ int spudtest(int argc, char **argv)
     config.icmp_handler = icmp_handler;
     config.data_handler = data_handler;
 
-	
-    if(!getRemoteIpAddr((struct sockaddr *)&config.remoteAddr, 
-                            argv[2], 
+
+    if(!getRemoteIpAddr((struct sockaddr *)&config.remoteAddr,
+                            argv[2],
                         1402)){
         LOGI("Error getting remote IPaddr");
         exit(1);
         }
-    
-    if(!getLocalInterFaceAddrs( (struct sockaddr *)&config.localAddr, 
-                                argv[1], 
-                                config.remoteAddr.ss_family, 
-                                IPv6_ADDR_NORMAL, 
+
+    if(!getLocalInterFaceAddrs( (struct sockaddr *)&config.localAddr,
+                                argv[1],
+                                config.remoteAddr.ss_family,
+                                IPv6_ADDR_NORMAL,
                                 false)){
         LOGI("Error local getting IPaddr on %s\n", argv[1]);
         exit(1);
@@ -247,12 +247,12 @@ int spudtest(int argc, char **argv)
 
     //Start and listen to the sockets.
     pthread_create(&listenThread, NULL, (void *)socketListen, &config);
-    
+
     //Start a thread that sends packet to the destination (Simulate RTP)
     pthread_create(&sendDataThread, NULL, (void *)sendData, &config);
-    
+
     //Do other stuff here..
-    
+
     //Just wait a bit
     sleep(5);
     pthread_cancel(sendDataThread);
@@ -267,17 +267,17 @@ int traceroute(const char* hostname, int port)
 {
 	char *argv[3];
 	int argc = 3;
-	
+
 	argv[1] = (char*)malloc(1024);
 	argv[2] = (char*)malloc(1024);
 	strcpy(argv[1], "wlan0");
 	strcpy(argv[2], hostname);
 
 	spudtest(argc, argv);
-	
+
 	free(argv[1]);
 	free(argv[2]);
-	return 0; 
+	return 0;
 }
 
 #else
@@ -286,4 +286,3 @@ int main(int argc, char **argv)
 	return spudtest(argc, argv);
 }
 #endif
-

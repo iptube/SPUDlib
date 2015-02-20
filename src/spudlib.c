@@ -11,10 +11,9 @@ bool spud_isSpud(const uint8_t *payload, uint16_t length)
     return ( memcmp(payload, (void *)SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE) == 0 );
 }
 
-bool spud_createId(struct SpudMsgId *id)
-{
+static bool get_randBuf(void *buf, size_t sz) {
 #ifdef HAVE_ARC4RANDOM
-    arc4random_buf(id, sizeof(*id));
+    arc4random_buf(buf, sz);
     return true;
 #elif defined(HAVE__DEV_URANDOM)
     // TODO: think about pre-reading entropy to avoid blocking I/O here.
@@ -31,40 +30,59 @@ bool spud_createId(struct SpudMsgId *id)
         return false;
     }
 
-    nread = fread(id, sizeof(*id), 1, rfile);
+    nread = fread(id, sz, 1, rfile);
     fclose(rfile);
-    return nread == sizeof(*id);
+    return nread == sz;
 #else
   #error New random source needed
 #endif
 }
-
-
-bool spud_setId(struct SpudMsg *msg,const struct SpudMsgId *id)
+bool spud_createId(struct SpudMsgFlagsId *id)
 {
-    if(msg == NULL || id == NULL){
+    uint8_t flags;
+    if (id == NULL) {
         return false;
     }
-    memcpy(&msg->msgHdr.id, id, SPUD_MSG_ID_SIZE);
+    flags = SPUD_GET_FLAGS(*id);
 
+    if (!get_randBuf(id, sizeof(*id))) {
+        return false;
+    }
+    SPUD_SET_FLAGS(*id, flags);
     return true;
 }
 
-bool spud_isIdEqual(const struct SpudMsgId *a,const struct SpudMsgId *b)
+
+bool spud_setId(struct SpudMsg *msg,const struct SpudMsgFlagsId *id)
 {
-    return (memcmp(a, b, SPUD_MSG_ID_SIZE) == 0);
+    uint8_t flags;
+    if(msg == NULL || id == NULL){
+        return false;
+    }
+    flags = SPUD_GET_FLAGS(msg->msgHdr.flags_id);
+    memcpy(&msg->msgHdr.flags_id, id, SPUD_FLAGS_ID_SIZE);
+    SPUD_SET_FLAGS(msg->msgHdr.flags_id, flags);
+    return true;
 }
 
-char* spud_idToString(char* buf, size_t len, const struct SpudMsgId *id)
+bool spud_isIdEqual(const struct SpudMsgFlagsId *a,const struct SpudMsgFlagsId *b)
+{
+    return ((a->octet[0] & SPUD_FLAGS_EXCLUDE_MASK) ==
+            (b->octet[0] & SPUD_FLAGS_EXCLUDE_MASK)) &&
+           (memcmp(&a->octet[1], &b->octet[1], SPUD_FLAGS_ID_SIZE-1) == 0);
+}
+
+char* spud_idToString(char* buf, size_t len, const struct SpudMsgFlagsId *id)
 {
     size_t i;
 
-    if(len < SPUD_MSG_ID_SIZE*2+1){
+    if(len < SPUD_ID_STRING_SIZE+1){
         return NULL;
     }
 
-    for(i=0;i<SPUD_MSG_ID_SIZE;i++){
-        sprintf(buf+2*i,"%02x",id->octet[i]);
+    for(i=0;i<SPUD_FLAGS_ID_SIZE;i++){
+        sprintf(buf+2*i,"%02x",
+        (i==0) ? (id->octet[i] & SPUD_FLAGS_EXCLUDE_MASK) : id->octet[i]);
     }
     return buf;
 }

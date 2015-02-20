@@ -33,10 +33,10 @@ struct listenConfig{
 
     int sockfd;
     /*Handles normal data like RTP etc */
-    void (*data_handler)(struct listenConfig *, struct sockaddr *, 
+    void (*data_handler)(struct listenConfig *, struct sockaddr *,
                          void *, unsigned char *, int);
     /*Handles STUN packet*/
-    void (*spud_handler)(struct listenConfig *, struct sockaddr *, 
+    void (*spud_handler)(struct listenConfig *, struct sockaddr *,
                          void *, unsigned char *, int);
 };
 
@@ -78,17 +78,17 @@ static void *socketListen(void *ptr){
     int numbytes;
     int i;
     int numSockets = 0;
-    
+
     const int dataSock = 0;
-    
+
 
     //Normal send/recieve RTP socket..
     ufds[dataSock].fd = config->sockfd;
     ufds[dataSock].events = POLLIN | POLLERR;
     numSockets++;
-    
+
     addr_len = sizeof their_addr;
-    
+
     while(1){
         rv = poll(ufds, numSockets, -1);
         if (rv == -1) {
@@ -98,19 +98,19 @@ static void *socketListen(void *ptr){
         } else {
             for(i=0;i<numSockets;i++){
                 if (ufds[i].revents & POLLIN) {
-                    
-                    if ((numbytes = recvfrom(config->sockfd, buf, 
-                                             MAXBUFLEN , 0, 
+
+                    if ((numbytes = recvfrom(config->sockfd, buf,
+                                             MAXBUFLEN , 0,
                                              (struct sockaddr *)&their_addr, &addr_len)) == -1) {
                         printf("recvfrom (data)");
                     }
                     if( spud_isSpud(buf, numbytes) ){
                         struct SpudMsg *sMsg;
-                        
+
                         sMsg = (struct SpudMsg *)buf;
-                        
-                        char idStr[SPUD_MSG_ID_SIZE*2+1];
-                        printf(" \r Spud ID: %s", spud_idToString(idStr, sizeof idStr, &sMsg->msgHdr.id ));
+
+                        char idStr[SPUD_ID_STRING_SIZE+1];
+                        printf(" \r Spud ID: %s", spud_idToString(idStr, sizeof idStr, &sMsg->msgHdr.flags_id ));
                         config->data_handler(config, (struct sockaddr *)&their_addr, NULL, buf+sizeof(*sMsg), numbytes-sizeof(*sMsg));
                     }
                     else{
@@ -133,18 +133,18 @@ int main(void)
 
     pthread_t socketListenThread;
 
-    struct listenConfig listenConfig;    
+    struct listenConfig listenConfig;
 
     signal(SIGINT, teardown);
-    
+
     sockfd = createSocket(NULL, MYPORT, AI_PASSIVE, servinfo, &p);
-    
-    
-    listenConfig.sockfd= sockfd;   
+
+
+    listenConfig.sockfd= sockfd;
     listenConfig.spud_handler = spudHandler;
     listenConfig.data_handler = dataHandler;
-    
-    
+
+
 
 
     pthread_create( &socketListenThread, NULL, socketListen, (void*)&listenConfig);

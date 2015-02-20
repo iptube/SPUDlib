@@ -47,7 +47,7 @@ START_TEST (is_spud)
 
     struct SpudMsg msg;
     //should this be in init() instead?
-    memcpy(msg.msgHdr.magic.cookie, SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE);
+    memcpy(msg.msgHdr.magic, SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE);
 
     //copy the whole spud msg into the buffer..
     memcpy(buf, &msg, sizeof msg);
@@ -68,15 +68,15 @@ START_TEST (createId)
 
     struct SpudMsg msg;
     //should this be in init() instead?
-    memcpy(msg.msgHdr.magic.cookie, SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE);
+    memcpy(msg.msgHdr.magic, SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE);
     //Create ID
-    spud_createId(&msg.msgHdr.id);
+    spud_createId(&msg.msgHdr.flags_id);
 
-    printf("ID: %s\n", spud_idToString(idStr, len, &msg.msgHdr.id));
+    printf("ID: %s\n", spud_idToString(idStr, len, &msg.msgHdr.flags_id));
 
     fail_if( spud_isSpud((const uint8_t *)&buf,len),
                  "isSpud() failed");
- 
+
 
     //copy the whole spud msg into the buffer..
     memcpy(buf, &msg, sizeof msg);
@@ -94,20 +94,20 @@ START_TEST (isIdEqual)
     struct SpudMsg msgA;
     struct SpudMsg msgB;//Equal to A
     struct SpudMsg msgC;//New random
-    
+
     //should this be in init() instead?
-    memcpy(msgA.msgHdr.magic.cookie, SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE);
-    memcpy(msgB.msgHdr.magic.cookie, SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE);
-    memcpy(msgC.msgHdr.magic.cookie, SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE);
-    
+    memcpy(msgA.msgHdr.magic, SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE);
+    memcpy(msgB.msgHdr.magic, SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE);
+    memcpy(msgC.msgHdr.magic, SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE);
+
     //Create ID
-    spud_createId(&msgA.msgHdr.id);
-    spud_setId(&msgB, &msgA.msgHdr.id);
-    spud_createId(&msgC.msgHdr.id);
-    
-    fail_unless( spud_isIdEqual(&msgA.msgHdr.id, &msgB.msgHdr.id));
-    fail_if( spud_isIdEqual(&msgA.msgHdr.id, &msgC.msgHdr.id));
-    fail_if( spud_isIdEqual(&msgB.msgHdr.id, &msgC.msgHdr.id));
+    spud_createId(&msgA.msgHdr.flags_id);
+    spud_setId(&msgB, &msgA.msgHdr.flags_id);
+    spud_createId(&msgC.msgHdr.flags_id);
+
+    fail_unless( spud_isIdEqual(&msgA.msgHdr.flags_id, &msgB.msgHdr.flags_id));
+    fail_if( spud_isIdEqual(&msgA.msgHdr.flags_id, &msgC.msgHdr.flags_id));
+    fail_if( spud_isIdEqual(&msgB.msgHdr.flags_id, &msgC.msgHdr.flags_id));
 }
 END_TEST
 
@@ -124,7 +124,7 @@ Suite * spudlib_suite (void)
       tcase_add_test (tc_core, is_spud);
       tcase_add_test (tc_core, createId);
       tcase_add_test (tc_core, isIdEqual);
-      
+
       suite_add_tcase (s, tc_core);
   }
 
