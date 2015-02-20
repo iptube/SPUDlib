@@ -11,7 +11,19 @@ bool spud_isSpud(const uint8_t *payload, uint16_t length)
     return ( memcmp(payload, (void *)SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE) == 0 );
 }
 
-static bool get_randBuf(void *buf, size_t sz) {
+bool spud_init(struct SpudMsg *msg, struct SpudMsgFlagsId *id)
+{
+    memcpy(msg->msgHdr.magic, SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE);
+    SPUD_SET_FLAGS(msg->msgHdr.flags_id, 0);
+    if (id != NULL) {
+        return spud_setId(msg, id);
+    } else {
+        return spud_createId(&msg->msgHdr.flags_id);
+    }
+}
+
+static bool get_randBuf(void *buf, size_t sz)
+{
 #ifdef HAVE_ARC4RANDOM
     arc4random_buf(buf, sz);
     return true;
@@ -37,6 +49,7 @@ static bool get_randBuf(void *buf, size_t sz) {
   #error New random source needed
 #endif
 }
+
 bool spud_createId(struct SpudMsgFlagsId *id)
 {
     uint8_t flags;

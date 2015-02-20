@@ -68,9 +68,7 @@ START_TEST (createId)
 
     struct SpudMsg msg;
     //should this be in init() instead?
-    memcpy(msg.msgHdr.magic, SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE);
-    //Create ID
-    spud_createId(&msg.msgHdr.flags_id);
+    spud_init(&msg, NULL);
 
     printf("ID: %s\n", spud_idToString(idStr, len, &msg.msgHdr.flags_id));
 
@@ -83,9 +81,6 @@ START_TEST (createId)
 
     fail_unless( spud_isSpud((const uint8_t *)&buf,len),
                  "isSpud() failed");
-
-
-
 }
 END_TEST
 
@@ -96,14 +91,9 @@ START_TEST (isIdEqual)
     struct SpudMsg msgC;//New random
 
     //should this be in init() instead?
-    memcpy(msgA.msgHdr.magic, SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE);
-    memcpy(msgB.msgHdr.magic, SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE);
-    memcpy(msgC.msgHdr.magic, SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE);
-
-    //Create ID
-    spud_createId(&msgA.msgHdr.flags_id);
-    spud_setId(&msgB, &msgA.msgHdr.flags_id);
-    spud_createId(&msgC.msgHdr.flags_id);
+    spud_init(&msgA, NULL);
+    spud_init(&msgB, &msgA.msgHdr.flags_id);
+    spud_init(&msgC, NULL);
 
     fail_unless( spud_isIdEqual(&msgA.msgHdr.flags_id, &msgB.msgHdr.flags_id));
     fail_if( spud_isIdEqual(&msgA.msgHdr.flags_id, &msgC.msgHdr.flags_id));
