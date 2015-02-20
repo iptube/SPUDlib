@@ -22,14 +22,16 @@ bool spud_createId(struct SpudMsgId *id)
     // Also, read these:
     // http://insanecoding.blogspot.com/2014/05/a-good-idea-with-bad-usage-devurandom.html
     // http://www.2uo.de/myths-about-urandom/
+    // --- Yes. Move to openSSL or someting?
     FILE *rfile = fopen("/dev/urandom", "r");
+    size_t nread;
     if (!rfile) {
         perror("Error opening /dev/urandom");
         //Do something else?
         return false;
     }
 
-    size_t nread = fread(id, sizeof(*id), 1, rfile);
+    nread = fread(id, sizeof(*id), 1, rfile);
     fclose(rfile);
     return nread == sizeof(*id);
 #else
