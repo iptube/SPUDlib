@@ -1,10 +1,8 @@
 
 #include <stdlib.h>
 #include <string.h>
-//#include <unistd.h>
 #include <stdio.h>
 
-#include <stdbool.h>
 #include <sys/socket.h>
 #include <poll.h>
 
@@ -206,9 +204,9 @@ int spudtest(int argc, char **argv)
     memset(&config, 0, sizeof(config));
     config.data_handler = data_handler;
 
-    if(!getRemoteIpAddr((struct sockaddr *)&config.remoteAddr,
+    if(!getRemoteIpAddr((struct sockaddr_in6*)&config.remoteAddr,
                         argv[1],
-                        1402)) {
+                        "1402")) {
         LOGI("Error getting remote IPaddr");
         return 1;
     }

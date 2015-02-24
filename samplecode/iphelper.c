@@ -10,7 +10,7 @@
 #include <string.h>
 
 #include <sockaddr_util.h>
- 
+
 #ifndef   NI_MAXHOST
 #define   NI_MAXHOST 1025
 #endif
@@ -18,10 +18,11 @@
 
 #include "iphelper.h"
 
-bool getLocalInterFaceAddrs(struct sockaddr *addr, 
-                            char *iface, int ai_family, 
-                            IPv6_ADDR_TYPE ipv6_addr_type, 
-                            bool force_privacy){
+bool getLocalInterFaceAddrs(struct sockaddr *addr,
+                            char *iface, int ai_family,
+                            IPv6_ADDR_TYPE ipv6_addr_type,
+                            bool force_privacy)
+{
     struct ifaddrs *ifaddr, *ifa;
     int family, s;
     char host[NI_MAXHOST];
@@ -31,7 +32,7 @@ bool getLocalInterFaceAddrs(struct sockaddr *addr,
         perror("getifaddrs");
         exit(EXIT_FAILURE);
     }
-    
+
     /* Walk through linked list, maintaining head pointer so we
        can free list later */
 
@@ -63,9 +64,9 @@ bool getLocalInterFaceAddrs(struct sockaddr *addr,
             }
 
             if(force_privacy){
-                if( !sockaddr_isAddrTemporary(ifa->ifa_addr, 
-                                                  ifa->ifa_name, 
-                                                  sizeof(ifa->ifa_name)) ){
+                if( !sockaddr_isAddrTemporary(ifa->ifa_addr,
+                                              ifa->ifa_name,
+                                              sizeof(ifa->ifa_name)) ){
                     continue;
                 }
             }
@@ -78,11 +79,11 @@ bool getLocalInterFaceAddrs(struct sockaddr *addr,
                     if (!sockaddr_isAddrULA(ifa->ifa_addr)){
                         continue;
                     }
-                        
+
                     break;
                 case IPv6_ADDR_PRIVACY:
-                    if( !sockaddr_isAddrTemporary(ifa->ifa_addr, 
-                                                  ifa->ifa_name, 
+                    if( !sockaddr_isAddrTemporary(ifa->ifa_addr,
+                                                  ifa->ifa_name,
                                                   sizeof(ifa->ifa_name)) ){
                         continue;
                     }
@@ -93,9 +94,9 @@ bool getLocalInterFaceAddrs(struct sockaddr *addr,
                     }
                     break;
             }//switch
-                        
+
         }//IPv6
-                
+
         s = getnameinfo(ifa->ifa_addr,
                         (family == AF_INET) ? sizeof(struct sockaddr_in) :
                         sizeof(struct sockaddr_in6),
@@ -105,7 +106,7 @@ bool getLocalInterFaceAddrs(struct sockaddr *addr,
             exit(EXIT_FAILURE);
         }
         break; //for
-        
+
     }//for
     freeifaddrs(ifaddr);
 
@@ -116,43 +117,32 @@ bool getLocalInterFaceAddrs(struct sockaddr *addr,
 }
 
 
-int getRemoteIpAddr(struct sockaddr *remoteAddr, char *fqdn, uint16_t port)
+bool getRemoteIpAddr(struct sockaddr_in6 *remoteAddr, const char *fqdn, const char *port)
 {
     struct addrinfo hints, *res, *p;
     int status;
     char ipstr[INET6_ADDRSTRLEN];
+    bool found = false;
 
     memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_UNSPEC; // AF_INET or AF_INET6 to force version
-    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_V4MAPPED;
+    hints.ai_family = AF_INET6; // use AI_V4MAPPED for v4 addresses
+    hints.ai_protocol = IPPROTO_UDP;
+    hints.ai_socktype = SOCK_DGRAM;
 
-    if ((status = getaddrinfo(fqdn, NULL, &hints, &res)) != 0) {
+    if ((status = getaddrinfo(fqdn, port, &hints, &res)) != 0) {
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(status));
-        return 2;
+        return false;
     }
 
     for(p = res;p != NULL; p = p->ai_next) {
-        void *addr;
-        // get the pointer to the address itself,
-        // different fields in IPv4 and IPv6:
-        if (p->ai_family == AF_INET) { // IPv4
-            struct sockaddr_in *ipv4 = (struct sockaddr_in *)p->ai_addr;
-            if ( ipv4->sin_port == 0 ) {
-                sockaddr_initFromIPv4Int((struct sockaddr_in *)remoteAddr,
-                                         ipv4->sin_addr.s_addr,
-                                         htons(port));
-            }
-            addr = &(ipv4->sin_addr);
-        } else { // IPv6
-            struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *)p->ai_addr;
-            if ( ipv6->sin6_port == 0 ) {
-                sockaddr_initFromIPv6Int((struct sockaddr_in6 *)remoteAddr,
-                                         ipv6->sin6_addr.s6_addr,
-                                         htons(port));
-            }
-            addr = &(ipv6->sin6_addr);
+        // copy the first match
+        if (p->ai_family == AF_INET6) { // Should always be v6 (mapped for v4)
+            memcpy(remoteAddr, p->ai_addr, sizeof(struct sockaddr_in6));
+            found = true;
+            break;
         }
     }
     freeaddrinfo(res); // free the linked list
-    return 1;
+    return found;
 }
