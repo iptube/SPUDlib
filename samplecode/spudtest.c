@@ -68,6 +68,8 @@ int lines; //Just to gracefully handle SIGINT
 static const int numChar = 53;
 static const char* s1= "[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~";
 
+#define UNUSED(x) (void)(x)
+
 struct test_config{
 
     struct sockaddr_storage remoteAddr;
@@ -82,8 +84,10 @@ struct test_config{
 };
 
 static void data_handler(struct test_config *config, struct sockaddr *saddr,
-                         unsigned char *buf, int len){
-
+                         unsigned char *buf, int len)
+{
+    UNUSED(saddr);
+    UNUSED(len);
     config->numRcvdPkts++;
     LOGI("\r " ESC_7C " RX: %i  %s", config->numRcvdPkts, buf);
 }
@@ -125,7 +129,6 @@ static void *sendData(struct test_config *config)
                    (uint8_t *)buf,
                    sizeof msg + strlen(s1),
                    (struct sockaddr *)&config->remoteAddr,
-                   false,
                    0);
     }
 }
@@ -140,9 +143,6 @@ static void *socketListen(void *ptr){
     int numbytes;
     int i;
     int numSockets = 0;
-    int keyLen = 16;
-    char md5[keyLen];
-
 
     //Normal send/recieve RTP socket..
     ufds[0].fd = config->sockfd;
@@ -151,34 +151,37 @@ static void *socketListen(void *ptr){
 
     addr_len = sizeof their_addr;
 
-    while(1){
+    while(1) {
         rv = poll(ufds, numSockets, -1);
         if (rv == -1) {
             LOGE("poll"); // error occurred in poll()
         } else if (rv == 0) {
             LOGI("Timeout occurred! (Should not happen)\n");
         } else {
-            for(i=0;i<numSockets;i++){
+            for (i=0; i<numSockets; i++) {
                 if (ufds[i].revents & POLLIN) {
                     if ((numbytes = recvfrom(config->sockfd, buf,
-                                                 MAXBUFLEN , 0,
-                                                 (struct sockaddr *)&their_addr, &addr_len)) == -1) {
-                            LOGE("recvfrom (data)");
+                                             MAXBUFLEN , 0,
+                                             (struct sockaddr *)&their_addr,
+                                             &addr_len)) == -1) {
+                        LOGE("recvfrom (data)");
+                        continue;
                     }
-                    config->data_handler(config, (struct sockaddr *)&their_addr, buf, numbytes);
-
-
+                    config->data_handler(config,
+                                         (struct sockaddr *)&their_addr,
+                                         buf,
+                                         numbytes);
                 }
-
+                if (ufds[i].revents & POLLERR) {
+                    LOGE("Poll socket");
+                    return NULL;
+                }
             }
         }
     }
- }
+}
 
-
-
-
-void done(){
+void done() {
     LOGI(ESC_iB,lines);
     LOGI("\nDONE!\n");
     exit(0);
@@ -195,7 +198,6 @@ int spudtest(int argc, char **argv)
         exit(64);
     }
 
-    int i;
 #ifndef ANDROID
     signal(SIGINT, done);
 #endif
@@ -207,22 +209,12 @@ int spudtest(int argc, char **argv)
     if(!getRemoteIpAddr((struct sockaddr_in6*)&config.remoteAddr,
                         argv[1],
                         "1402")) {
-        LOGI("Error getting remote IPaddr");
         return 1;
     }
 
-    if (config.remoteAddr.ss_family == AF_INET) {
-        config.sockfd = socket(PF_INET, SOCK_DGRAM, 0);
-        sockaddr_initAsIPv4Any((struct sockaddr_in *)&config.localAddr, 0);
-    }
-    else if (config.remoteAddr.ss_family == AF_INET6) {
-        config.sockfd = socket(PF_INET6, SOCK_DGRAM, 0);
-        sockaddr_initAsIPv6Any((struct sockaddr_in6 *)&config.localAddr, 0);
-    }
-    else {
-        LOGI("Invalid address family\n");
-        return 1;
-    }
+    config.sockfd = socket(PF_INET6, SOCK_DGRAM, 0);
+    sockaddr_initAsIPv6Any((struct sockaddr_in6 *)&config.localAddr, 0);
+
     char buf[1024];
     printf("local: %s\n", sockaddr_toString((struct sockaddr *)&config.localAddr, buf, sizeof(buf), true));
 

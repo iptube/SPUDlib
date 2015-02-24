@@ -26,8 +26,9 @@
 #define MAXBUFLEN 2048
 #define MAX_LISTEN_SOCKETS 10
 
-int sockfd;
+#define UNUSED(x) (void)(x)
 
+int sockfd;
 
 struct listenConfig{
 
@@ -48,21 +49,34 @@ void teardown()
   exit(0);
 }
 
-void dataHandler(struct listenConfig *config, struct sockaddr *from_addr, void *cb, unsigned char *buf, int bufLen)
+void dataHandler(struct listenConfig *config,
+                 struct sockaddr *from_addr,
+                 void *cb,
+                 unsigned char *buf,
+                 int bufLen)
 {
+    UNUSED(cb);
     printf(" %s", buf);
     fflush(stdout);
     sendPacket(config->sockfd,
                buf,
                bufLen,
                from_addr,
-               false,
                0);
 }
 
 
-void spudHandler(struct listenConfig *config, struct sockaddr *from_addr, void *cb, unsigned char *buf, int buflen)
+void spudHandler(struct listenConfig *config,
+                 struct sockaddr *from_addr,
+                 void *cb,
+                 unsigned char *buf,
+                 int buflen)
 {
+    UNUSED(config);
+    UNUSED(from_addr);
+    UNUSED(cb);
+    UNUSED(buf);
+    UNUSED(buflen);
     //do something
 }
 
@@ -122,14 +136,10 @@ static void *socketListen(void *ptr){
     }
 }
 
-
-
 int main(void)
 {
-    struct addrinfo *servinfo, *p;
-    int numbytes;
-    struct sockaddr_storage their_addr;
-    unsigned char buf[MAXBUFLEN];
+    struct addrinfo servinfo;
+    struct addrinfo *p;
 
     pthread_t socketListenThread;
 
@@ -137,15 +147,11 @@ int main(void)
 
     signal(SIGINT, teardown);
 
-    sockfd = createSocket(NULL, MYPORT, AI_PASSIVE, servinfo, &p);
-
+    sockfd = createSocket(NULL, MYPORT, AI_PASSIVE, &servinfo, &p);
 
     listenConfig.sockfd= sockfd;
     listenConfig.spud_handler = spudHandler;
     listenConfig.data_handler = dataHandler;
-
-
-
 
     pthread_create( &socketListenThread, NULL, socketListen, (void*)&listenConfig);
 

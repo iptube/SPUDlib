@@ -26,7 +26,6 @@ bool getLocalInterFaceAddrs(struct sockaddr *addr,
     struct ifaddrs *ifaddr, *ifa;
     int family, s;
     char host[NI_MAXHOST];
-    int rc;
 
     if (getifaddrs(&ifaddr) == -1) {
         perror("getifaddrs");
@@ -121,7 +120,6 @@ bool getRemoteIpAddr(struct sockaddr_in6 *remoteAddr, const char *fqdn, const ch
 {
     struct addrinfo hints, *res, *p;
     int status;
-    char ipstr[INET6_ADDRSTRLEN];
     bool found = false;
 
     memset(&hints, 0, sizeof hints);

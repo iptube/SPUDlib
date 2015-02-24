@@ -10,7 +10,6 @@ int createLocalUDPSocket(int ai_family,
     int sockfd;
 
     int rv;
-    int yes = 1;
     struct addrinfo hints, *ai, *p;
     char addr[SOCKADDR_MAX_STRLEN];
     char service[8];
@@ -22,14 +21,14 @@ int createLocalUDPSocket(int ai_family,
     snprintf(service, 8, "%d", port);
     //snprintf(service, 8, "%d", 3478);
 
-        
+
     // get us a socket and bind it
     memset(&hints, 0, sizeof hints);
     hints.ai_family = ai_family;
     hints.ai_socktype = SOCK_DGRAM;
     hints.ai_flags = AI_NUMERICHOST | AI_ADDRCONFIG;
 
-    
+
     if ((rv = getaddrinfo(addr, service, &hints, &ai)) != 0) {
         fprintf(stderr, "selectserver: %s ('%s')\n", gai_strerror(rv), addr);
         exit(1);
@@ -40,19 +39,19 @@ int createLocalUDPSocket(int ai_family,
             //printf("Ignoring any\n");
             continue;
         }
-        
+
         if ((sockfd = socket(p->ai_family, p->ai_socktype,
                              p->ai_protocol)) == -1) {
             perror("client: socket");
             continue;
         }
-                    
+
         if (bind(sockfd, p->ai_addr, p->ai_addrlen) < 0) {
             printf("Bind failed\n");
             close(sockfd);
             continue;
         }
-    
+
         if (localIp != NULL){
             struct sockaddr_storage ss;
             socklen_t len = sizeof(ss);
@@ -72,9 +71,9 @@ int createLocalUDPSocket(int ai_family,
     return sockfd;
 }
 
-int createSocket(char host[], char port[], 
-                 int ai_flags, 
-                 struct addrinfo *servinfo, 
+int createSocket(char host[], char port[],
+                 int ai_flags,
+                 struct addrinfo *servinfo,
                  struct addrinfo **p)
 {
     struct addrinfo hints;
@@ -96,7 +95,7 @@ int createSocket(char host[], char port[],
             perror("socket");
             continue;
         }
-        
+
         if (ai_flags != 0 && bind(sockfd, (*p)->ai_addr, (*p)->ai_addrlen) == -1) {
             close(sockfd);
             perror("bind");
@@ -111,20 +110,17 @@ int createSocket(char host[], char port[],
     return sockfd;
 }
 
-
-
 void sendPacket(int sockHandle,
                 const uint8_t *buf,
                 int bufLen,
                 const struct sockaddr *dstAddr,
-                bool useRelay,
                 uint8_t ttl)
 {
     int32_t numbytes;
     //char addrStr[SOCKADDR_MAX_STRLEN];
     uint32_t sock_ttl;
     uint32_t addr_len;
-        
+
     if(dstAddr->sa_family == AF_INET)
         addr_len = sizeof(struct sockaddr_in);
     else
@@ -143,10 +139,10 @@ void sendPacket(int sockHandle,
             getsockopt(sockHandle, IPPROTO_IPV6, IPV6_UNICAST_HOPS, &old_ttl, &optlen);
         }
         sock_ttl = ttl;
-        
+
         //sockaddr_toString(dstAddr, addrStr, SOCKADDR_MAX_STRLEN, true);
         //printf("Sending Raw (To: '%s'(%i), Bytes:%i/%i  (Addr size: %u)\n", addrStr, sockHandle, numbytes, bufLen,addr_len);
-            
+
         if(dstAddr->sa_family == AF_INET)
             setsockopt(sockHandle, IPPROTO_IP, IP_TTL, &sock_ttl, sizeof(sock_ttl));
         else
@@ -163,7 +159,7 @@ void sendPacket(int sockHandle,
         else{
             setsockopt(sockHandle, IPPROTO_IPV6, IPV6_UNICAST_HOPS, &old_ttl, optlen);
         }
-        
+
     }else{
         /*Nothing special, just send the packet*/
         if ((numbytes = sendto(sockHandle, buf, bufLen, 0, dstAddr, addr_len)) == -1) {
@@ -172,6 +168,3 @@ void sendPacket(int sockHandle,
         }
     }
 }
-
-
-

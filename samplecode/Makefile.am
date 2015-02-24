@@ -1,6 +1,6 @@
 bin_PROGRAMS = spudtest spudecho
 
-AM_CPPFLAGS = -I../include		
+AM_CPPFLAGS = -I../include	-Wall -Wextra -Werror	
 
 spudtest_LDADD = ../src/libspud.la
 spudecho_LDADD = ../src/libspud.la
