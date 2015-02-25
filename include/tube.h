@@ -49,7 +49,7 @@ typedef void (*tube_data_cb)(struct _tube_t* tube,
                              ssize_t length,
                              const struct sockaddr* addr);
 
-typedef void (*tube_close_cb)(struct _tube_t* tube,
+typedef void (*tube_state_cb)(struct _tube_t* tube,
                               const struct sockaddr* addr);
 
 typedef struct _tube_t {
@@ -59,7 +59,8 @@ typedef struct _tube_t {
   struct SpudMsgFlagsId id;
   void *data;
   tube_data_cb data_cb;
-  tube_close_cb close_cb;
+  tube_state_cb running_cb;
+  tube_state_cb close_cb;
 } tube_t;
 
 // multiple tubes per socket

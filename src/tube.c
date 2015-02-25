@@ -155,6 +155,11 @@ int tube_recv(tube_t *tube, struct SpudMsg *msg, const struct sockaddr* addr)
     assert(tube!=NULL);
     assert(msg!=NULL);
 
+    if (tube->state == TS_START) {
+        fprintf(stderr, "Invalid state\n");
+        return -1;
+    }
+
     cmd = msg->header->flags_id.octet[0] & SPUD_COMMAND;
     switch(cmd) {
     case SPUD_DATA:
@@ -169,34 +174,26 @@ int tube_recv(tube_t *tube, struct SpudMsg *msg, const struct sockaddr* addr)
             // double-close is a no-op
             if (tube->close_cb) {
                 tube->close_cb(tube, addr);
-                tube->state = TS_UNKNOWN;
-                memset(&tube->peer, 0, sizeof(tube->peer));
-                // leave id in place to allow for reconnects later
             }
+            tube->state = TS_UNKNOWN;
+            memset(&tube->peer, 0, sizeof(tube->peer));
+            // leave id in place to allow for reconnects later
         }
         break;
     case SPUD_OPEN:
-        // always a no-op for now; servers should call spud_ack instead
-        // TODO: simplify caller's life by doing that here
-        break;
+        // TODO: check if we're in server policy
+        return tube_ack(tube,
+                        &msg->header->flags_id,
+                        addr);
     case SPUD_ACK:
+        if (tube->state == TS_OPENING) {
+            tube->state = TS_RUNNING;
+            if (tube->running_cb) {
+                tube->running_cb(tube, addr);
+            }
+        }
         break;
     }
 
-    switch (tube->state) {
-    case TS_START:
-        // This shouldn't happen, but it will one day when someone overwrites
-        // the end of an array
-        fprintf(stderr, "invalid state\n");
-        return -1;
-    case TS_UNKNOWN:
-        break;
-    case TS_OPENING:
-        break;
-    case TS_RUNNING:
-        break;
-    case TS_RESUMING:
-        break;
-    }
     return 0;
 }

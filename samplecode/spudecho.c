@@ -106,10 +106,7 @@ static int socketListen() {
                     }
 
                     tube = tube_match(&sMsg.header->flags_id);
-                    if (tube) {
-                        // do states
-                        tube_recv(tube, &sMsg, (struct sockaddr *)&their_addr);
-                    } else {
+                    if (!tube) {
                         // get started
                         tube = tube_unused();
                         if (!tube) {
@@ -117,10 +114,8 @@ static int socketListen() {
                             // TODO: send back error
                             continue;
                         }
-                        tube_ack(tube,
-                                 &sMsg.header->flags_id,
-                                 (struct sockaddr *)&their_addr);
                     }
+                    tube_recv(tube, &sMsg, (struct sockaddr *)&their_addr);
 		        }
             }
         }
@@ -140,7 +135,7 @@ static void read_cb(tube_t *tube,
                            sizeof idStr,
                            &tube->id));
 
-    printf(" %*s", (int)length, data);
+    printf(" %s", data);
     fflush(stdout);
     tube_data(tube, (uint8_t*)data, length);
 }

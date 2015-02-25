@@ -61,13 +61,14 @@
 #define MAXBUFLEN 2048
 #define MAX_LISTEN_SOCKETS 10
 
+pthread_t sendDataThread;
 int lines; //Just to gracefully handle SIGINT
 
 //static const int numChar = 13;
 //static const char* s1 = "º¤ø,¸¸,ø¤º°`°º¤ø,¸¸,ø¤º°`°º¤ø,¸¸,ø¤º°`°º¤ø,¸¸,ø¤º°`°º¤ø,¸¸,ø¤º°`°º¤ø,¸¸,ø¤º°`° ";
 
-// static const int numChar = 53;
-// static const char* s1= "[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~";
+static const int numChar = 53;
+static const char* s1= "[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~";
 
 #define UNUSED(x) (void)(x)
 
@@ -80,37 +81,18 @@ struct test_config {
     int numSentPkts;
     int numRcvdPkts;
     int numSentProbe;
-    void (*data_handler)(struct test_config *, struct sockaddr *,
-                         unsigned char *, int);
 };
 
-static void data_handler(struct test_config *config, struct sockaddr *saddr,
-                         unsigned char *buf, int len)
-{
-    UNUSED(saddr);
-    UNUSED(len);
-    config->numRcvdPkts++;
-    LOGI("\r " ESC_7C " RX: %i  %s", config->numRcvdPkts, buf);
-}
-
-/*
 static void *sendData(struct test_config *config)
 {
     struct timespec timer;
     struct timespec remaining;
-    int len = 1024;
-    unsigned char buf[len];
-    //char * data = "Tuber is cooool\0";
-    struct SpudMsg msg;
+    unsigned char buf[1024];
     int i;
 
     //How fast? Pretty fast..
     timer.tv_sec = 0;
     timer.tv_nsec = 50000000;
-
-    //Create SPUD message
-    memcpy(msg.msgHdr.magic, SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE);
-    spud_createId(&msg.msgHdr.flags_id);
 
     for(;;) {
         nanosleep(&timer, &remaining);
@@ -120,21 +102,14 @@ static void *sendData(struct test_config *config)
         fflush(stdout);
 #endif
 
-        memcpy(buf, &msg, sizeof msg);
-        for(i=0;i<1;i++){
-            int len = sizeof msg +(numChar*i);
-
+        for (i=0; i<1; i++) {
+            int len = (numChar*i);
+            // TODO: parse this.
             memcpy(buf+len, s1+(config->numSentPkts%numChar)+(numChar*i), numChar);
         }
-
-        sendPacket(config->sockfd,
-                   (uint8_t *)buf,
-                   sizeof msg + strlen(s1),
-                   (struct sockaddr *)&config->remoteAddr,
-                   0);
+        tube_data(&config->tube, buf, strlen(s1));
     }
 }
-*/
 
 static void *socketListen(void *ptr){
     struct pollfd ufds[MAX_LISTEN_SOCKETS];
@@ -183,14 +158,41 @@ static void *socketListen(void *ptr){
                         // it's another kind of attack
                         continue;
                     }
-                    // TODO: check their_addr
-                    printf("ack\n");
+                    tube_recv(&config->tube, &sMsg, (struct sockaddr *)&their_addr);
                 }
             }
         }
     }
 }
 
+static void data_cb(tube_t *tube,
+                    const uint8_t *data,
+                    ssize_t length,
+                    const struct sockaddr* addr)
+{
+    struct test_config *config = (struct test_config *)tube->data;
+    UNUSED(addr);
+    UNUSED(length);
+    config->numRcvdPkts++;
+    LOGI("\r " ESC_7C " RX: %i  %s", config->numRcvdPkts, data);
+}
+
+static void running_cb(struct _tube_t* tube,
+                       const struct sockaddr* addr)
+{
+    UNUSED(addr);
+    printf("running!\n");
+
+    //Start a thread that sends packet to the destination
+    pthread_create(&sendDataThread, NULL, (void *)sendData, tube->data);
+}
+
+static void close_cb(struct _tube_t* tube,
+                     const struct sockaddr* addr)
+{
+    UNUSED(tube);
+    UNUSED(addr);
+}
 
 void done() {
     LOGI(ESC_iB,lines);
@@ -204,7 +206,6 @@ int spudtest(int argc, char **argv)
     int sockfd;
     char buf[1024];
 
-    // pthread_t sendDataThread;
     pthread_t listenThread;
 
     if (argc < 2) {
@@ -218,7 +219,6 @@ int spudtest(int argc, char **argv)
 	LOGI("entering spudtest\n");
 
     memset(&config, 0, sizeof(config));
-    config.data_handler = data_handler;
 
     if(!getRemoteIpAddr((struct sockaddr_in6*)&config.remoteAddr,
                         argv[1],
@@ -237,6 +237,10 @@ int spudtest(int argc, char **argv)
     }
 
     tube_init(&config.tube, sockfd);
+    config.tube.data = &config;
+    config.tube.data_cb = data_cb;
+    config.tube.running_cb = running_cb;
+    config.tube.close_cb = close_cb;
     tube_print(&config.tube);
     printf("-> %s\n", sockaddr_toString((struct sockaddr*)&config.remoteAddr, buf, sizeof(buf), true));
 
@@ -244,9 +248,6 @@ int spudtest(int argc, char **argv)
     pthread_create(&listenThread, NULL, (void *)socketListen, &config);
 
     tube_open(&config.tube, (const struct sockaddr*)&config.remoteAddr);
-
-    //Start a thread that sends packet to the destination (Simulate RTP)
-    //pthread_create(&sendDataThread, NULL, (void *)sendData, &config);
 
 
     //Do other stuff here..
