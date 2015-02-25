@@ -27,8 +27,9 @@ typedef enum {
     SPUD_ACK   = 0x03 << 6
 } spud_command_t;
 
-#define SPUD_ADEC 0x20
-#define SPUD_PDEC 0x10
+#define SPUD_ADEC    0x20
+#define SPUD_PDEC    0x10
+#define SPUD_COMMAND 0xC0
 
 /*
  *  0                   1                   2                   3
@@ -66,21 +67,25 @@ struct SpudMsgHdr
 /* Decoded  SPUD message */
 struct SpudMsg
 {
-    struct SpudMsgHdr msgHdr;
+    struct SpudMsgHdr *header;
     //CBOR MAP
+    size_t length;
+    const uint8_t *data;
 };
 
 
-bool spud_isSpud(const uint8_t *payload, uint16_t length);
+bool spud_isSpud(const uint8_t *payload, size_t length);
 
-bool spud_init(struct SpudMsg *msg, struct SpudMsgFlagsId *id);
+bool spud_cast(const uint8_t *payload, size_t length, struct SpudMsg *msg);
+
+bool spud_init(struct SpudMsgHdr *hdr, struct SpudMsgFlagsId *id);
 
 bool spud_createId(struct SpudMsgFlagsId *id);
 
 bool spud_isIdEqual(const struct SpudMsgFlagsId *a,
                     const struct SpudMsgFlagsId *b);
 
-bool spud_setId(struct SpudMsg *msg, const struct SpudMsgFlagsId *id);
+bool spud_setId(struct SpudMsgHdr *hdr, const struct SpudMsgFlagsId *id);
 
 char* spud_idToString(char* buf, size_t len, const struct SpudMsgFlagsId *id);
 #endif

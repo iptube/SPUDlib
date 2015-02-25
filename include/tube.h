@@ -36,26 +36,30 @@ or implied, of Cisco.
 
 typedef enum {
   TS_START,
-  TS_INITIALIZED,
-  TS_LISTENING,
-  TS_SERVER,
-  TS_CLIENT,
-  TS_OPEN
+  TS_UNKNOWN,
+  TS_OPENING,
+  TS_RUNNING,
+  TS_RESUMING
 } tube_states_t;
 
 struct _tube_t;
 
-typedef void (*tube_read_cb)(struct _tube_t* tube,
-                             ssize_t nread,
-                             uint8_t *buf,
+typedef void (*tube_data_cb)(struct _tube_t* tube,
+                             const uint8_t *data,
+                             ssize_t length,
                              const struct sockaddr* addr);
+
+typedef void (*tube_close_cb)(struct _tube_t* tube,
+                              const struct sockaddr* addr);
 
 typedef struct _tube_t {
   tube_states_t state;
   int sock;
-  tube_read_cb cb;
   struct sockaddr_storage peer;
   struct SpudMsgFlagsId id;
+  void *data;
+  tube_data_cb data_cb;
+  tube_close_cb close_cb;
 } tube_t;
 
 // multiple tubes per socket
@@ -63,7 +67,6 @@ int tube_init(tube_t *tube, int sock);
 
 // print [local address]:port to stdout
 int tube_print(const tube_t *tube);
-int tube_listen(tube_t *tube, tube_read_cb recv_cb);
 int tube_open(tube_t *tube, const struct sockaddr *dest);
 int tube_ack(tube_t *tube,
              const struct SpudMsgFlagsId *id,
@@ -75,3 +78,5 @@ int tube_send(tube_t *tube,
               spud_command_t cmd,
               bool adec, bool pdec,
               uint8_t *data, size_t len);
+
+int tube_recv(tube_t *tube, struct SpudMsg *msg, const struct sockaddr* addr);

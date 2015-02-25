@@ -6,7 +6,7 @@
 #include "spudlib.h"
 #include "../config.h"
 
-bool spud_isSpud(const uint8_t *payload, uint16_t length)
+bool spud_isSpud(const uint8_t *payload, size_t length)
 {
     if (length < sizeof(struct SpudMsgHdr)) {
         return false;
@@ -14,14 +14,14 @@ bool spud_isSpud(const uint8_t *payload, uint16_t length)
     return (memcmp(payload, (void *)SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE) == 0);
 }
 
-bool spud_init(struct SpudMsg *msg, struct SpudMsgFlagsId *id)
+bool spud_init(struct SpudMsgHdr *hdr, struct SpudMsgFlagsId *id)
 {
-    memcpy(msg->msgHdr.magic, SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE);
-    SPUD_SET_FLAGS(msg->msgHdr.flags_id, 0);
+    memcpy(hdr->magic, SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE);
+    SPUD_SET_FLAGS(hdr->flags_id, 0);
     if (id != NULL) {
-        return spud_setId(msg, id);
+        return spud_setId(hdr, id);
     } else {
-        return spud_createId(&msg->msgHdr.flags_id);
+        return spud_createId(&hdr->flags_id);
     }
 }
 
@@ -68,16 +68,26 @@ bool spud_createId(struct SpudMsgFlagsId *id)
     return true;
 }
 
-
-bool spud_setId(struct SpudMsg *msg,const struct SpudMsgFlagsId *id)
+bool spud_cast(const uint8_t *payload, size_t length, struct SpudMsg *msg)
 {
-    uint8_t flags;
-    if(msg == NULL || id == NULL){
+    if ((payload == NULL) || (msg == NULL) || !spud_isSpud(payload, length)) {
         return false;
     }
-    flags = SPUD_GET_FLAGS(msg->msgHdr.flags_id);
-    memcpy(&msg->msgHdr.flags_id, id, SPUD_FLAGS_ID_SIZE);
-    SPUD_SET_FLAGS(msg->msgHdr.flags_id, flags);
+    msg->header = (struct SpudMsgHdr *)payload;
+    msg->length = length - sizeof(struct SpudMsgHdr);
+    msg->data = (msg->length>0) ? (payload+sizeof(struct SpudMsgHdr)) : NULL;
+    return true;
+}
+
+bool spud_setId(struct SpudMsgHdr *hdr, const struct SpudMsgFlagsId *id)
+{
+    uint8_t flags;
+    if (hdr == NULL || id == NULL){
+        return false;
+    }
+    flags = SPUD_GET_FLAGS(hdr->flags_id);
+    memcpy(&hdr->flags_id, id, SPUD_FLAGS_ID_SIZE);
+    SPUD_SET_FLAGS(hdr->flags_id, flags);
     return true;
 }
 

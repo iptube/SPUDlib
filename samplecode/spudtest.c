@@ -146,7 +146,7 @@ static void *socketListen(void *ptr){
     int numbytes;
     int i;
     int numSockets = 0;
-    struct SpudMsg *sMsg;
+    struct SpudMsg sMsg;
 
     //Normal send/recieve RTP socket..
     ufds[0].fd = config->tube.sock;
@@ -175,12 +175,11 @@ static void *socketListen(void *ptr){
                         LOGE("recvfrom (data)");
                         continue;
                     }
-                    if (!spud_isSpud(buf, numbytes)) {
+                    if (!spud_cast(buf, numbytes, &sMsg)) {
                         // It's an attack
                         continue;
                     }
-                    sMsg = (struct SpudMsg *)buf;
-                    if (!spud_isIdEqual(&config->tube.id, &sMsg->msgHdr.flags_id)) {
+                    if (!spud_isIdEqual(&config->tube.id, &sMsg.header->flags_id)) {
                         // it's another kind of attack
                         continue;
                     }

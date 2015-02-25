@@ -53,16 +53,6 @@ tube_t* tube_match(struct SpudMsgFlagsId *flags_id) {
     return NULL;
 }
 
-struct listenConfig {
-    int sockfd;
-    /*Handles normal data like RTP etc */
-    void (*data_handler)(struct listenConfig *, struct sockaddr *,
-                         void *, unsigned char *, int);
-    /*Handles STUN packet*/
-    void (*spud_handler)(struct listenConfig *, struct sockaddr *,
-                         void *, unsigned char *, int);
-};
-
 void teardown()
 {
   close(sockfd);
@@ -70,41 +60,10 @@ void teardown()
   exit(0);
 }
 
-void dataHandler(struct listenConfig *config,
-                 struct sockaddr *from_addr,
-                 void *cb,
-                 unsigned char *buf,
-                 int bufLen)
-{
-    UNUSED(cb);
-    printf(" %s", buf);
-    fflush(stdout);
-    sendPacket(config->sockfd,
-               buf,
-               bufLen,
-               from_addr,
-               0);
-}
-
-void spudHandler(struct listenConfig *config,
-                 struct sockaddr *from_addr,
-                 void *cb,
-                 unsigned char *buf,
-                 int buflen)
-{
-    UNUSED(config);
-    UNUSED(from_addr);
-    UNUSED(cb);
-    UNUSED(buf);
-    UNUSED(buflen);
-    //do something
-}
-
-static void *socketListen(void *ptr) {
+static int socketListen() {
     struct pollfd ufds[MAX_LISTEN_SOCKETS];
-    struct listenConfig *config = (struct listenConfig *)ptr;
     struct sockaddr_storage their_addr;
-    unsigned char buf[MAXBUFLEN];
+    uint8_t buf[MAXBUFLEN];
     socklen_t addr_len;
     int rv;
     int numbytes;
@@ -112,10 +71,9 @@ static void *socketListen(void *ptr) {
     int numSockets = 0;
     const int dataSock = 0;
     tube_t *tube;
-    struct SpudMsg *sMsg;
+    struct SpudMsg sMsg;
 
-    //Normal send/recieve RTP socket..
-    ufds[dataSock].fd = config->sockfd;
+    ufds[dataSock].fd = sockfd;
     ufds[dataSock].events = POLLIN | POLLERR;
     numSockets++;
 
@@ -131,26 +89,26 @@ static void *socketListen(void *ptr) {
             for (i=0;i<numSockets;i++) {
                 if (ufds[i].revents & POLLERR) {
                     fprintf(stderr, "poll socket error\n");
-                    return NULL;
+                    return 1;
                 }
                 if (ufds[i].revents & POLLIN) {
-                    if ((numbytes = recvfrom(config->sockfd, buf,
+                    if ((numbytes = recvfrom(sockfd, buf,
                                              MAXBUFLEN , 0,
                                              (struct sockaddr *)&their_addr,
                                              &addr_len)) == -1) {
                         perror("recvfrom (data)");
-                        return NULL;
+                        return 1;
                     }
-                    if (!spud_isSpud(buf, numbytes)) {
+
+                    if (!spud_cast(buf, numbytes, &sMsg)) {
                         // it's an attack.  Move along.
                         continue;
                     }
 
-                    sMsg = (struct SpudMsg *)buf;
-                    tube = tube_match(&sMsg->msgHdr.flags_id);
+                    tube = tube_match(&sMsg.header->flags_id);
                     if (tube) {
                         // do states
-                        // TODO: check their_addr
+                        tube_recv(tube, &sMsg, (struct sockaddr *)&their_addr);
                     } else {
                         // get started
                         tube = tube_unused();
@@ -160,32 +118,44 @@ static void *socketListen(void *ptr) {
                             continue;
                         }
                         tube_ack(tube,
-                                 &sMsg->msgHdr.flags_id,
+                                 &sMsg.header->flags_id,
                                  (struct sockaddr *)&their_addr);
                     }
-
-                    // char idStr[SPUD_ID_STRING_SIZE+1];
-                    // printf(" \r Spud ID: %s",
-                    //        spud_idToString(idStr,
-                    //                        sizeof idStr,
-                    //                        &sMsg->msgHdr.flags_id));
-                    // config->data_handler(
-                    //     config,
-                    //     (struct sockaddr *)&their_addr,
-                    //     NULL,
-                    //     buf+sizeof(*sMsg),
-                    //     numbytes-sizeof(*sMsg));
 		        }
             }
         }
     }
+    return 0;
+}
+
+static void read_cb(tube_t *tube,
+                    const uint8_t *data,
+                    ssize_t length,
+                    const struct sockaddr* addr)
+{
+    UNUSED(addr);
+    char idStr[SPUD_ID_STRING_SIZE+1];
+    printf(" \r Spud ID: %s",
+           spud_idToString(idStr,
+                           sizeof idStr,
+                           &tube->id));
+
+    printf(" %*s", (int)length, data);
+    fflush(stdout);
+    tube_data(tube, (uint8_t*)data, length);
+}
+
+static void close_cb(tube_t *tube,
+                     const struct sockaddr* addr)
+{
+    int i = *(int*)tube->data;
+    UNUSED(addr);
+    bit_clear(bs_clients, i);
 }
 
 int main(void)
 {
-    pthread_t socketListenThread;
     struct sockaddr_in6 servaddr;
-    struct listenConfig listenConfig;
 
     signal(SIGINT, teardown);
 
@@ -203,19 +173,13 @@ int main(void)
         return 1;
     }
 
-    listenConfig.sockfd= sockfd;
-    listenConfig.spud_handler = spudHandler;
-    listenConfig.data_handler = dataHandler;
-
     for (int i=0; i<MAX_CLIENTS; i++) {
         tube_init(&clients[i], sockfd);
+        clients[i].data = malloc(sizeof(int));
+        *((int*)clients[i].data) = i;
+        clients[i].data_cb = read_cb;
+        clients[i].close_cb = close_cb;
     }
 
-    pthread_create(&socketListenThread, NULL, socketListen, (void*)&listenConfig);
-
-    while(1) {
-        printf("spudecho: waiting to recvfrom...\n");
-
-        sleep(1000);
-    }
+    return socketListen();
 }
