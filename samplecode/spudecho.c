@@ -1,23 +1,14 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <signal.h>
-#include <unistd.h>
+#include <bitstring.h>
 #include <errno.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-
-#include <pthread.h>
-
-#include <stdbool.h>
-
-
 #include <poll.h>
+#include <pthread.h>
+#include <stdio.h>
+#include <strings.h>
+#include <sys/socket.h>
 
 #include "spudlib.h"
+#include "tube.h"
 #include "iphelper.h"
 #include "sockethelper.h"
 
@@ -30,8 +21,39 @@
 
 int sockfd;
 
-struct listenConfig{
+// TODO: replace this with a hashtable
+#define MAX_CLIENTS 128
+bitstr_t bit_decl(bs_clients, MAX_CLIENTS);
+tube_t clients[MAX_CLIENTS];
 
+tube_t* tube_unused()
+{
+    int n = -1;
+    bit_ffc(bs_clients, MAX_CLIENTS, &n);
+    if (n == -1) {
+        return NULL;
+    }
+    bit_set(bs_clients, n);
+    return &clients[n];
+}
+
+tube_t* tube_match(struct SpudMsgFlagsId *flags_id) {
+    struct SpudMsgFlagsId search;
+    memcpy(&search, flags_id, sizeof(search));
+    search.octet[0] &= SPUD_FLAGS_EXCLUDE_MASK;
+
+    // table scan.  I said, replace this with a hashtable.
+    for (int i=0; i<MAX_CLIENTS; i++) {
+        if (bit_test(bs_clients, i)) {
+            if (memcmp(&search, &clients[i].id, sizeof(search)) == 0) {
+                return &clients[i];
+            }
+        }
+    }
+    return NULL;
+}
+
+struct listenConfig {
     int sockfd;
     /*Handles normal data like RTP etc */
     void (*data_handler)(struct listenConfig *, struct sockaddr *,
@@ -64,7 +86,6 @@ void dataHandler(struct listenConfig *config,
                0);
 }
 
-
 void spudHandler(struct listenConfig *config,
                  struct sockaddr *from_addr,
                  void *cb,
@@ -90,6 +111,8 @@ static void *socketListen(void *ptr) {
     int i;
     int numSockets = 0;
     const int dataSock = 0;
+    tube_t *tube;
+    struct SpudMsg *sMsg;
 
     //Normal send/recieve RTP socket..
     ufds[dataSock].fd = config->sockfd;
@@ -118,26 +141,40 @@ static void *socketListen(void *ptr) {
                         perror("recvfrom (data)");
                         return NULL;
                     }
-                    if (spud_isSpud(buf, numbytes)) {
-                        struct SpudMsg *sMsg;
-
-                        sMsg = (struct SpudMsg *)buf;
-
-                        char idStr[SPUD_ID_STRING_SIZE+1];
-                        printf(" \r Spud ID: %s",
-                               spud_idToString(idStr,
-                                               sizeof idStr,
-                                               &sMsg->msgHdr.flags_id));
-                        config->data_handler(
-                            config,
-                            (struct sockaddr *)&their_addr,
-                            NULL,
-                            buf+sizeof(*sMsg),
-                            numbytes-sizeof(*sMsg));
+                    if (!spud_isSpud(buf, numbytes)) {
+                        // it's an attack.  Move along.
+                        continue;
                     }
-                    else {
-		                config->data_handler(config, (struct sockaddr *)&their_addr, NULL, buf, numbytes);
-		            }
+
+                    sMsg = (struct SpudMsg *)buf;
+                    tube = tube_match(&sMsg->msgHdr.flags_id);
+                    if (tube) {
+                        // do states
+                        // TODO: check their_addr
+                    } else {
+                        // get started
+                        tube = tube_unused();
+                        if (!tube) {
+                            // full.
+                            // TODO: send back error
+                            continue;
+                        }
+                        tube_ack(tube,
+                                 &sMsg->msgHdr.flags_id,
+                                 (struct sockaddr *)&their_addr);
+                    }
+
+                    // char idStr[SPUD_ID_STRING_SIZE+1];
+                    // printf(" \r Spud ID: %s",
+                    //        spud_idToString(idStr,
+                    //                        sizeof idStr,
+                    //                        &sMsg->msgHdr.flags_id));
+                    // config->data_handler(
+                    //     config,
+                    //     (struct sockaddr *)&their_addr,
+                    //     NULL,
+                    //     buf+sizeof(*sMsg),
+                    //     numbytes-sizeof(*sMsg));
 		        }
             }
         }
@@ -148,10 +185,12 @@ int main(void)
 {
     pthread_t socketListenThread;
     struct sockaddr_in6 servaddr;
-
     struct listenConfig listenConfig;
 
     signal(SIGINT, teardown);
+
+    memset(clients, 0, MAX_CLIENTS*sizeof(tube_t));
+    bit_nclear(bs_clients, 0, MAX_CLIENTS-1);
 
     sockfd = socket(PF_INET6, SOCK_DGRAM, 0);
     if (sockfd < 0) {
@@ -167,6 +206,10 @@ int main(void)
     listenConfig.sockfd= sockfd;
     listenConfig.spud_handler = spudHandler;
     listenConfig.data_handler = dataHandler;
+
+    for (int i=0; i<MAX_CLIENTS; i++) {
+        tube_init(&clients[i], sockfd);
+    }
 
     pthread_create(&socketListenThread, NULL, socketListen, (void*)&listenConfig);
 

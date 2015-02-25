@@ -8,7 +8,10 @@
 
 bool spud_isSpud(const uint8_t *payload, uint16_t length)
 {
-    return ( memcmp(payload, (void *)SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE) == 0 );
+    if (length < sizeof(struct SpudMsgHdr)) {
+        return false;
+    }
+    return (memcmp(payload, (void *)SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE) == 0);
 }
 
 bool spud_init(struct SpudMsg *msg, struct SpudMsgFlagsId *id)

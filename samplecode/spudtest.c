@@ -17,6 +17,7 @@
 #include<signal.h>
 
 #include "spudlib.h"
+#include "tube.h"
 
 #ifdef __linux
 #include <linux/types.h>	// required for linux/errqueue.h
@@ -65,16 +66,16 @@ int lines; //Just to gracefully handle SIGINT
 //static const int numChar = 13;
 //static const char* s1 = "º¤ø,¸¸,ø¤º°`°º¤ø,¸¸,ø¤º°`°º¤ø,¸¸,ø¤º°`°º¤ø,¸¸,ø¤º°`°º¤ø,¸¸,ø¤º°`°º¤ø,¸¸,ø¤º°`° ";
 
-static const int numChar = 53;
-static const char* s1= "[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~";
+// static const int numChar = 53;
+// static const char* s1= "[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~";
 
 #define UNUSED(x) (void)(x)
 
-struct test_config{
+struct test_config {
 
     struct sockaddr_storage remoteAddr;
     struct sockaddr_storage localAddr;
-    int sockfd;
+    tube_t tube;
 
     int numSentPkts;
     int numRcvdPkts;
@@ -92,6 +93,7 @@ static void data_handler(struct test_config *config, struct sockaddr *saddr,
     LOGI("\r " ESC_7C " RX: %i  %s", config->numRcvdPkts, buf);
 }
 
+/*
 static void *sendData(struct test_config *config)
 {
     struct timespec timer;
@@ -132,6 +134,7 @@ static void *sendData(struct test_config *config)
                    0);
     }
 }
+*/
 
 static void *socketListen(void *ptr){
     struct pollfd ufds[MAX_LISTEN_SOCKETS];
@@ -143,9 +146,10 @@ static void *socketListen(void *ptr){
     int numbytes;
     int i;
     int numSockets = 0;
+    struct SpudMsg *sMsg;
 
     //Normal send/recieve RTP socket..
-    ufds[0].fd = config->sockfd;
+    ufds[0].fd = config->tube.sock;
     ufds[0].events = POLLIN | POLLERR;
     numSockets++;
 
@@ -159,27 +163,35 @@ static void *socketListen(void *ptr){
             LOGI("Timeout occurred! (Should not happen)\n");
         } else {
             for (i=0; i<numSockets; i++) {
+                if (ufds[i].revents & POLLERR) {
+                    LOGE("Poll socket");
+                    return NULL;
+                }
                 if (ufds[i].revents & POLLIN) {
-                    if ((numbytes = recvfrom(config->sockfd, buf,
+                    if ((numbytes = recvfrom(config->tube.sock, buf,
                                              MAXBUFLEN , 0,
                                              (struct sockaddr *)&their_addr,
                                              &addr_len)) == -1) {
                         LOGE("recvfrom (data)");
                         continue;
                     }
-                    config->data_handler(config,
-                                         (struct sockaddr *)&their_addr,
-                                         buf,
-                                         numbytes);
-                }
-                if (ufds[i].revents & POLLERR) {
-                    LOGE("Poll socket");
-                    return NULL;
+                    if (!spud_isSpud(buf, numbytes)) {
+                        // It's an attack
+                        continue;
+                    }
+                    sMsg = (struct SpudMsg *)buf;
+                    if (!spud_isIdEqual(&config->tube.id, &sMsg->msgHdr.flags_id)) {
+                        // it's another kind of attack
+                        continue;
+                    }
+                    // TODO: check their_addr
+                    printf("ack\n");
                 }
             }
         }
     }
 }
+
 
 void done() {
     LOGI(ESC_iB,lines);
@@ -190,7 +202,10 @@ void done() {
 int spudtest(int argc, char **argv)
 {
     struct test_config config;
-    pthread_t sendDataThread;
+    int sockfd;
+    char buf[1024];
+
+    // pthread_t sendDataThread;
     pthread_t listenThread;
 
     if (argc < 2) {
@@ -201,7 +216,7 @@ int spudtest(int argc, char **argv)
 #ifndef ANDROID
     signal(SIGINT, done);
 #endif
-	LOGI("entering spudtest");
+	LOGI("entering spudtest\n");
 
     memset(&config, 0, sizeof(config));
     config.data_handler = data_handler;
@@ -212,30 +227,34 @@ int spudtest(int argc, char **argv)
         return 1;
     }
 
-    config.sockfd = socket(PF_INET6, SOCK_DGRAM, 0);
+    sockfd = socket(PF_INET6, SOCK_DGRAM, 0);
     sockaddr_initAsIPv6Any((struct sockaddr_in6 *)&config.localAddr, 0);
 
-    char buf[1024];
-    printf("local: %s\n", sockaddr_toString((struct sockaddr *)&config.localAddr, buf, sizeof(buf), true));
-
-    if (bind(config.sockfd,
+    if (bind(sockfd,
              (struct sockaddr *)&config.localAddr,
              config.localAddr.ss_len) != 0) {
         perror("bind");
         return 1;
     }
 
+    tube_init(&config.tube, sockfd);
+    tube_print(&config.tube);
+    printf("-> %s\n", sockaddr_toString((struct sockaddr*)&config.remoteAddr, buf, sizeof(buf), true));
+
     //Start and listen to the sockets.
     pthread_create(&listenThread, NULL, (void *)socketListen, &config);
 
+    tube_open(&config.tube, (const struct sockaddr*)&config.remoteAddr);
+
     //Start a thread that sends packet to the destination (Simulate RTP)
-    pthread_create(&sendDataThread, NULL, (void *)sendData, &config);
+    //pthread_create(&sendDataThread, NULL, (void *)sendData, &config);
+
 
     //Do other stuff here..
 
     //Just wait a bit
     sleep(5);
-    pthread_cancel(sendDataThread);
+    //pthread_cancel(sendDataThread);
     sleep(1);
     done();
     //done exits...

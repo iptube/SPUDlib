@@ -19,6 +19,17 @@
 static const uint8_t SpudMagicCookie[]   = SPUD_MAGIC_COOKIE_ARRAY;
 #define SPUD_MAGIC_COOKIE_SIZE sizeof(SpudMagicCookie)/sizeof(SpudMagicCookie[0])
 
+// OR these with the top byte of flags_id
+typedef enum {
+    SPUD_DATA  = 0x00 << 6,
+    SPUD_OPEN  = 0x01 << 6,
+    SPUD_CLOSE = 0x02 << 6,
+    SPUD_ACK   = 0x03 << 6
+} spud_command_t;
+
+#define SPUD_ADEC 0x20
+#define SPUD_PDEC 0x10
+
 /*
  *  0                   1                   2                   3
  *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2
@@ -66,9 +77,10 @@ bool spud_init(struct SpudMsg *msg, struct SpudMsgFlagsId *id);
 
 bool spud_createId(struct SpudMsgFlagsId *id);
 
-bool spud_isIdEqual(const struct SpudMsgFlagsId *a,const struct SpudMsgFlagsId *b);
+bool spud_isIdEqual(const struct SpudMsgFlagsId *a,
+                    const struct SpudMsgFlagsId *b);
 
-bool spud_setId(struct SpudMsg *msg,const struct SpudMsgFlagsId *id);
+bool spud_setId(struct SpudMsg *msg, const struct SpudMsgFlagsId *id);
 
 char* spud_idToString(char* buf, size_t len, const struct SpudMsgFlagsId *id);
 #endif
