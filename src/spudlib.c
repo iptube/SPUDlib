@@ -8,13 +8,13 @@
 
 bool spud_isSpud(const uint8_t *payload, size_t length)
 {
-    if (length < sizeof(struct SpudMsgHdr)) {
+    if (length < sizeof(spud_header_t)) {
         return false;
     }
     return (memcmp(payload, (void *)SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE) == 0);
 }
 
-bool spud_init(struct SpudMsgHdr *hdr, struct SpudMsgFlagsId *id)
+bool spud_init(spud_header_t *hdr, spud_flags_id_t *id)
 {
     memcpy(hdr->magic, SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE);
     SPUD_SET_FLAGS(hdr->flags_id, 0);
@@ -53,7 +53,7 @@ static bool get_randBuf(void *buf, size_t sz)
 #endif
 }
 
-bool spud_createId(struct SpudMsgFlagsId *id)
+bool spud_createId(spud_flags_id_t *id)
 {
     uint8_t flags;
     if (id == NULL) {
@@ -68,18 +68,18 @@ bool spud_createId(struct SpudMsgFlagsId *id)
     return true;
 }
 
-bool spud_cast(const uint8_t *payload, size_t length, struct SpudMsg *msg)
+bool spud_cast(const uint8_t *payload, size_t length, spud_message_t *msg)
 {
     if ((payload == NULL) || (msg == NULL) || !spud_isSpud(payload, length)) {
         return false;
     }
-    msg->header = (struct SpudMsgHdr *)payload;
-    msg->length = length - sizeof(struct SpudMsgHdr);
-    msg->data = (msg->length>0) ? (payload+sizeof(struct SpudMsgHdr)) : NULL;
+    msg->header = (spud_header_t *)payload;
+    msg->length = length - sizeof(spud_header_t);
+    msg->data = (msg->length>0) ? (payload+sizeof(spud_header_t)) : NULL;
     return true;
 }
 
-bool spud_setId(struct SpudMsgHdr *hdr, const struct SpudMsgFlagsId *id)
+bool spud_setId(spud_header_t *hdr, const spud_flags_id_t *id)
 {
     uint8_t flags;
     if (hdr == NULL || id == NULL){
@@ -91,14 +91,14 @@ bool spud_setId(struct SpudMsgHdr *hdr, const struct SpudMsgFlagsId *id)
     return true;
 }
 
-bool spud_isIdEqual(const struct SpudMsgFlagsId *a,const struct SpudMsgFlagsId *b)
+bool spud_isIdEqual(const spud_flags_id_t *a,const spud_flags_id_t *b)
 {
     return ((a->octet[0] & SPUD_FLAGS_EXCLUDE_MASK) ==
             (b->octet[0] & SPUD_FLAGS_EXCLUDE_MASK)) &&
            (memcmp(&a->octet[1], &b->octet[1], SPUD_FLAGS_ID_SIZE-1) == 0);
 }
 
-char* spud_idToString(char* buf, size_t len, const struct SpudMsgFlagsId *id)
+char* spud_idToString(char* buf, size_t len, const spud_flags_id_t *id)
 {
     size_t i;
 

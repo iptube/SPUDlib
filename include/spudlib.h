@@ -49,43 +49,43 @@ typedef enum {
  */
 
 
-struct SpudMsgFlagsId {
+typedef struct _spud_flags_id_t {
     //56 bits
     uint8_t octet[SPUD_FLAGS_ID_SIZE];
-};
+} spud_flags_id_t;
 
 /*
  * SPUD message header.
  */
-struct SpudMsgHdr
+typedef struct _spud_header_t
 {
     uint8_t magic[SPUD_MAGIC_COOKIE_SIZE];
-    struct SpudMsgFlagsId flags_id;
-};
+    spud_flags_id_t flags_id;
+} spud_header_t;
 
 
 /* Decoded  SPUD message */
-struct SpudMsg
+typedef struct _spud_message_t
 {
-    struct SpudMsgHdr *header;
+    spud_header_t *header;
     //CBOR MAP
     size_t length;
     const uint8_t *data;
-};
+} spud_message_t;
 
 
 bool spud_isSpud(const uint8_t *payload, size_t length);
 
-bool spud_cast(const uint8_t *payload, size_t length, struct SpudMsg *msg);
+bool spud_cast(const uint8_t *payload, size_t length, spud_message_t *msg);
 
-bool spud_init(struct SpudMsgHdr *hdr, struct SpudMsgFlagsId *id);
+bool spud_init(spud_header_t *hdr, spud_flags_id_t *id);
 
-bool spud_createId(struct SpudMsgFlagsId *id);
+bool spud_createId(spud_flags_id_t *id);
 
-bool spud_isIdEqual(const struct SpudMsgFlagsId *a,
-                    const struct SpudMsgFlagsId *b);
+bool spud_isIdEqual(const spud_flags_id_t *a,
+                    const spud_flags_id_t *b);
 
-bool spud_setId(struct SpudMsgHdr *hdr, const struct SpudMsgFlagsId *id);
+bool spud_setId(spud_header_t *hdr, const spud_flags_id_t *id);
 
-char* spud_idToString(char* buf, size_t len, const struct SpudMsgFlagsId *id);
+char* spud_idToString(char* buf, size_t len, const spud_flags_id_t *id);
 #endif

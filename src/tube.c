@@ -74,7 +74,7 @@ bool tube_send(tube_t *tube,
                bool adec, bool pdec,
                uint8_t *data, size_t len)
 {
-    struct SpudMsgHdr smh;
+    spud_header_t smh;
     uint8_t flags = 0;
     struct msghdr msg;
     struct iovec iov[2];
@@ -125,14 +125,14 @@ bool tube_open(tube_t *tube, const struct sockaddr *dest)
 }
 
 bool tube_ack(tube_t *tube,
-              const struct SpudMsgFlagsId *id,
+              const spud_flags_id_t *id,
               const struct sockaddr *dest)
 {
     assert(tube!=NULL);
     assert(id!=NULL);
     assert(dest!=NULL);
 
-    memcpy(&tube->id, id, sizeof(struct SpudMsgFlagsId));
+    memcpy(&tube->id, id, sizeof(spud_flags_id_t));
     tube->id.octet[0] &= SPUD_FLAGS_EXCLUDE_MASK;
 
     memcpy(&tube->peer, dest, dest->sa_len);
@@ -151,7 +151,7 @@ bool tube_close(tube_t *tube)
     return tube_send(tube, SPUD_CLOSE, false, false, NULL, 0);
 }
 
-bool tube_recv(tube_t *tube, struct SpudMsg *msg, const struct sockaddr* addr)
+bool tube_recv(tube_t *tube, spud_message_t *msg, const struct sockaddr* addr)
 {
     spud_command_t cmd;
     assert(tube!=NULL);

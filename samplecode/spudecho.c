@@ -49,8 +49,8 @@ tube_t* tube_unused()
     return &clients[n];
 }
 
-tube_t* tube_match(struct SpudMsgFlagsId *flags_id) {
-    struct SpudMsgFlagsId search;
+tube_t* tube_match(spud_flags_id_t *flags_id) {
+    spud_flags_id_t search;
     memcpy(&search, flags_id, sizeof(search));
     search.octet[0] &= SPUD_FLAGS_EXCLUDE_MASK;
 
@@ -84,7 +84,7 @@ static int socketListen() {
     int numSockets = 0;
     const int dataSock = 0;
     tube_t *tube;
-    struct SpudMsg sMsg;
+    spud_message_t sMsg;
 
     ufds[dataSock].fd = sockfd;
     ufds[dataSock].events = POLLIN | POLLERR;

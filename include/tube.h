@@ -56,7 +56,7 @@ typedef struct _tube_t {
   tube_states_t state;
   int sock;
   struct sockaddr_storage peer;
-  struct SpudMsgFlagsId id;
+  spud_flags_id_t id;
   void *data;
   tube_data_cb data_cb;
   tube_state_cb running_cb;
@@ -70,7 +70,7 @@ bool tube_init(tube_t *tube, int sock);
 bool tube_print(const tube_t *tube);
 bool tube_open(tube_t *tube, const struct sockaddr *dest);
 bool tube_ack(tube_t *tube,
-              const struct SpudMsgFlagsId *id,
+              const spud_flags_id_t *id,
               const struct sockaddr *dest);
 bool tube_data(tube_t *tube, uint8_t *data, size_t len);
 bool tube_close(tube_t *tube);
@@ -80,4 +80,4 @@ bool tube_send(tube_t *tube,
                bool adec, bool pdec,
                uint8_t *data, size_t len);
 
-bool tube_recv(tube_t *tube, struct SpudMsg *msg, const struct sockaddr* addr);
+bool tube_recv(tube_t *tube, spud_message_t *msg, const struct sockaddr* addr);

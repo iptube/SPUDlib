@@ -125,7 +125,7 @@ static void *socketListen(void *ptr){
     int numbytes;
     int i;
     int numSockets = 0;
-    struct SpudMsg sMsg;
+    spud_message_t sMsg;
 
     //Normal send/recieve RTP socket..
     ufds[0].fd = config->tube.sock;
