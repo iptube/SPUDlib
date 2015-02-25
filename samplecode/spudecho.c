@@ -26,6 +26,18 @@ int sockfd;
 bitstr_t bit_decl(bs_clients, MAX_CLIENTS);
 tube_t clients[MAX_CLIENTS];
 
+typedef struct _context_t {
+    int num;
+    size_t count;
+} context_t;
+
+context_t *new_context(int num) {
+    context_t *c = malloc(sizeof(context_t));
+    c->num = num;
+    c->count = 0;
+    return c;
+}
+
 tube_t* tube_unused()
 {
     int n = -1;
@@ -115,11 +127,11 @@ static int socketListen() {
                             // TODO: send back error
                             continue;
                         }
-                        printf("\n Spud ID: %s OPEN (%d)\n",
+                        printf("Spud ID: %s(%d) OPEN\n",
                                spud_idToString(idStr,
                                                sizeof(idStr),
                                                &sMsg.header->flags_id),
-                               *(int*)tube->data);
+                               ((context_t*)tube->data)->num);
 
                     }
                     tube_recv(tube, &sMsg, (struct sockaddr *)&their_addr);
@@ -136,29 +148,23 @@ static void read_cb(tube_t *tube,
                     const struct sockaddr* addr)
 {
     UNUSED(addr);
-    char idStr[SPUD_ID_STRING_SIZE+1];
-    printf(" \r Spud ID: %s %s",
-           spud_idToString(idStr,
-                           sizeof idStr,
-                           &tube->id),
-           data);
-
-    fflush(stdout);
     tube_data(tube, (uint8_t*)data, length);
+    ((context_t*)tube->data)->count++;
 }
 
 static void close_cb(tube_t *tube,
                      const struct sockaddr* addr)
 {
-    int i = *(int*)tube->data;
+    context_t *c = (context_t*)tube->data;
     char idStr[SPUD_ID_STRING_SIZE+1];
     UNUSED(addr);
-    bit_clear(bs_clients, i);
-    printf("\n Spud ID: %s CLOSED (%d)\n",
+    bit_clear(bs_clients, c->num);
+    printf("Spud ID: %s(%d) CLOSED: %zd data packets\n",
            spud_idToString(idStr,
                            sizeof(idStr),
                            &tube->id),
-           i);
+           c->num,
+           c->count);
 }
 
 int main(void)
@@ -183,8 +189,7 @@ int main(void)
 
     for (int i=0; i<MAX_CLIENTS; i++) {
         tube_init(&clients[i], sockfd);
-        clients[i].data = malloc(sizeof(int));
-        *((int*)clients[i].data) = i;
+        clients[i].data = new_context(i);
         clients[i].data_cb = read_cb;
         clients[i].close_cb = close_cb;
     }
