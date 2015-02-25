@@ -13,7 +13,7 @@
 #define SPUD_GET_FLAGS(flags_id) \
   (flags_id).octet[0] & SPUD_FLAGS_SELECT_MASK
 #define SPUD_SET_FLAGS(flags_id, flags) \
-  (flags_id).octet[0] = ((flags_id).octet[0] & SPUD_FLAGS_EXCLUDE_MASK) & (flags)
+  (flags_id).octet[0] = ((flags_id).octet[0] & SPUD_FLAGS_EXCLUDE_MASK) | (flags)
 
 #define SPUD_MAGIC_COOKIE_ARRAY         {0xd8, 0x00, 0x00, 0xd8}
 static const uint8_t SpudMagicCookie[]   = SPUD_MAGIC_COOKIE_ARRAY;
