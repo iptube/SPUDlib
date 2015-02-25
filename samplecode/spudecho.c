@@ -1,7 +1,6 @@
 #include <bitstring.h>
 #include <errno.h>
 #include <netinet/in.h>
-#include <poll.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <strings.h>
@@ -73,71 +72,48 @@ void teardown()
 }
 
 static int socketListen() {
-    struct pollfd ufds[MAX_LISTEN_SOCKETS];
     struct sockaddr_storage their_addr;
     uint8_t buf[MAXBUFLEN];
     char idStr[SPUD_ID_STRING_SIZE+1];
     socklen_t addr_len;
-    int rv;
     int numbytes;
-    int i;
-    int numSockets = 0;
-    const int dataSock = 0;
     tube_t *tube;
     spud_message_t sMsg;
-
-    ufds[dataSock].fd = sockfd;
-    ufds[dataSock].events = POLLIN | POLLERR;
-    numSockets++;
 
     addr_len = sizeof their_addr;
 
     while(1) {
-        rv = poll(ufds, numSockets, -1);
-        if (rv == -1) {
-            printf("Error in poll\n"); // error occurred in poll()
-        } else if (rv == 0) {
-            printf("Poll Timeout occurred! (Should not happen)\n");
-        } else {
-            for (i=0;i<numSockets;i++) {
-                if (ufds[i].revents & POLLERR) {
-                    fprintf(stderr, "poll socket error\n");
-                    return 1;
-                }
-                if (ufds[i].revents & POLLIN) {
-                    if ((numbytes = recvfrom(sockfd, buf,
-                                             MAXBUFLEN , 0,
-                                             (struct sockaddr *)&their_addr,
-                                             &addr_len)) == -1) {
-                        perror("recvfrom (data)");
-                        return 1;
-                    }
-
-                    if (!spud_cast(buf, numbytes, &sMsg)) {
-                        // it's an attack.  Move along.
-                        continue;
-                    }
-
-                    tube = tube_match(&sMsg.header->flags_id);
-                    if (!tube) {
-                        // get started
-                        tube = tube_unused();
-                        if (!tube) {
-                            // full.
-                            // TODO: send back error
-                            continue;
-                        }
-                        printf("Spud ID: %s(%d) OPEN\n",
-                               spud_idToString(idStr,
-                                               sizeof(idStr),
-                                               &sMsg.header->flags_id),
-                               ((context_t*)tube->data)->num);
-
-                    }
-                    tube_recv(tube, &sMsg, (struct sockaddr *)&their_addr);
-		        }
-            }
+        addr_len = sizeof(their_addr);
+        if ((numbytes = recvfrom(sockfd, buf,
+                                 MAXBUFLEN , 0,
+                                 (struct sockaddr *)&their_addr,
+                                 &addr_len)) == -1) {
+            perror("recvfrom (data)");
+            return 1;
         }
+
+        if (!spud_cast(buf, numbytes, &sMsg)) {
+            // it's an attack.  Move along.
+            continue;
+        }
+
+        tube = tube_match(&sMsg.header->flags_id);
+        if (!tube) {
+            // get started
+            tube = tube_unused();
+            if (!tube) {
+                // full.
+                // TODO: send back error
+                continue;
+            }
+            printf("Spud ID: %s(%d) OPEN\n",
+                   spud_idToString(idStr,
+                                   sizeof(idStr),
+                                   &sMsg.header->flags_id),
+                   ((context_t*)tube->data)->num);
+
+        }
+        tube_recv(tube, &sMsg, (struct sockaddr *)&their_addr);
     }
     return 0;
 }

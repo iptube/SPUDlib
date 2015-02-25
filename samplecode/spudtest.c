@@ -1,17 +1,7 @@
-
-#include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 
-#include <sys/socket.h>
-#include <poll.h>
-
-#include <arpa/inet.h>
-
 #include <netinet/ip.h>
-#include <netinet/ip_icmp.h>
-
-#include <time.h>
 #include <pthread.h>
 
 #include<signal.h>
@@ -65,11 +55,6 @@ bool keepGoing = true;
 pthread_t sendDataThread;
 pthread_t listenThread;
 
-int lines; //Just to gracefully handle SIGINT
-
-//static const int numChar = 13;
-//static const char* s1 = "º¤ø,¸¸,ø¤º°`°º¤ø,¸¸,ø¤º°`°º¤ø,¸¸,ø¤º°`°º¤ø,¸¸,ø¤º°`°º¤ø,¸¸,ø¤º°`°º¤ø,¸¸,ø¤º°`° ";
-
 static const int numChar = 53;
 static const char* s1= "[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~";
 
@@ -116,59 +101,33 @@ static void *sendData(struct test_config *config)
 }
 
 static void *socketListen(void *ptr){
-    struct pollfd ufds[MAX_LISTEN_SOCKETS];
     struct test_config *config = (struct test_config *)ptr;
     struct sockaddr_storage their_addr;
     unsigned char buf[MAXBUFLEN];
     socklen_t addr_len;
-    int rv;
     int numbytes;
-    int i;
-    int numSockets = 0;
     spud_message_t sMsg;
 
-    //Normal send/recieve RTP socket..
-    ufds[0].fd = config->tube.sock;
-    ufds[0].events = POLLIN | POLLERR;
-    numSockets++;
-
-    addr_len = sizeof their_addr;
-
     while (keepGoing) {
-        rv = poll(ufds, numSockets, -1);
-        if (rv == -1) {
-            LOGE("poll"); // error occurred in poll()
-        } else if (rv == 0) {
-            LOGI("Timeout occurred! (Should not happen)\n");
-        } else {
-            for (i=0; i<numSockets; i++) {
-                if (ufds[i].revents & POLLERR) {
-                    LOGE("Poll socket");
-                    break;
-                }
-                if (ufds[i].revents & POLLIN) {
-                    if ((numbytes = recvfrom(config->tube.sock, buf,
-                                             MAXBUFLEN , 0,
-                                             (struct sockaddr *)&their_addr,
-                                             &addr_len)) == -1) {
-                        LOGE("recvfrom (data)");
-                        continue;
-                    }
-                    if (!spud_cast(buf, numbytes, &sMsg)) {
-                        // It's an attack
-                        continue;
-                    }
-                    if (!spud_isIdEqual(&config->tube.id, &sMsg.header->flags_id)) {
-                        // it's another kind of attack
-                        continue;
-                    }
-                    tube_recv(&config->tube, &sMsg, (struct sockaddr *)&their_addr);
-                }
-            }
+        addr_len = sizeof(their_addr);
+        if ((numbytes = recvfrom(config->tube.sock, buf,
+                                 MAXBUFLEN , 0,
+                                 (struct sockaddr *)&their_addr,
+                                 &addr_len)) == -1) {
+            LOGE("recvfrom (data)");
+            continue;
         }
+        if (!spud_cast(buf, numbytes, &sMsg)) {
+            // It's an attack
+            continue;
+        }
+        if (!spud_isIdEqual(&config->tube.id, &sMsg.header->flags_id)) {
+            // it's another kind of attack
+            continue;
+        }
+        tube_recv(&config->tube, &sMsg, (struct sockaddr *)&their_addr);
     }
     tube_close(&config->tube);
-    LOGI(ESC_iB,lines);
     return NULL;
 }
 
