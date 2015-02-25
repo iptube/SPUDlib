@@ -61,7 +61,10 @@
 #define MAXBUFLEN 2048
 #define MAX_LISTEN_SOCKETS 10
 
+bool keepGoing = true;
 pthread_t sendDataThread;
+pthread_t listenThread;
+
 int lines; //Just to gracefully handle SIGINT
 
 //static const int numChar = 13;
@@ -94,7 +97,7 @@ static void *sendData(struct test_config *config)
     timer.tv_sec = 0;
     timer.tv_nsec = 50000000;
 
-    for(;;) {
+    while (keepGoing) {
         nanosleep(&timer, &remaining);
         config->numSentPkts++;
 #ifndef ANDROID
@@ -109,6 +112,7 @@ static void *sendData(struct test_config *config)
         }
         tube_data(&config->tube, buf, strlen(s1));
     }
+    return NULL;
 }
 
 static void *socketListen(void *ptr){
@@ -130,7 +134,7 @@ static void *socketListen(void *ptr){
 
     addr_len = sizeof their_addr;
 
-    while(1) {
+    while (keepGoing) {
         rv = poll(ufds, numSockets, -1);
         if (rv == -1) {
             LOGE("poll"); // error occurred in poll()
@@ -140,7 +144,7 @@ static void *socketListen(void *ptr){
             for (i=0; i<numSockets; i++) {
                 if (ufds[i].revents & POLLERR) {
                     LOGE("Poll socket");
-                    return NULL;
+                    break;
                 }
                 if (ufds[i].revents & POLLIN) {
                     if ((numbytes = recvfrom(config->tube.sock, buf,
@@ -163,6 +167,9 @@ static void *socketListen(void *ptr){
             }
         }
     }
+    tube_close(&config->tube);
+    LOGI(ESC_iB,lines);
+    return NULL;
 }
 
 static void data_cb(tube_t *tube,
@@ -195,7 +202,8 @@ static void close_cb(struct _tube_t* tube,
 }
 
 void done() {
-    LOGI(ESC_iB,lines);
+    keepGoing = false;
+    pthread_join(listenThread, NULL);
     LOGI("\nDONE!\n");
     exit(0);
 }
@@ -206,18 +214,12 @@ int spudtest(int argc, char **argv)
     int sockfd;
     char buf[1024];
 
-    pthread_t listenThread;
-
     if (argc < 2) {
         fprintf(stderr, "spudtest <destination>\n");
         exit(64);
     }
 
-#ifndef ANDROID
-    signal(SIGINT, done);
-#endif
 	LOGI("entering spudtest\n");
-
     memset(&config, 0, sizeof(config));
 
     if(!getRemoteIpAddr((struct sockaddr_in6*)&config.remoteAddr,
@@ -244,18 +246,17 @@ int spudtest(int argc, char **argv)
     tube_print(&config.tube);
     printf("-> %s\n", sockaddr_toString((struct sockaddr*)&config.remoteAddr, buf, sizeof(buf), true));
 
+
     //Start and listen to the sockets.
     pthread_create(&listenThread, NULL, (void *)socketListen, &config);
+#ifndef ANDROID
+    signal(SIGINT, done);
+#endif
 
     tube_open(&config.tube, (const struct sockaddr*)&config.remoteAddr);
 
-
-    //Do other stuff here..
-
     //Just wait a bit
     sleep(5);
-    //pthread_cancel(sendDataThread);
-    sleep(1);
     done();
     //done exits...
     return 0;

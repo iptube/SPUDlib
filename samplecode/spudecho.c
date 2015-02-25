@@ -64,6 +64,7 @@ static int socketListen() {
     struct pollfd ufds[MAX_LISTEN_SOCKETS];
     struct sockaddr_storage their_addr;
     uint8_t buf[MAXBUFLEN];
+    char idStr[SPUD_ID_STRING_SIZE+1];
     socklen_t addr_len;
     int rv;
     int numbytes;
@@ -114,6 +115,12 @@ static int socketListen() {
                             // TODO: send back error
                             continue;
                         }
+                        printf("\n Spud ID: %s OPEN (%d)\n",
+                               spud_idToString(idStr,
+                                               sizeof(idStr),
+                                               &sMsg.header->flags_id),
+                               *(int*)tube->data);
+
                     }
                     tube_recv(tube, &sMsg, (struct sockaddr *)&their_addr);
 		        }
@@ -130,12 +137,12 @@ static void read_cb(tube_t *tube,
 {
     UNUSED(addr);
     char idStr[SPUD_ID_STRING_SIZE+1];
-    printf(" \r Spud ID: %s",
+    printf(" \r Spud ID: %s %s",
            spud_idToString(idStr,
                            sizeof idStr,
-                           &tube->id));
+                           &tube->id),
+           data);
 
-    printf(" %s", data);
     fflush(stdout);
     tube_data(tube, (uint8_t*)data, length);
 }
@@ -144,8 +151,14 @@ static void close_cb(tube_t *tube,
                      const struct sockaddr* addr)
 {
     int i = *(int*)tube->data;
+    char idStr[SPUD_ID_STRING_SIZE+1];
     UNUSED(addr);
     bit_clear(bs_clients, i);
+    printf("\n Spud ID: %s CLOSED (%d)\n",
+           spud_idToString(idStr,
+                           sizeof(idStr),
+                           &tube->id),
+           i);
 }
 
 int main(void)
