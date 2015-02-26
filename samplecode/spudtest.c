@@ -4,15 +4,10 @@
 #include <netinet/ip.h>
 #include <pthread.h>
 
-#include<signal.h>
-
 #include "spudlib.h"
 #include "tube.h"
-
-#ifdef __linux
-#include <linux/types.h>	// required for linux/errqueue.h
-#include <linux/errqueue.h>	// SO_EE_ORIGIN_ICMP
-#endif
+#include "iphelper.h"
+#include "sockethelper.h"
 
 #ifdef ANDROID
 #include <jni.h>
@@ -24,11 +19,6 @@
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, TAG, __VA_ARGS__)
 
 #define ESC_7C 	""
-#define ESC_35C ""
-#define ESC_16C ""
-#define ESC_iB 	""
-#define ESC_iA  ""
-#define ESC_K   ""
 
 #else
 #define LOGI(...) printf(__VA_ARGS__)
@@ -36,17 +26,8 @@
 #define LOGE(...) printf(__VA_ARGS__)
 
 #define ESC_7C 	"\033[7C"
-#define ESC_35C "\033[35C"
-#define ESC_16C "\033[16C"
-#define ESC_iB 	"\033[%iB"
-#define ESC_iA  "\033[%iA"
-#define ESC_K   "\033[K"
 
 #endif
-
-#include "iphelper.h"
-#include "sockethelper.h"
-
 
 #define MAXBUFLEN 2048
 #define MAX_LISTEN_SOCKETS 10

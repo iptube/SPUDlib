@@ -132,8 +132,7 @@ bool tube_ack(tube_t *tube,
     assert(id!=NULL);
     assert(dest!=NULL);
 
-    memcpy(&tube->id, id, sizeof(spud_flags_id_t));
-    tube->id.octet[0] &= SPUD_FLAGS_EXCLUDE_MASK;
+    spud_copyId(id, &tube->id);
 
     memcpy(&tube->peer, dest, dest->sa_len);
     tube->state = TS_RUNNING;

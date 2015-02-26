@@ -88,4 +88,7 @@ bool spud_isIdEqual(const spud_flags_id_t *a,
 bool spud_setId(spud_header_t *hdr, const spud_flags_id_t *id);
 
 char* spud_idToString(char* buf, size_t len, const spud_flags_id_t *id);
+
+void spud_copyId(const spud_flags_id_t *src, spud_flags_id_t *dest);
+
 #endif

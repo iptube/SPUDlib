@@ -10,7 +10,7 @@
 #include "tube.h"
 #include "iphelper.h"
 #include "sockethelper.h"
-
+#include "htable.h"
 
 #define MYPORT 1402    // the port users will be connecting to
 #define MAXBUFLEN 2048
@@ -18,57 +18,58 @@
 
 #define UNUSED(x) (void)(x)
 
-int sockfd;
-
-// TODO: replace this with a hashtable
-#define MAX_CLIENTS 128
-bitstr_t bit_decl(bs_clients, MAX_CLIENTS);
-tube_t clients[MAX_CLIENTS];
+int sockfd = -1;
+jw_htable clients = NULL;
 
 typedef struct _context_t {
-    int num;
     size_t count;
 } context_t;
 
-context_t *new_context(int num) {
+context_t *new_context() {
     context_t *c = malloc(sizeof(context_t));
-    c->num = num;
     c->count = 0;
     return c;
 }
 
-tube_t* tube_unused()
-{
-    int n = -1;
-    bit_ffc(bs_clients, MAX_CLIENTS, &n);
-    if (n == -1) {
-        return NULL;
-    }
-    bit_set(bs_clients, n);
-    return &clients[n];
-}
-
-tube_t* tube_match(spud_flags_id_t *flags_id) {
-    spud_flags_id_t search;
-    memcpy(&search, flags_id, sizeof(search));
-    search.octet[0] &= SPUD_FLAGS_EXCLUDE_MASK;
-
-    // table scan.  I said, replace this with a hashtable.
-    for (int i=0; i<MAX_CLIENTS; i++) {
-        if (bit_test(bs_clients, i)) {
-            if (memcmp(&search, &clients[i].id, sizeof(search)) == 0) {
-                return &clients[i];
-            }
-        }
-    }
-    return NULL;
-}
-
 void teardown()
 {
-  close(sockfd);
-  printf("Quitting...\n");
-  exit(0);
+    printf("Quitting...\n");
+    if (sockfd >= 0) {
+        close(sockfd);
+    }
+    exit(0);
+}
+
+static void read_cb(tube_t *tube,
+                    const uint8_t *data,
+                    ssize_t length,
+                    const struct sockaddr* addr)
+{
+    UNUSED(addr);
+
+    // echo
+    tube_data(tube, (uint8_t*)data, length);
+    ((context_t*)tube->data)->count++;
+}
+
+static void close_cb(tube_t *tube,
+                     const struct sockaddr* addr)
+{
+    UNUSED(addr);
+    context_t *c = (context_t*)tube->data;
+    char idStr[SPUD_ID_STRING_SIZE+1];
+
+    printf("Spud ID: %s CLOSED: %zd data packets\n",
+           spud_idToString(idStr,
+                           sizeof(idStr),
+                           &tube->id),
+           c->count);
+    tube_t *old = jw_htable_remove(clients, &tube->id);
+    if (old != tube) {
+        fprintf(stderr, "Invalid state closing tube\n");
+    }
+    free(c);
+    free(tube);
 }
 
 static int socketListen() {
@@ -79,6 +80,8 @@ static int socketListen() {
     int numbytes;
     tube_t *tube;
     spud_message_t sMsg;
+    jw_err err;
+    spud_flags_id_t uid;
 
     addr_len = sizeof their_addr;
 
@@ -97,20 +100,26 @@ static int socketListen() {
             continue;
         }
 
-        tube = tube_match(&sMsg.header->flags_id);
+        spud_copyId(&sMsg.header->flags_id, &uid);
+
+        tube = (tube_t *)jw_htable_get(clients, &uid);
         if (!tube) {
             // get started
-            tube = tube_unused();
+            tube = malloc(sizeof(tube_t));
             if (!tube) {
-                // full.
-                // TODO: send back error
-                continue;
+                fprintf(stderr, "out of memory");
+                return 1; // TODO: replace with an unused queue
             }
-            printf("Spud ID: %s(%d) OPEN\n",
-                   spud_idToString(idStr,
-                                   sizeof(idStr),
-                                   &sMsg.header->flags_id),
-                   ((context_t*)tube->data)->num);
+            tube_init(tube, sockfd);
+            tube->data = new_context();
+            tube->data_cb = read_cb;
+            tube->close_cb = close_cb;
+            if (!jw_htable_put(clients, &uid, tube, NULL, &err)) {
+                fprintf(stderr, "jw_htable_put: %d, %s", err.code, jw_err_message(err.code));
+            }
+
+            printf("Spud ID: %s created\n",
+                   spud_idToString(idStr, sizeof(idStr), &uid));
 
         }
         tube_recv(tube, &sMsg, (struct sockaddr *)&their_addr);
@@ -118,39 +127,45 @@ static int socketListen() {
     return 0;
 }
 
-static void read_cb(tube_t *tube,
-                    const uint8_t *data,
-                    ssize_t length,
-                    const struct sockaddr* addr)
-{
-    UNUSED(addr);
-    tube_data(tube, (uint8_t*)data, length);
-    ((context_t*)tube->data)->count++;
+unsigned int hash_id(const void *id) {
+    // treat the 8 bytes of tube ID like a long long.
+    uint64_t key = *(uint64_t *)id;
+
+    // from
+    // https://gist.github.com/badboy/6267743#64-bit-to-32-bit-hash-functions
+    key = (~key) + (key << 18);
+    key = key ^ (key >> 31);
+    key = key * 21;
+    key = key ^ (key >> 11);
+    key = key + (key << 6);
+    key = key ^ (key >> 22);
+    return (unsigned int) key;
 }
 
-static void close_cb(tube_t *tube,
-                     const struct sockaddr* addr)
-{
-    context_t *c = (context_t*)tube->data;
-    char idStr[SPUD_ID_STRING_SIZE+1];
-    UNUSED(addr);
-    bit_clear(bs_clients, c->num);
-    printf("Spud ID: %s(%d) CLOSED: %zd data packets\n",
-           spud_idToString(idStr,
-                           sizeof(idStr),
-                           &tube->id),
-           c->num,
-           c->count);
+int compare_id(const void *key1, const void *key2) {
+    int ret = 0;
+    uint64_t k1 = *(uint64_t *)key1;
+    uint64_t k2 = *(uint64_t *)key2;
+    if (k1<k2) {
+        ret = -1;
+    } else {
+        ret = (k1==k2) ? 0 : 1;
+    }
+    return ret;
 }
 
 int main(void)
 {
     struct sockaddr_in6 servaddr;
-
+    jw_err err;
     signal(SIGINT, teardown);
 
-    memset(clients, 0, MAX_CLIENTS*sizeof(tube_t));
-    bit_nclear(bs_clients, 0, MAX_CLIENTS-1);
+    // 65521 is max prime under 65535, which seems like an interesting
+    // starting point for scale.
+    if (!jw_htable_create(65521, hash_id, compare_id, &clients, &err)) {
+        fprintf(stderr, "jw_htable_create: %d, %s\n", err.code, jw_err_message(err.code));
+        return 1;
+    }
 
     sockfd = socket(PF_INET6, SOCK_DGRAM, 0);
     if (sockfd < 0) {
@@ -161,13 +176,6 @@ int main(void)
     if (bind(sockfd, (struct sockaddr*)&servaddr, servaddr.sin6_len) != 0) {
         perror("bind");
         return 1;
-    }
-
-    for (int i=0; i<MAX_CLIENTS; i++) {
-        tube_init(&clients[i], sockfd);
-        clients[i].data = new_context(i);
-        clients[i].data_cb = read_cb;
-        clients[i].close_cb = close_cb;
     }
 
     return socketListen();

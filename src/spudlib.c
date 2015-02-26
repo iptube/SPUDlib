@@ -112,3 +112,8 @@ char* spud_idToString(char* buf, size_t len, const spud_flags_id_t *id)
     }
     return buf;
 }
+
+void spud_copyId(const spud_flags_id_t *src, spud_flags_id_t *dest) {
+    memcpy(dest, src, sizeof(spud_flags_id_t));
+    dest->octet[0] &= SPUD_FLAGS_EXCLUDE_MASK;
+}
