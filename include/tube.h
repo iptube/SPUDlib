@@ -33,6 +33,8 @@ or implied, of Cisco.
 #include <sys/socket.h>
 
 #include "spudlib.h"
+#include "ls_error.h"
+#include "ls_mem.h"
 
 typedef enum {
   TS_START,
@@ -42,17 +44,17 @@ typedef enum {
   TS_RESUMING
 } tube_states_t;
 
-struct _tube_t;
+struct _tube;
 
-typedef void (*tube_data_cb)(struct _tube_t* tube,
+typedef void (*tube_data_cb)(struct _tube* t,
                              const uint8_t *data,
                              ssize_t length,
                              const struct sockaddr* addr);
 
-typedef void (*tube_state_cb)(struct _tube_t* tube,
+typedef void (*tube_state_cb)(struct _tube* t,
                               const struct sockaddr* addr);
 
-typedef struct _tube_t {
+typedef struct _tube {
   tube_states_t state;
   int sock;
   struct sockaddr_storage peer;
@@ -61,23 +63,24 @@ typedef struct _tube_t {
   tube_data_cb data_cb;
   tube_state_cb running_cb;
   tube_state_cb close_cb;
-} tube_t;
+} *tube;
 
 // multiple tubes per socket
-bool tube_init(tube_t *tube, int sock);
+LS_API bool tube_create(int sock, tube *t, ls_err *err);
+LS_API void tube_destroy(tube t);
 
 // print [local address]:port to stdout
-bool tube_print(const tube_t *tube);
-bool tube_open(tube_t *tube, const struct sockaddr *dest);
-bool tube_ack(tube_t *tube,
-              const spud_flags_id_t *id,
-              const struct sockaddr *dest);
-bool tube_data(tube_t *tube, uint8_t *data, size_t len);
-bool tube_close(tube_t *tube);
+LS_API bool tube_print(const tube t);
+LS_API bool tube_open(tube t, const struct sockaddr *dest);
+LS_API bool tube_ack(tube t,
+                     const spud_flags_id_t *id,
+                     const struct sockaddr *dest);
+LS_API bool tube_data(tube t, uint8_t *data, size_t len);
+LS_API bool tube_close(tube t);
 
-bool tube_send(tube_t *tube,
-               spud_command_t cmd,
-               bool adec, bool pdec,
-               uint8_t *data, size_t len);
+LS_API bool tube_send(tube t,
+                      spud_command_t cmd,
+                      bool adec, bool pdec,
+                      uint8_t *data, size_t len);
 
-bool tube_recv(tube_t *tube, spud_message_t *msg, const struct sockaddr* addr);
+LS_API bool tube_recv(tube t, spud_message_t *msg, const struct sockaddr* addr);

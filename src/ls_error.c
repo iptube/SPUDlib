@@ -6,7 +6,7 @@
  * Copyright (c) 2015 Cisco Systems, Inc.  All Rights Reserved.
  */
 
-#include "error.h"
+#include "ls_error.h"
 
 /*****************************************************************************
  * Internal type definitions

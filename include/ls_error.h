@@ -10,7 +10,7 @@
  */
 #pragma once
 
-#include "basics.h"
+#include "ls_basics.h"
 
 /**
  * Enumeration of defined error codes.

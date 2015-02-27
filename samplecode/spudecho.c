@@ -11,6 +11,7 @@
 #include "iphelper.h"
 #include "sockethelper.h"
 #include "htable.h"
+#include "ls_log.h"
 
 #define MYPORT 1402    // the port users will be connecting to
 #define MAXBUFLEN 2048
@@ -38,7 +39,7 @@ void teardown()
     exit(0);
 }
 
-static void read_cb(tube_t *tube,
+static void read_cb(tube t,
                     const uint8_t *data,
                     ssize_t length,
                     const struct sockaddr* addr)
@@ -46,28 +47,28 @@ static void read_cb(tube_t *tube,
     UNUSED_PARAM(addr);
 
     // echo
-    tube_data(tube, (uint8_t*)data, length);
-    ((context_t*)tube->data)->count++;
+    tube_data(t, (uint8_t*)data, length);
+    ((context_t*)t->data)->count++;
 }
 
-static void close_cb(tube_t *tube,
+static void close_cb(tube t,
                      const struct sockaddr* addr)
 {
     UNUSED_PARAM(addr);
-    context_t *c = (context_t*)tube->data;
+    context_t *c = (context_t*)t->data;
     char idStr[SPUD_ID_STRING_SIZE+1];
 
     printf("Spud ID: %s CLOSED: %zd data packets\n",
            spud_idToString(idStr,
                            sizeof(idStr),
-                           &tube->id),
+                           &t->id),
            c->count);
-    tube_t *old = ls_htable_remove(clients, &tube->id);
-    if (old != tube) {
+    tube old = ls_htable_remove(clients, &t->id);
+    if (old != t) {
         fprintf(stderr, "Invalid state closing tube\n");
     }
+    tube_destroy(t);
     free(c);
-    free(tube);
 }
 
 static int socketListen() {
@@ -76,7 +77,7 @@ static int socketListen() {
     char idStr[SPUD_ID_STRING_SIZE+1];
     socklen_t addr_len;
     int numbytes;
-    tube_t *tube;
+    tube t;
     spud_message_t sMsg;
     ls_err err;
     spud_flags_id_t uid;
@@ -100,27 +101,25 @@ static int socketListen() {
 
         spud_copyId(&sMsg.header->flags_id, &uid);
 
-        tube = (tube_t *)ls_htable_get(clients, &uid);
-        if (!tube) {
+        t = (tube)ls_htable_get(clients, &uid);
+        if (!t) {
             // get started
-            tube = malloc(sizeof(tube_t));
-            if (!tube) {
-                fprintf(stderr, "out of memory");
+            if (!tube_create(sockfd, &t, &err)) {
+                LS_LOG_ERR(err, "tube_create");
                 return 1; // TODO: replace with an UNUSED_PARAM queue
             }
-            tube_init(tube, sockfd);
-            tube->data = new_context();
-            tube->data_cb = read_cb;
-            tube->close_cb = close_cb;
-            if (!ls_htable_put(clients, &uid, tube, NULL, &err)) {
-                fprintf(stderr, "ls_htable_put: %d, %s", err.code, ls_err_message(err.code));
+            t->data = new_context();
+            t->data_cb = read_cb;
+            t->close_cb = close_cb;
+            if (!ls_htable_put(clients, &uid, t, NULL, &err)) {
+                LS_LOG_ERR(err, "ls_htable_put");
             }
 
-            printf("Spud ID: %s created\n",
+            ls_log(LS_LOG_INFO, "Spud ID: %s created\n",
                    spud_idToString(idStr, sizeof(idStr), &uid));
 
         }
-        tube_recv(tube, &sMsg, (struct sockaddr *)&their_addr);
+        tube_recv(t, &sMsg, (struct sockaddr *)&their_addr);
     }
     return 0;
 }
@@ -161,13 +160,13 @@ int main(void)
     // 65521 is max prime under 65535, which seems like an interesting
     // starting point for scale.
     if (!ls_htable_create(65521, hash_id, compare_id, &clients, &err)) {
-        fprintf(stderr, "ls_htable_create: %d, %s\n", err.code, ls_err_message(err.code));
+        LS_LOG_ERR(err, ls_htable_create);
         return 1;
     }
 
     sockfd = socket(PF_INET6, SOCK_DGRAM, 0);
     if (sockfd < 0) {
-        perror("socket");
+        LS_LOG_PERROR("socket");
         return 1;
     }
     sockaddr_initAsIPv6Any(&servaddr, MYPORT);

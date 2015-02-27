@@ -35,24 +35,37 @@ or implied, of Cisco.
 #include "../config.h"
 #include "tube.h"
 
-bool tube_init(tube_t *tube, int sock)
+LS_API bool tube_create(int sock, tube *t, ls_err *err)
 {
-    assert(tube!=NULL);
-    memset(tube, 0, sizeof(tube_t));
-    tube->sock = sock;
-    tube->state = TS_UNKNOWN;
+    assert(t != NULL);
+    *t = (tube)ls_data_malloc(sizeof(**t));
+    if (*t == NULL) {
+        LS_ERROR(err, LS_ERR_NO_MEMORY);
+        return false;
+    }
+    memset(*t, 0, sizeof(**t));
+    (*t)->sock = sock;
+    (*t)->state = TS_UNKNOWN;
     return true;
 }
 
-bool tube_print(const tube_t *tube)
+LS_API void tube_destroy(tube t)
+{
+    if (t->state == TS_RUNNING) {
+        tube_close(t);
+    }
+    ls_data_free(t);
+}
+
+LS_API bool tube_print(const tube t)
 {
     struct sockaddr_storage addr;
     socklen_t addr_len = sizeof(addr);
     char host[NI_MAXHOST];
     char serv[NI_MAXSERV];
 
-    assert(tube!=NULL);
-    if (getsockname(tube->sock, (struct sockaddr *)&addr, &addr_len) != 0) {
+    assert(t!=NULL);
+    if (getsockname(t->sock, (struct sockaddr *)&addr, &addr_len) != 0) {
         perror("getsockname");
         return false;
     }
@@ -69,7 +82,7 @@ bool tube_print(const tube_t *tube)
     return true;
 }
 
-bool tube_send(tube_t *tube,
+LS_API bool tube_send(tube t,
                spud_command_t cmd,
                bool adec, bool pdec,
                uint8_t *data, size_t len)
@@ -79,8 +92,8 @@ bool tube_send(tube_t *tube,
     struct msghdr msg;
     struct iovec iov[2];
 
-    assert(tube!=NULL);
-    if (!spud_init(&smh, &tube->id)) {
+    assert(t!=NULL);
+    if (!spud_init(&smh, &t->id)) {
         return false;
     }
     flags |= cmd;
@@ -98,12 +111,12 @@ bool tube_send(tube_t *tube,
     iov[1].iov_len  = len;
 
     memset(&msg, 0, sizeof(msg));
-    msg.msg_name = &tube->peer;
-    msg.msg_namelen = tube->peer.ss_len;
+    msg.msg_name = &t->peer;
+    msg.msg_namelen = t->peer.ss_len;
     msg.msg_iov = iov;
     msg.msg_iovlen = (data==NULL) ? 1 : 2;
 
-    int ret = sendmsg(tube->sock, &msg, 0);
+    int ret = sendmsg(t->sock, &msg, 0);
     if (ret <= 0) {
         perror("sendmsg");
         printf("ret: %d\n", ret);
@@ -112,51 +125,51 @@ bool tube_send(tube_t *tube,
     return true;
 }
 
-bool tube_open(tube_t *tube, const struct sockaddr *dest)
+LS_API bool tube_open(tube t, const struct sockaddr *dest)
 {
-    assert(tube!=NULL);
+    assert(t!=NULL);
     assert(dest!=NULL);
-    memcpy(&tube->peer, dest, dest->sa_len);
-    if (!spud_createId(&tube->id)) {
+    memcpy(&t->peer, dest, dest->sa_len);
+    if (!spud_createId(&t->id)) {
         return false;
     }
-    tube->state = TS_OPENING;
-    return tube_send(tube, SPUD_OPEN, false, false, NULL, 0);
+    t->state = TS_OPENING;
+    return tube_send(t, SPUD_OPEN, false, false, NULL, 0);
 }
 
-bool tube_ack(tube_t *tube,
+LS_API bool tube_ack(tube t,
               const spud_flags_id_t *id,
               const struct sockaddr *dest)
 {
-    assert(tube!=NULL);
+    assert(t!=NULL);
     assert(id!=NULL);
     assert(dest!=NULL);
 
-    spud_copyId(id, &tube->id);
+    spud_copyId(id, &t->id);
 
-    memcpy(&tube->peer, dest, dest->sa_len);
-    tube->state = TS_RUNNING;
-    return tube_send(tube, SPUD_ACK, false, false, NULL, 0);
+    memcpy(&t->peer, dest, dest->sa_len);
+    t->state = TS_RUNNING;
+    return tube_send(t, SPUD_ACK, false, false, NULL, 0);
 }
 
-bool tube_data(tube_t *tube, uint8_t *data, size_t len)
+LS_API bool tube_data(tube t, uint8_t *data, size_t len)
 {
-    return tube_send(tube, SPUD_DATA, false, false, data, len);
+    return tube_send(t, SPUD_DATA, false, false, data, len);
 }
 
-bool tube_close(tube_t *tube)
+LS_API bool tube_close(tube t)
 {
-    tube->state = TS_UNKNOWN;
-    return tube_send(tube, SPUD_CLOSE, false, false, NULL, 0);
+    t->state = TS_UNKNOWN;
+    return tube_send(t, SPUD_CLOSE, false, false, NULL, 0);
 }
 
-bool tube_recv(tube_t *tube, spud_message_t *msg, const struct sockaddr* addr)
+LS_API bool tube_recv(tube t, spud_message_t *msg, const struct sockaddr* addr)
 {
     spud_command_t cmd;
-    assert(tube!=NULL);
+    assert(t!=NULL);
     assert(msg!=NULL);
 
-    if (tube->state == TS_START) {
+    if (t->state == TS_START) {
         fprintf(stderr, "Invalid state\n");
         return false;
     }
@@ -164,33 +177,33 @@ bool tube_recv(tube_t *tube, spud_message_t *msg, const struct sockaddr* addr)
     cmd = msg->header->flags_id.octet[0] & SPUD_COMMAND;
     switch(cmd) {
     case SPUD_DATA:
-        if (tube->state == TS_RUNNING) {
-            if (tube->data_cb) {
-                tube->data_cb(tube, msg->data, msg->length, addr);
+        if (t->state == TS_RUNNING) {
+            if (t->data_cb) {
+                t->data_cb(t, msg->data, msg->length, addr);
             }
         }
         break;
     case SPUD_CLOSE:
-        if (tube->state != TS_UNKNOWN) {
+        if (t->state != TS_UNKNOWN) {
             // double-close is a no-op
-            if (tube->close_cb) {
-                tube->close_cb(tube, addr);
+            t->state = TS_UNKNOWN;
+            if (t->close_cb) {
+                t->close_cb(t, addr);
             }
-            tube->state = TS_UNKNOWN;
-            memset(&tube->peer, 0, sizeof(tube->peer));
+            memset(&t->peer, 0, sizeof(t->peer));
             // leave id in place to allow for reconnects later
         }
         break;
     case SPUD_OPEN:
         // TODO: check if we're in server policy
-        return tube_ack(tube,
+        return tube_ack(t,
                         &msg->header->flags_id,
                         addr);
     case SPUD_ACK:
-        if (tube->state == TS_OPENING) {
-            tube->state = TS_RUNNING;
-            if (tube->running_cb) {
-                tube->running_cb(tube, addr);
+        if (t->state == TS_OPENING) {
+            t->state = TS_RUNNING;
+            if (t->running_cb) {
+                t->running_cb(t, addr);
             }
         }
         break;

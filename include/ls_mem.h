@@ -44,8 +44,8 @@
 
 #include <stdlib.h>
 
-#include "basics.h"
-#include "error.h"
+#include "ls_basics.h"
+#include "ls_error.h"
 
 /**
  * \todo US1064 TA3061 normalize api, pool

@@ -30,7 +30,6 @@
 #endif
 
 #define MAXBUFLEN 2048
-#define MAX_LISTEN_SOCKETS 10
 
 bool keepGoing = true;
 pthread_t sendDataThread;
@@ -45,7 +44,7 @@ struct test_config {
 
     struct sockaddr_storage remoteAddr;
     struct sockaddr_storage localAddr;
-    tube_t tube;
+    tube t;
 
     int numSentPkts;
     int numRcvdPkts;
@@ -76,7 +75,7 @@ static void *sendData(struct test_config *config)
             // TODO: parse this.
             memcpy(buf+len, s1+(config->numSentPkts%numChar)+(numChar*i), numChar);
         }
-        tube_data(&config->tube, buf, strlen(s1));
+        tube_data(config->t, buf, strlen(s1));
     }
     return NULL;
 }
@@ -91,7 +90,7 @@ static void *socketListen(void *ptr){
 
     while (keepGoing) {
         addr_len = sizeof(their_addr);
-        if ((numbytes = recvfrom(config->tube.sock, buf,
+        if ((numbytes = recvfrom(config->t->sock, buf,
                                  MAXBUFLEN , 0,
                                  (struct sockaddr *)&their_addr,
                                  &addr_len)) == -1) {
@@ -102,42 +101,42 @@ static void *socketListen(void *ptr){
             // It's an attack
             continue;
         }
-        if (!spud_isIdEqual(&config->tube.id, &sMsg.header->flags_id)) {
+        if (!spud_isIdEqual(&config->t->id, &sMsg.header->flags_id)) {
             // it's another kind of attack
             continue;
         }
-        tube_recv(&config->tube, &sMsg, (struct sockaddr *)&their_addr);
+        tube_recv(config->t, &sMsg, (struct sockaddr *)&their_addr);
     }
-    tube_close(&config->tube);
+    tube_close(config->t);
     return NULL;
 }
 
-static void data_cb(tube_t *tube,
+static void data_cb(tube t,
                     const uint8_t *data,
                     ssize_t length,
                     const struct sockaddr* addr)
 {
-    struct test_config *config = (struct test_config *)tube->data;
+    struct test_config *config = (struct test_config *)t->data;
     UNUSED(addr);
     UNUSED(length);
     config->numRcvdPkts++;
     LOGI("\r " ESC_7C " RX: %i  %s", config->numRcvdPkts, data);
 }
 
-static void running_cb(struct _tube_t* tube,
+static void running_cb(tube t,
                        const struct sockaddr* addr)
 {
     UNUSED(addr);
     printf("running!\n");
 
     //Start a thread that sends packet to the destination
-    pthread_create(&sendDataThread, NULL, (void *)sendData, tube->data);
+    pthread_create(&sendDataThread, NULL, (void *)sendData, t->data);
 }
 
-static void close_cb(struct _tube_t* tube,
+static void close_cb(tube t,
                      const struct sockaddr* addr)
 {
-    UNUSED(tube);
+    UNUSED(t);
     UNUSED(addr);
 }
 
@@ -152,6 +151,7 @@ int spudtest(int argc, char **argv)
 {
     struct test_config config;
     int sockfd;
+    ls_err err;
     char buf[1024];
 
     if (argc < 2) {
@@ -178,12 +178,14 @@ int spudtest(int argc, char **argv)
         return 1;
     }
 
-    tube_init(&config.tube, sockfd);
-    config.tube.data = &config;
-    config.tube.data_cb = data_cb;
-    config.tube.running_cb = running_cb;
-    config.tube.close_cb = close_cb;
-    tube_print(&config.tube);
+    if (!tube_create(sockfd, &config.t, &err)) {
+        return 1;
+    }
+    config.t->data = &config;
+    config.t->data_cb = data_cb;
+    config.t->running_cb = running_cb;
+    config.t->close_cb = close_cb;
+    tube_print(config.t);
     printf("-> %s\n", sockaddr_toString((struct sockaddr*)&config.remoteAddr, buf, sizeof(buf), true));
 
 
@@ -193,7 +195,7 @@ int spudtest(int argc, char **argv)
     signal(SIGINT, done);
 #endif
 
-    tube_open(&config.tube, (const struct sockaddr*)&config.remoteAddr);
+    tube_open(config.t, (const struct sockaddr*)&config.remoteAddr);
 
     //Just wait a bit
     sleep(5);

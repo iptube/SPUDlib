@@ -13,12 +13,10 @@
 #include <string.h>
 #include <assert.h>
 
-#include "basics.h"
-#include "error.h"
-#include "str.h"
-#include "mem.h"
+#include "ls_str.h"
+#include "ls_mem.h"
 
-#include "pool_types.h"
+#include "ls_pool.h"
 
 ls_data_malloc_func _malloc_func = malloc;
 ls_data_realloc_func _realloc_func = realloc;
@@ -48,7 +46,7 @@ static bool _malloc_fnc(ls_pool pool, size_t size, void **ptr, ls_pool_cleaner c
 /*
  * Allocate block from given page. return false if request is too large
  */
-bool _page_malloc(_pool_page page, size_t size, void **ptr)
+static bool _page_malloc(_pool_page page, size_t size, void **ptr)
 {
     size_t will_use = page->used;
 
@@ -67,7 +65,7 @@ bool _page_malloc(_pool_page page, size_t size, void **ptr)
 }
 
 /* page cleaner*/
-void _free_page(void *arg)
+static void _free_page(void *arg)
 {
     _pool_page page = (struct pool_page*)arg;
 
@@ -77,7 +75,7 @@ void _free_page(void *arg)
 /* Allocate and add a new page to the given pool
    may result in a LS_ERR_NO_MEMORY err,
    incs pool->size as side-effect*/
-bool _add_page(ls_pool pool, ls_err* err)
+static bool _add_page(ls_pool pool, ls_err* err)
 {
     _pool_page page;
 

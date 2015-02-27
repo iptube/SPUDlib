@@ -18,8 +18,8 @@
 
 #pragma once
 
-#include "basics.h"
-#include "error.h"
+#include "ls_basics.h"
+#include "ls_error.h"
 
 /**
  * An instance of a hashtable

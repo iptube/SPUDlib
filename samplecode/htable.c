@@ -6,7 +6,7 @@
  */
 
 #include "htable.h"
-#include "mem.h"
+#include "ls_mem.h"
 
 #include <assert.h>
 #include <ctype.h>
