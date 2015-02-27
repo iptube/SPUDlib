@@ -52,6 +52,7 @@ typedef u_int16_t   in_port_t;
 
 #include "sockaddr_util.h"
 
+
 void sockaddr_reset(struct sockaddr_storage * sa)
 {
     memset(sa, 0, sizeof *sa);
@@ -61,7 +62,7 @@ void sockaddr_reset(struct sockaddr_storage * sa)
 void sockaddr_initAsIPv4Any(struct sockaddr_in * sa, int port)
 {
     memset(sa, 0, sizeof(*sa));
-    sa->sin_len = sizeof(*sa);
+    //sa->sin_len = sizeof(*sa);
     sa->sin_family = AF_INET;
     sa->sin_port = htons(port);
     sa->sin_addr.s_addr = INADDR_ANY;
@@ -72,7 +73,7 @@ void sockaddr_initAsIPv6Any(struct sockaddr_in6 * sa, int port)
     memset(sa, 0, sizeof(*sa));
     sa->sin6_family = AF_INET6;
     sa->sin6_addr = in6addr_any;
-    sa->sin6_len = sizeof(*sa);
+    //sa->sin6_len = sizeof(*sa);
     sa->sin6_port = htons(port);
 }
 
@@ -389,6 +390,9 @@ int sockaddr_getIPv6Flags(const struct sockaddr * sa, const char* ifa_name, int 
 
     return ifr6.ifr_ifru.ifru_flags6;
 #else
+    (void)(sa);
+    (void)(ifa_name);
+    (void)(ifa_len);
 return 0;
 #endif
 }
@@ -413,6 +417,9 @@ bool sockaddr_isAddrTemporary(const struct sockaddr * sa, const char* ifa_name, 
     }
     return false;
 #else
+    (void)(sa);
+    (void)(ifa_name);
+    (void)(ifa_len);
     return false;
 #endif
 }
@@ -437,6 +444,9 @@ bool sockaddr_isAddrDeprecated(const struct sockaddr * sa, const char* ifa_name,
     }
     return false;
 #else
+    (void)(sa);
+    (void)(ifa_name);
+    (void)(ifa_len);
     return false;
 #endif
 }

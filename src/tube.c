@@ -31,9 +31,25 @@ or implied, of Cisco.
 #include <netdb.h>
 #include <stdio.h>
 #include <string.h>
+#include <netinet/in.h>
 
 #include "../config.h"
 #include "tube.h"
+
+
+
+size_t tube_getSockAddrLen( const struct sockaddr *addr)
+{
+    if( addr->sa_family == AF_INET) {
+        return sizeof( struct sockaddr_in );
+    }
+    else if(addr->sa_family == AF_INET6) {
+        return sizeof( struct sockaddr_in6 );
+    }
+    return 0;
+}
+
+
 
 bool tube_init(tube_t *tube, int sock)
 {
@@ -78,6 +94,7 @@ bool tube_send(tube_t *tube,
     uint8_t flags = 0;
     struct msghdr msg;
     struct iovec iov[2];
+    int ret;
 
     assert(tube!=NULL);
     if (!spud_init(&smh, &tube->id)) {
@@ -99,11 +116,13 @@ bool tube_send(tube_t *tube,
 
     memset(&msg, 0, sizeof(msg));
     msg.msg_name = &tube->peer;
-    msg.msg_namelen = tube->peer.ss_len;
+    //ss_len not in linux
+    //msg.msg_namelen = tube->peer.ss_len;
+    msg.msg_namelen = tube_getSockAddrLen( (struct sockaddr *)&tube->peer );
     msg.msg_iov = iov;
     msg.msg_iovlen = (data==NULL) ? 1 : 2;
 
-    int ret = sendmsg(tube->sock, &msg, 0);
+    ret = sendmsg(tube->sock, &msg, 0);
     if (ret <= 0) {
         perror("sendmsg");
         printf("ret: %d\n", ret);
@@ -116,7 +135,7 @@ bool tube_open(tube_t *tube, const struct sockaddr *dest)
 {
     assert(tube!=NULL);
     assert(dest!=NULL);
-    memcpy(&tube->peer, dest, dest->sa_len);
+    memcpy(&tube->peer, dest, tube_getSockAddrLen(dest));
     if (!spud_createId(&tube->id)) {
         return false;
     }
@@ -134,7 +153,7 @@ bool tube_ack(tube_t *tube,
 
     spud_copyId(id, &tube->id);
 
-    memcpy(&tube->peer, dest, dest->sa_len);
+    memcpy(&tube->peer, dest, tube_getSockAddrLen(dest));
     tube->state = TS_RUNNING;
     return tube_send(tube, SPUD_ACK, false, false, NULL, 0);
 }

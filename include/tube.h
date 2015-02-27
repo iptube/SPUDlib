@@ -81,3 +81,5 @@ bool tube_send(tube_t *tube,
                uint8_t *data, size_t len);
 
 bool tube_recv(tube_t *tube, spud_message_t *msg, const struct sockaddr* addr);
+
+size_t tube_getSockAddrLen( const struct sockaddr *addr);

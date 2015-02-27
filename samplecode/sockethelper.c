@@ -7,7 +7,7 @@ int createLocalUDPSocket(int ai_family,
                          const struct sockaddr *localIp,
                          uint16_t port)
 {
-    int sockfd;
+    int sockfd = 0;
 
     int rv;
     struct addrinfo hints, *ai, *p;

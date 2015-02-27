@@ -45,7 +45,7 @@ static bool get_randBuf(void *buf, size_t sz)
         return false;
     }
 
-    nread = fread(id, sz, 1, rfile);
+    nread = fread(buf, sz, 1, rfile);
     fclose(rfile);
     return nread == sz;
 #else

@@ -45,7 +45,6 @@ extern "C" {
 /*static const uint32_t SOCKADDR_MAX_STRLEN = INET6_ADDRSTRLEN + 8; //port, :, [];*/
 #define SOCKADDR_MAX_STRLEN  INET6_ADDRSTRLEN + 8
 
-
 void sockaddr_reset(struct sockaddr_storage * sa);
 
 /*
