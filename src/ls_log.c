@@ -64,6 +64,14 @@ LS_API ls_loglevel ls_log_get_level(void)
     return _ls_loglevel;
 }
 
+static int level_colors[] = {
+    31,
+    33,
+    32,
+    34,
+    30
+};
+
 LS_API void ls_log(ls_loglevel level, const char *fmt, ...)
 {
     time_t t;
@@ -82,13 +90,14 @@ LS_API void ls_log(ls_loglevel level, const char *fmt, ...)
         return;
 
     _ls_log_fixed_function(stderr,
-            "%d-%2.2d-%2.2dT%2.2d:%2.2d:%2.2d [%7s]: ",
+            "\e[1m%d-%2.2d-%2.2dT%2.2d:%2.2d:%2.2d\e[0m [\e[%dm%7s\e[39m]: ",
             local.tm_year+1900,
             local.tm_mon+1,
             local.tm_mday,
             local.tm_hour,
             local.tm_min,
             local.tm_sec,
+            level_colors[level],
             ls_log_level_name(level));
 
     va_start(ap, fmt);

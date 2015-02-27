@@ -175,5 +175,6 @@ int main(void)
         return 1;
     }
 
+    ls_log(LS_LOG_INFO, "Listening on port %d", MYPORT);
     return socketListen();
 }
