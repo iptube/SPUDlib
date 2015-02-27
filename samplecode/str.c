@@ -14,7 +14,7 @@
  * EXTERNAL functions
  */
 
-JABBERWERX_API int jw_atoi(const char *a, int def)
+LS_API int ls_atoi(const char *a, int def)
 {
     if (a == NULL)
     {
@@ -23,7 +23,7 @@ JABBERWERX_API int jw_atoi(const char *a, int def)
     return atoi(a);
 }
 
-JABBERWERX_API size_t jw_strlen(const char *a)
+LS_API size_t ls_strlen(const char *a)
 {
     if (a == NULL)
     {
@@ -32,7 +32,7 @@ JABBERWERX_API size_t jw_strlen(const char *a)
     return strlen(a);
 }
 
-JABBERWERX_API size_t jw_strnlen(const char *a, size_t len)
+LS_API size_t ls_strnlen(const char *a, size_t len)
 {
     size_t i;
     if (a == NULL)
@@ -45,7 +45,7 @@ JABBERWERX_API size_t jw_strnlen(const char *a, size_t len)
     return i;
 }
 
-JABBERWERX_API int jw_strcmp(const char *a, const char *b)
+LS_API int ls_strcmp(const char *a, const char *b)
 {
     if (a == b)
     {
@@ -62,7 +62,7 @@ JABBERWERX_API int jw_strcmp(const char *a, const char *b)
     return strcmp(a, b);
 }
 
-JABBERWERX_API int jw_strcasecmp(const char *a, const char *b)
+LS_API int ls_strcasecmp(const char *a, const char *b)
 {
     if (a == b)
     {
@@ -79,7 +79,7 @@ JABBERWERX_API int jw_strcasecmp(const char *a, const char *b)
     return strcasecmp(a, b);
 }
 
-JABBERWERX_API int jw_strncmp(const char *a, const char *b, size_t n)
+LS_API int ls_strncmp(const char *a, const char *b, size_t n)
 {
     if (a == b)
     {

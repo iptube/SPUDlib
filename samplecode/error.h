@@ -8,13 +8,7 @@
  * Portions created or assigned to Cisco Systems, Inc. are
  * Copyright (c) 2010 Cisco Systems, Inc.  All Rights Reserved.
  */
-#ifndef JABBERWERX_UTIL_ERROR_H
-#define JABBERWERX_UTIL_ERROR_H
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
+#pragma once
 
 #include "basics.h"
 
@@ -24,26 +18,26 @@ extern "C"
 typedef enum
 {
     /** No error */
-    JW_ERR_NONE = 0,
+    LS_ERR_NONE = 0,
     /** argument was invalid (beyond invariants) */
-    JW_ERR_INVALID_ARG,
+    LS_ERR_INVALID_ARG,
     /** context is not in a valid state */
-    JW_ERR_INVALID_STATE,
+    LS_ERR_INVALID_STATE,
     /** out of memory */
-    JW_ERR_NO_MEMORY,
+    LS_ERR_NO_MEMORY,
     /** buffer would overflow */
-    JW_ERR_OVERFLOW,
+    LS_ERR_OVERFLOW,
     /** error connecting to a remote endpoint */
-    JW_ERR_SOCKET_CONNECT,
+    LS_ERR_SOCKET_CONNECT,
     /** provided data could not be parsed by consuming entity */
-    JW_ERR_BAD_FORMAT,
+    LS_ERR_BAD_FORMAT,
     /** invalid protocol */
-    JW_ERR_PROTOCOL,
+    LS_ERR_PROTOCOL,
     /** timed out */
-    JW_ERR_TIMEOUT,
+    LS_ERR_TIMEOUT,
     /** user-defined errors */
-    JW_ERR_USER
-} jw_errcode;
+    LS_ERR_USER
+} ls_errcode;
 
 /**
  * An instance of an error context. Unlike other structures, it
@@ -54,7 +48,7 @@ typedef enum
 typedef struct
 {
     /** The error code */
-    jw_errcode          code;
+    ls_errcode          code;
     /** The human readable message for the error code */
     const char *        message;
     /** The function where the error occured, or "<unknown>"
@@ -64,7 +58,7 @@ typedef struct
     const char *        file;
     /** The line number in the file where the error occured */
     unsigned long       line;
-} jw_err;
+} ls_err;
 
 
 /**
@@ -73,28 +67,22 @@ typedef struct
  * \param code The error code to lookup
  * \retval const char * The message for {code}
  */
-JABBERWERX_API const char * jw_err_message(jw_errcode code);
+LS_API const char * ls_err_message(ls_errcode code);
 
 /**
- * \def JABBERWERX_ERROR(err, code)
+ * \def LS_ERROR(err, code)
  *
  * Macro to initialize an error context.
  *
  * \param err The pointer to the error context, or NULL if none
  * \param errcode The error code
  */
-#define JABBERWERX_ERROR(err, errcode) \
-        if ((err) != NULL && (errcode) != JW_ERR_NONE) \
+#define LS_ERROR(err, errcode) \
+        if ((err) != NULL && (errcode) != LS_ERR_NONE) \
         { \
             (err)->code = (errcode); \
-            (err)->message = jw_err_message((errcode)); \
+            (err)->message = ls_err_message((errcode)); \
             (err)->function = __func__; \
             (err)->file = __FILE__; \
             (err)->line = __LINE__; \
         }
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif  /* JABBERWERX_UTIL_ERROR_H */

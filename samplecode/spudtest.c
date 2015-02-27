@@ -159,7 +159,7 @@ int spudtest(int argc, char **argv)
         exit(64);
     }
 
-	LOGI("entering spudtest\n");
+    LOGI("entering spudtest\n");
     memset(&config, 0, sizeof(config));
 
     if(!getRemoteIpAddr((struct sockaddr_in6*)&config.remoteAddr,
@@ -205,21 +205,21 @@ int spudtest(int argc, char **argv)
 #ifdef ANDROID
 int traceroute(const char* hostname, int port)
 {
-	char *argv[2];
-	int argc = 2;
+    char *argv[2];
+    int argc = 2;
 
-	argv[1] = (char*)malloc(1024);
-	strcpy(argv[1], hostname);
+    argv[1] = (char*)malloc(1024);
+    strcpy(argv[1], hostname);
 
-	spudtest(argc, argv);
+    spudtest(argc, argv);
 
-	free(argv[1]);
-	return 0;
+    free(argv[1]);
+    return 0;
 }
 
 #else
 int main(int argc, char **argv)
 {
-	return spudtest(argc, argv);
+    return spudtest(argc, argv);
 }
 #endif

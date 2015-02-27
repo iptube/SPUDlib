@@ -16,10 +16,8 @@
 #define MAXBUFLEN 2048
 #define MAX_LISTEN_SOCKETS 10
 
-#define UNUSED(x) (void)(x)
-
 int sockfd = -1;
-jw_htable clients = NULL;
+ls_htable clients = NULL;
 
 typedef struct _context_t {
     size_t count;
@@ -45,7 +43,7 @@ static void read_cb(tube_t *tube,
                     ssize_t length,
                     const struct sockaddr* addr)
 {
-    UNUSED(addr);
+    UNUSED_PARAM(addr);
 
     // echo
     tube_data(tube, (uint8_t*)data, length);
@@ -55,7 +53,7 @@ static void read_cb(tube_t *tube,
 static void close_cb(tube_t *tube,
                      const struct sockaddr* addr)
 {
-    UNUSED(addr);
+    UNUSED_PARAM(addr);
     context_t *c = (context_t*)tube->data;
     char idStr[SPUD_ID_STRING_SIZE+1];
 
@@ -64,7 +62,7 @@ static void close_cb(tube_t *tube,
                            sizeof(idStr),
                            &tube->id),
            c->count);
-    tube_t *old = jw_htable_remove(clients, &tube->id);
+    tube_t *old = ls_htable_remove(clients, &tube->id);
     if (old != tube) {
         fprintf(stderr, "Invalid state closing tube\n");
     }
@@ -80,7 +78,7 @@ static int socketListen() {
     int numbytes;
     tube_t *tube;
     spud_message_t sMsg;
-    jw_err err;
+    ls_err err;
     spud_flags_id_t uid;
 
     addr_len = sizeof their_addr;
@@ -102,20 +100,20 @@ static int socketListen() {
 
         spud_copyId(&sMsg.header->flags_id, &uid);
 
-        tube = (tube_t *)jw_htable_get(clients, &uid);
+        tube = (tube_t *)ls_htable_get(clients, &uid);
         if (!tube) {
             // get started
             tube = malloc(sizeof(tube_t));
             if (!tube) {
                 fprintf(stderr, "out of memory");
-                return 1; // TODO: replace with an unused queue
+                return 1; // TODO: replace with an UNUSED_PARAM queue
             }
             tube_init(tube, sockfd);
             tube->data = new_context();
             tube->data_cb = read_cb;
             tube->close_cb = close_cb;
-            if (!jw_htable_put(clients, &uid, tube, NULL, &err)) {
-                fprintf(stderr, "jw_htable_put: %d, %s", err.code, jw_err_message(err.code));
+            if (!ls_htable_put(clients, &uid, tube, NULL, &err)) {
+                fprintf(stderr, "ls_htable_put: %d, %s", err.code, ls_err_message(err.code));
             }
 
             printf("Spud ID: %s created\n",
@@ -157,13 +155,13 @@ int compare_id(const void *key1, const void *key2) {
 int main(void)
 {
     struct sockaddr_in6 servaddr;
-    jw_err err;
+    ls_err err;
     signal(SIGINT, teardown);
 
     // 65521 is max prime under 65535, which seems like an interesting
     // starting point for scale.
-    if (!jw_htable_create(65521, hash_id, compare_id, &clients, &err)) {
-        fprintf(stderr, "jw_htable_create: %d, %s\n", err.code, jw_err_message(err.code));
+    if (!ls_htable_create(65521, hash_id, compare_id, &clients, &err)) {
+        fprintf(stderr, "ls_htable_create: %d, %s\n", err.code, ls_err_message(err.code));
         return 1;
     }
 

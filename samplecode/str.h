@@ -9,13 +9,7 @@
  * Copyright (c) 2010 Cisco Systems, Inc.  All Rights Reserved.
  */
 
-#ifndef JABBERWERX_UTIL_STR_H
-#define JABBERWERX_UTIL_STR_H
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
+#pragma once
 
 #include "basics.h"
 
@@ -30,7 +24,7 @@ extern "C"
  * \param def The default value to return
  * \retval int The integer representation of a, or def if NULL
  */
-JABBERWERX_API int jw_atoi(const char *a, int def);
+LS_API int ls_atoi(const char *a, int def);
 
 /**
  * Determines the length of the given string. This function
@@ -39,7 +33,7 @@ JABBERWERX_API int jw_atoi(const char *a, int def);
  * \param a The string to determine the length of
  * \retval size_t The length of a, or 0 if a is NULL
  */
-JABBERWERX_API size_t jw_strlen(const char *a);
+LS_API size_t ls_strlen(const char *a);
 
 /**
  * Determines the length of the given string. This function
@@ -49,7 +43,7 @@ JABBERWERX_API size_t jw_strlen(const char *a);
  * \param len The maximum length to consider
  * \retval size_t The length of a, or 0 if a is NULL
  */
-JABBERWERX_API size_t jw_strnlen(const char *a, size_t len);
+LS_API size_t ls_strnlen(const char *a, size_t len);
 
 /**
  * Compares two NULL-terminated strings (case-sensitive), allowing for either
@@ -62,7 +56,7 @@ JABBERWERX_API size_t jw_strnlen(const char *a, size_t len);
  *             greater than 0 if a is after b;
  *             0 if a and be are equal
  */
-JABBERWERX_API int jw_strcmp(const char *a, const char *b);
+LS_API int ls_strcmp(const char *a, const char *b);
 /**
  * Compares two NULL-terminated strings (case-insensitive), allowing for either
  * to be NULL. This function behaves as strcmp, with the difference that a
@@ -74,7 +68,7 @@ JABBERWERX_API int jw_strcmp(const char *a, const char *b);
  *             greater than 0 if a is after b;
  *             0 if a and be are equal
  */
-JABBERWERX_API int jw_strcasecmp(const char *a, const char *b);
+LS_API int ls_strcasecmp(const char *a, const char *b);
 
 /**
  * Compares part of two NULL-terminated strings, allowing for either to be
@@ -88,10 +82,4 @@ JABBERWERX_API int jw_strcasecmp(const char *a, const char *b);
  *             greater than 0 if a is after b;
  *             0 if a and be are equal
  */
-JABBERWERX_API int jw_strncmp(const char *a, const char *b, size_t n);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* JABBERWERX_UTIL_STR_H */
+LS_API int ls_strncmp(const char *a, const char *b, size_t n);

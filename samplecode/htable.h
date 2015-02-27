@@ -3,7 +3,7 @@
  * \brief
  * Datatypes and functions for hashtables.
  *
- * \b NOTE: Instances of jw_htable do not take ownership of keys and values.
+ * \b NOTE: Instances of ls_htable do not take ownership of keys and values.
  * Users MUST ensure any memory allocated for keys and values is released
  * when they are no longer in use.
  *
@@ -16,13 +16,7 @@
  * Copyright (c) 2010 Cisco Systems, Inc.  All Rights Reserved.
  */
 
-#ifndef JABBERWERX_UTIL_HTABLE_H
-#define JABBERWERX_UTIL_HTABLE_H
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
+#pragma once
 
 #include "basics.h"
 #include "error.h"
@@ -30,23 +24,23 @@ extern "C"
 /**
  * An instance of a hashtable
  */
-typedef struct _jw_htable_int *jw_htable;
+typedef struct _ls_htable_int *ls_htable;
 
 /**
  * A node in the hashtable.
  */
-typedef struct _jw_hnode_int *jw_hnode;
+typedef struct _ls_hnode_int *ls_hnode;
 
 /**
  * Pointer to a function for generating hashcodes.
  *
  * \param key The key to generate a hashcode for
  * \retval int The hashcode for key
- * \see jw_int_hashcode
- * \see jw_str_hashcode
- * \see jw_strcase_hashcode
+ * \see ls_int_hashcode
+ * \see ls_str_hashcode
+ * \see ls_strcase_hashcode
  */
-typedef unsigned int (*jw_htable_hashfunc)(const void *key);
+typedef unsigned int (*ls_htable_hashfunc)(const void *key);
 /**
  * Pointer to a function for comparing keys.
  *
@@ -55,9 +49,9 @@ typedef unsigned int (*jw_htable_hashfunc)(const void *key);
  * \retval int less than 1 if key1 is before key2,
  *             greater than 1 if key1 is after key2,
  *             0 if key1 and key2 are equal
- * \see jw_int_compare
+ * \see ls_int_compare
  */
-typedef int (*jw_htable_cmpfunc)(const void *key1, const void *key2);
+typedef int (*ls_htable_cmpfunc)(const void *key1, const void *key2);
 /**
  * Function pointer for walking all the elements in a hashtable
  *
@@ -66,7 +60,7 @@ typedef int (*jw_htable_cmpfunc)(const void *key1, const void *key2);
  * \param data The current data being visited
  * \retval int 0 to stop walking the hashtable's elements, or 1 to continue.
  */
-typedef int (*jw_htable_walkfunc)(void *user_data, const void *key, void *data);
+typedef int (*ls_htable_walkfunc)(void *user_data, const void *key, void *data);
 
 /**
  * Retrieves the key for the given hashtable node
@@ -75,7 +69,7 @@ typedef int (*jw_htable_walkfunc)(void *user_data, const void *key, void *data);
  * \param node The node to retrieve the key of
  * \retval void *The key of node
  */
-JABBERWERX_API const void *jw_hnode_get_key(jw_hnode node);
+LS_API const void *ls_hnode_get_key(ls_hnode node);
 /**
  * Retrieves the value for the given hashtable node
  *
@@ -83,7 +77,7 @@ JABBERWERX_API const void *jw_hnode_get_key(jw_hnode node);
  * \param node The node to retrieve the value of
  * \retval void *The value of node
  */
-JABBERWERX_API void *jw_hnode_get_value(jw_hnode node);
+LS_API void *ls_hnode_get_value(ls_hnode node);
 /**
  * Changes the value of the given hashtable node
  *
@@ -92,7 +86,7 @@ JABBERWERX_API void *jw_hnode_get_value(jw_hnode node);
  * \param data The new value
  * \retval void *The previous value, or NULL if not set
  */
-JABBERWERX_API void *jw_hnode_put_value(jw_hnode node,
+LS_API void *ls_hnode_put_value(ls_hnode node,
                                         void *data);
 
 /**
@@ -113,24 +107,24 @@ JABBERWERX_API void *jw_hnode_put_value(jw_hnode node,
  * \param[out] err The error information (provide NULL to ignore)
  * \retval bool true if successful, false otherwise.
  */
-JABBERWERX_API bool jw_htable_create(
+LS_API bool ls_htable_create(
                         int buckets,
-                        jw_htable_hashfunc hash,
-                        jw_htable_cmpfunc cmp,
-                        jw_htable *tbl,
-                        jw_err *err);
+                        ls_htable_hashfunc hash,
+                        ls_htable_cmpfunc cmp,
+                        ls_htable *tbl,
+                        ls_err *err);
 /**
  * Destroys a hashtable.
  *
  * <b>NOTE:</b> This function will not attempt to clean up memory allocated
  * for the actual keys and values, only the structures used to reference the
- * keys and values.  Call jw_htable_clear() to free memory specific to
+ * keys and values.  Call ls_htable_clear() to free memory specific to
  * keys and values.
  *
  * \invariant tbl != NULL
  * \param tbl Hashtable to be destroyed.
  */
-JABBERWERX_API void jw_htable_destroy(jw_htable tbl);
+LS_API void ls_htable_destroy(ls_htable tbl);
 
 /**
  * Returns the number of elements stored in the given hashtable
@@ -139,18 +133,18 @@ JABBERWERX_API void jw_htable_destroy(jw_htable tbl);
  * \param tbl The hashtable
  * \retval unsigned int The number of elements in tbl
  */
-JABBERWERX_API unsigned int jw_htable_get_count(jw_htable tbl);
+LS_API unsigned int ls_htable_get_count(ls_htable tbl);
 /**
  * Retrieves the node stored in the hashtable.
  *
  * \invariant tbl != NULL
  * \param tbl the hashtable to look in.
  * \param key the key value to search on.
- * \retval jw_hnode the node corresponding to the specified key,
+ * \retval ls_hnode the node corresponding to the specified key,
  *         or NULL if not found.
  */
-JABBERWERX_API jw_hnode jw_htable_get_node(
-                            jw_htable tbl,
+LS_API ls_hnode ls_htable_get_node(
+                            ls_htable tbl,
                             const void* key);
 /**
  * Retrieves a value stored in the hashtable.
@@ -160,7 +154,7 @@ JABBERWERX_API jw_hnode jw_htable_get_node(
  * \param key the key value to search on.
  * \retval void * Value corresponding to the specified key, NULL if not found.
  */
-JABBERWERX_API void *jw_htable_get(jw_htable tbl,
+LS_API void *ls_htable_get(ls_htable tbl,
                                    const void *key);
 /**
  * Associates a key with a value in this hashtable. If there is already
@@ -178,11 +172,11 @@ JABBERWERX_API void *jw_htable_get(jw_htable tbl,
  * \param[out] err The error information (provide NULL to ignore)
  * \retval bool if successful; false otherwise.
  */
-JABBERWERX_API bool jw_htable_put(jw_htable tbl,
+LS_API bool ls_htable_put(ls_htable tbl,
                                   const void *key,
                                   void *value,
                                   void **pvalue,
-                                  jw_err *err);
+                                  ls_err *err);
 /**
  * Removes an entry from a hashtable, given its key.
  *
@@ -191,7 +185,7 @@ JABBERWERX_API bool jw_htable_put(jw_htable tbl,
  * \param key Key of value to remove.
  * \retval void * previous value for the key, or NULL if none.
  */
-JABBERWERX_API void *jw_htable_remove(jw_htable tbl,
+LS_API void *ls_htable_remove(ls_htable tbl,
                                       const void *key);
 /**
  * Frees all elements in a hashtable, possibly calling a callback function for
@@ -203,8 +197,8 @@ JABBERWERX_API void *jw_htable_remove(jw_htable tbl,
  * \param user_data Value to use as the first parameter for the cleanup
  *                  function, f any.
  */
-JABBERWERX_API void jw_htable_clear(jw_htable tbl,
-                                    jw_htable_walkfunc cleanup,
+LS_API void ls_htable_clear(ls_htable tbl,
+                                    ls_htable_walkfunc cleanup,
                                     void *user_data);
 
 /**
@@ -212,21 +206,21 @@ JABBERWERX_API void jw_htable_clear(jw_htable tbl,
  *
  * \invariant tbl != NULL
  * \param tbl the hashtable to look in
- * \retval jw_hnode the first node in the hashtable or NULL if there
+ * \retval ls_hnode the first node in the hashtable or NULL if there
  *                          isn't one.
  */
-JABBERWERX_API jw_hnode jw_htable_get_first_node(jw_htable tbl);
+LS_API ls_hnode ls_htable_get_first_node(ls_htable tbl);
 /**
  * Returns the next node in the hashtable
  *
  * \invariant tbl != NULL
  * \param tbl the hashtable to look in
  * \param cur the current node
- * \retval jw_hnode a pointer to the next node or NULL if there isn't
+ * \retval ls_hnode a pointer to the next node or NULL if there isn't
                             one.
  */
-JABBERWERX_API jw_hnode jw_htable_get_next_node(jw_htable tbl,
-                                                jw_hnode cur);
+LS_API ls_hnode ls_htable_get_next_node(ls_htable tbl,
+                                                ls_hnode cur);
 /**
  * Iterates through a hashtable, calling a callback function for each element
  * stored in it.
@@ -237,9 +231,9 @@ JABBERWERX_API jw_hnode jw_htable_get_next_node(jw_htable tbl,
  * \return int Number of nodes visited up to and including the one for which
  *             the callback function returned 0, if it did
  */
-JABBERWERX_API unsigned int jw_htable_walk(
-                                jw_htable tbl,
-                                jw_htable_walkfunc func,
+LS_API unsigned int ls_htable_walk(
+                                ls_htable tbl,
+                                ls_htable_walkfunc func,
                                 void *user_data);
 
 /**
@@ -248,11 +242,11 @@ JABBERWERX_API unsigned int jw_htable_walk(
  * \param key The NULL-terminated string to hash
  * \retval unsigned int The hashcode for s
  */
-JABBERWERX_API unsigned int jw_str_hashcode(const void *key);
+LS_API unsigned int ls_str_hashcode(const void *key);
 /**
  * Compares string keys (case-sensitive). This is a casting of strcmp to
  * overcome warnings about incompatible pointer types, and to provide a
- * compliment to {@link jw_str_hashcode()}.
+ * compliment to {@link ls_str_hashcode()}.
  *
  * \param key1 The first NULL-terminated key to compare
  * \param key2 The second NULL-terminated key to compare
@@ -260,7 +254,7 @@ JABBERWERX_API unsigned int jw_str_hashcode(const void *key);
  *             greater than 0 if key1 is after key2;
  *             0 if key1 is equal to key2
  */
-JABBERWERX_API extern jw_htable_cmpfunc jw_str_compare;
+LS_API extern ls_htable_cmpfunc ls_str_compare;
 
 /**
  * Generates hashcodes for strings (case-insensitive).
@@ -268,11 +262,11 @@ JABBERWERX_API extern jw_htable_cmpfunc jw_str_compare;
  * \param key The NULL-terminated string to hash
  * \retval unsigned int The hashcode for s
  */
-JABBERWERX_API unsigned int jw_strcase_hashcode(const void *key);
+LS_API unsigned int ls_strcase_hashcode(const void *key);
 /**
  * Compares string keys (case-insensitive). This is a casting of
  * strcasecmp to overcome warnings about incompatible pointer types, and
- * to provide a compliment to {@link jw_strcase_hashcode()}.
+ * to provide a compliment to {@link ls_strcase_hashcode()}.
  *
  * \param key1 The first NULL-terminated key to compare
  * \param key2 The second NULL-terminated key to compare
@@ -280,7 +274,7 @@ JABBERWERX_API unsigned int jw_strcase_hashcode(const void *key);
  *             greater than 0 if key1 is after key2;
  *             0 if key1 is equal to key2
  */
-JABBERWERX_API extern jw_htable_cmpfunc jw_strcase_compare;
+LS_API extern ls_htable_cmpfunc ls_strcase_compare;
 
 /**
  * Generates hashcodes for integers.
@@ -288,7 +282,7 @@ JABBERWERX_API extern jw_htable_cmpfunc jw_strcase_compare;
  * \param key The integer to hash
  * \retval unsigned int The hashcode for i
  */
-JABBERWERX_API unsigned int jw_int_hashcode(const void *key);
+LS_API unsigned int ls_int_hashcode(const void *key);
 /**
  * Compares two integers for relative positioning.
  *
@@ -298,10 +292,4 @@ JABBERWERX_API unsigned int jw_int_hashcode(const void *key);
  *             greater than 0 if i1 is after i2;
  *             0 if i1 and i2 are equal
  */
-JABBERWERX_API int jw_int_compare(const void *key1, const void *key2);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* JABBERWERX_UTIL_HTABLE_H */
+LS_API int ls_int_compare(const void *key1, const void *key2);

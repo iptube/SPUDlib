@@ -2,13 +2,13 @@
  * \file
  * \brief
  * This file contains JabberWerxC allocation related functions
- * and jw_pool objects.
+ * and ls_pool objects.
  *
  * Memory Pools
  * A memory pool is a minimal memory manager
  * that simplifies freeing memory in non-trivial data
  * structures. Two examples in the JabberWerxC API
- * using memory pools are jw_dom and jw_jid.
+ * using memory pools are ls_dom and ls_jid.
  *
  * Pools are passed a "block" size on creation.
  * Each pool sub-allocates from its block, which grows as
@@ -21,8 +21,8 @@
  * Applications can register callbacks, call cleaners, that will
  * be triggered when the pool is destroyed. These cleaners will
  * be executed in the same order they were registered. For example,
- * jw_jid uses a cleaner to automatically decrement reference counts
- * if the jw_jid is used within the same context as the jw_pool.
+ * ls_jid uses a cleaner to automatically decrement reference counts
+ * if the ls_jid is used within the same context as the ls_pool.
  *
  * Pools work well with data structures that are relatively
  * static, unchanging. Pools have no way to free a particular
@@ -40,13 +40,7 @@
  * Copyright (c) 2010 Cisco Systems, Inc.  All Rights Reserved.
  */
 
-#ifndef JABBERWERX_UTIL_MEM_H
-#define JABBERWERX_UTIL_MEM_H
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
+#pragma once
 
 #include <stdlib.h>
 
@@ -55,13 +49,13 @@ extern "C"
 
 /**
  * \todo US1064 TA3061 normalize api, pool
- * fix constructor param order jw_pool_create
+ * fix constructor param order ls_pool_create
  */
 
 /**
  * An instance of a memory pool
  */
-typedef struct _jw_pool_int *jw_pool;
+typedef struct _ls_pool_int *ls_pool;
 
 /**
  * A callback invoked when the bound pool entry is free'd.
@@ -73,31 +67,31 @@ typedef struct _jw_pool_int *jw_pool;
  * \todo Refactor this event callback once a standard event
  *       signature is defined.
  */
-typedef void (*jw_pool_cleaner)(void *arg);
+typedef void (*ls_pool_cleaner)(void *arg);
 
 /**
- * Callback signature used by jw_data_malloc.
+ * Callback signature used by ls_data_malloc.
  *
  * \param[in] size Size of the memory to be allocated.
- * \retval void* Pointer to memory block created by jw_data_malloc
+ * \retval void* Pointer to memory block created by ls_data_malloc
  */
-typedef void *(*jw_data_malloc_func)(size_t size);
+typedef void *(*ls_data_malloc_func)(size_t size);
 
 /**
- * Callback signature used by jw_data_realloc.
+ * Callback signature used by ls_data_realloc.
  *
  * \param[in] ptr Pointer to the memory block that will be altered.
  * \param[in] size Size of the final memory block.
- * \retval void* Pointer to memory block created by jw_data_realloc
+ * \retval void* Pointer to memory block created by ls_data_realloc
  */
-typedef void *(*jw_data_realloc_func)(void *ptr, size_t size);
+typedef void *(*ls_data_realloc_func)(void *ptr, size_t size);
 
 /**
- * Callback signature used by jw_data_free.
+ * Callback signature used by ls_data_free.
  *
  * \param[in] ptr Pointer to memory block that will be freed.
  */
-typedef void (*jw_data_free_func)(void *ptr);
+typedef void (*ls_data_free_func)(void *ptr);
 
 /**
  * Replace memory allocators used by this library and by the libevent2 library.
@@ -115,21 +109,21 @@ typedef void (*jw_data_free_func)(void *ptr);
  * \param[in] realloc_func Function to replace realloc
  * \param[in] free_func Function to replace free
  */
-JABBERWERX_API void jw_data_set_memory_funcs(jw_data_malloc_func malloc_func,
-                                             jw_data_realloc_func realloc_func,
-                                             jw_data_free_func free_func);
+LS_API void ls_data_set_memory_funcs(ls_data_malloc_func malloc_func,
+                                             ls_data_realloc_func realloc_func,
+                                             ls_data_free_func free_func);
 
 /**
  * Release memory allocated by the JabberWerxC library.
  *
- * jw_data_free must be used to release any memory
+ * ls_data_free must be used to release any memory
  * allocated by jabberwerx, and cannot be used to free
  * memory allocated elsewhere.
  *
  * The library typically allocates memory in functions
  * returning unstructured data. The function documentation
  * will explicitly state what should be released using
- * jw_data_free.
+ * ls_data_free.
  *
  * \see api-design for a detailed discussion of jwc memory
  * philosophy and design.
@@ -137,7 +131,7 @@ JABBERWERX_API void jw_data_set_memory_funcs(jw_data_malloc_func malloc_func,
  *
  * \param[in] ptr The pointer to be freed. May be NULL.
  */
-JABBERWERX_API void jw_data_free(void *ptr);
+LS_API void ls_data_free(void *ptr);
 
 /**
  * Allocate 'size' bytes of memory and return a pointer
@@ -149,7 +143,7 @@ JABBERWERX_API void jw_data_free(void *ptr);
  * \param[in] size The number of bytes to allocate.
  * \retval void* Pointer to the allocated memory
  */
-JABBERWERX_API void *jw_data_malloc(size_t size);
+LS_API void *ls_data_malloc(size_t size);
 
 /**
  * Changes the size of the memory block pointed to by 'ptr'
@@ -158,11 +152,11 @@ JABBERWERX_API void *jw_data_malloc(size_t size);
  * \see api-design for a detailed discussion of jwc memory
  * philosophy and design.
  *
- * \param[in] ptr The original block of memory allocated through jw_data_malloc.
+ * \param[in] ptr The original block of memory allocated through ls_data_malloc.
  * \param[in] size The number of bytes to reallocate.
  * \retval void* Pointer to the resized memory block.
  */
-JABBERWERX_API void *jw_data_realloc(void *ptr, size_t size);
+LS_API void *ls_data_realloc(void *ptr, size_t size);
 
 /**
  * Duplicate a string by allocating memory
@@ -170,12 +164,12 @@ JABBERWERX_API void *jw_data_realloc(void *ptr, size_t size);
  * \see api-design for a detailed discussion of jwc memory
  * philosophy and design.
  *
- * This function can generate the same errors as jw_data_malloc()
+ * This function can generate the same errors as ls_data_malloc()
  *
  * \param[in] src The null (\0) terminated string to copy. May be NULL
- * \retval char * Returns the copy of the string, allocated with jw_data_malloc(), NULL if src is NULL
+ * \retval char * Returns the copy of the string, allocated with ls_data_malloc(), NULL if src is NULL
  */
-JABBERWERX_API char *jw_data_strdup(const char  *src);
+LS_API char *ls_data_strdup(const char  *src);
 
 /**
  * Duplicate a string by allocating memory
@@ -183,16 +177,16 @@ JABBERWERX_API char *jw_data_strdup(const char  *src);
  * \see api-design for a detailed discussion of jwc memory
  * philosophy and design.
  *
- * This function can generate the same errors as jw_data_malloc()
+ * This function can generate the same errors as ls_data_malloc()
  *
  * \param[in] src The potentially null (\0) terminated string to copy. May be NULL
  * \param[in] len The maximum number of bytes in src to copy.
  * \retval char * Returns the copy of the string containing the lesser
  *                of the full string (null terminated) or len bytes
  *                (result additionally null terminated).
- *                Allocated with jw_data_malloc(), NULL if src is NULL
+ *                Allocated with ls_data_malloc(), NULL if src is NULL
  */
-JABBERWERX_API char *jw_data_strndup(const char  *src,
+LS_API char *ls_data_strndup(const char  *src,
                                      size_t len);
 
 /**
@@ -200,7 +194,7 @@ JABBERWERX_API char *jw_data_strndup(const char  *src,
  *
  * This function can generate the following errors,
  * set when returning false:
- * \li \c JW_ERR_NO_MEMORY if the pool could not be allocated
+ * \li \c LS_ERR_NO_MEMORY if the pool could not be allocated
  *
  * \invariant pool != NULL
  * \param[in] size block byte size, 0 implies always use malloc.
@@ -209,20 +203,20 @@ JABBERWERX_API char *jw_data_strndup(const char  *src,
  * \retval bool Returns true if pool was successfully created,
  *              false otherwise.
  */
-JABBERWERX_API bool jw_pool_create(size_t size,
-                                   jw_pool *pool,
-                                   jw_err  *err);
+LS_API bool ls_pool_create(size_t size,
+                                   ls_pool *pool,
+                                   ls_err  *err);
 /**
  * Free any memory allocated by the given pool, including the
  * pool itself.
  *
- * Bound jw_pool_cleaner callbacks are invoked before any memory
+ * Bound ls_pool_cleaner callbacks are invoked before any memory
  * is freed.
  *
  * \invariant pool != NULL
  * \param pool The memory pool to free
  */
-JABBERWERX_API void jw_pool_destroy(jw_pool pool);
+LS_API void ls_pool_destroy(ls_pool pool);
 
 /**
  * Associate a callback to be fired when the given pointer
@@ -230,55 +224,55 @@ JABBERWERX_API void jw_pool_destroy(jw_pool pool);
  *
  * This function can generate the following errors,
  * set when returning false:
- * \li \c JW_ERR_NO_MEMORY if space for cleaner could not be allocated
+ * \li \c LS_ERR_NO_MEMORY if space for cleaner could not be allocated
  *
  * \invariant pool != NULL
  * \invariant callback != NULL
  *
  * \param[in] pool The memory pool in which the given pointer
  *                 was allocated
- * \param[in] callback The jw_pool_cleaner callback to be fired
+ * \param[in] callback The ls_pool_cleaner callback to be fired
  * \param[in] arg An argument past to callback, typically the pointer
  * \param[out] err The error information (provide NULL to ignore)
  * \retval bool Returns true if cleaner was successfully added,
  *              false otherwise.
  */
-JABBERWERX_API bool jw_pool_add_cleaner(jw_pool pool,
-                                        jw_pool_cleaner callback,
+LS_API bool ls_pool_add_cleaner(ls_pool pool,
+                                        ls_pool_cleaner callback,
                                         void   *arg,
-                                        jw_err *err);
+                                        ls_err *err);
 
 /**
  * Allocate memory from the given pool.
  *
  * This function can generate the following errors,
  * set when returning false:
- * \li \c JW_ERR_NO_MEMORY if the ptr could not be allocated
+ * \li \c LS_ERR_NO_MEMORY if the ptr could not be allocated
  *
  * \invariant pool != NULL
  * \invariant ptr != NULL
  *
- * \param[in] pool The jw_pool from which to allocate memory
+ * \param[in] pool The ls_pool from which to allocate memory
  * \param[in] size The number of bytes to allocate.
  * \param[out] ptr The newly allocated pointer.NULL if size == 0
  * \param[out] err The error information (provide NULL to ignore)
  * \retval bool Returns true if pool was successfully created,
  *              false otherwise.
  */
-JABBERWERX_API bool jw_pool_malloc(jw_pool pool,
+LS_API bool ls_pool_malloc(ls_pool pool,
                                    size_t  size,
                                    void    **ptr,
-                                   jw_err  *err);
+                                   ls_err  *err);
 /**
  * Calculate memory needed and allocate in given pool.
  *
  * This function can generate the following errors
  * set when returning false:
- * \li \c JW_ERR_NO_MEMORY if the ptr could not be allocated
+ * \li \c LS_ERR_NO_MEMORY if the ptr could not be allocated
  *
  * \invariant pool != NULL
  * \invariant ptr != NULL
- * \param[in] pool The jw_pool from which to allocate memory
+ * \param[in] pool The ls_pool from which to allocate memory
  * \param[in] num Number of items
  * \param[in] size Size of one item
  * \param[out] ptr Pointer to newly allocated block of
@@ -287,21 +281,21 @@ JABBERWERX_API bool jw_pool_malloc(jw_pool pool,
  * \retval bool Returns true if ptr was successfully allocated,
  *              false otherwise.
  */
-JABBERWERX_API bool jw_pool_calloc(jw_pool pool,
+LS_API bool ls_pool_calloc(ls_pool pool,
                                    size_t num,
                                    size_t size,
                                    void   **ptr,
-                                   jw_err *err);
+                                   ls_err *err);
 /**
  * Duplicate a string by allocating memory in the given pool.
  *
  * This function can generate the following errors
  * set when returning false:
- * \li \c JW_ERR_NO_MEMORY if the cpy could not be allocated
+ * \li \c LS_ERR_NO_MEMORY if the cpy could not be allocated
  *
  * \invariant pool != NULL
  * \invariant cpy != NULL
- * \param[in] pool The jw_pool from which to allocate memory
+ * \param[in] pool The ls_pool from which to allocate memory
  * \param[in] src The string to copy. May be NULL
  * \param[out] cpy The copy of src allocated in pool. NULL if
  *                  src was NULL.
@@ -309,13 +303,7 @@ JABBERWERX_API bool jw_pool_calloc(jw_pool pool,
  * \retval bool Returns true if cpy was successfully created,
  *              false otherwise.
  */
-JABBERWERX_API bool jw_pool_strdup(jw_pool pool,
+LS_API bool ls_pool_strdup(ls_pool pool,
                                    const char  *src,
                                    char  **cpy,
-                                   jw_err* err);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif  /* JABBERWERX_UTIL_MEM_H */
+                                   ls_err* err);

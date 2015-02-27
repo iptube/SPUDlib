@@ -3,7 +3,7 @@
  * Copyrights
  *
  * Portions created or assigned to Cisco Systems, Inc. are
- * Copyright (c) 2010 Cisco Systems, Inc.  All Rights Reserved.
+ * Copyright (c) 2015 Cisco Systems, Inc.  All Rights Reserved.
  */
 
 #include "error.h"
@@ -29,7 +29,7 @@ static const char *_ERR_MSG_TABLE[] = {
  * External functions
  */
 
-JABBERWERX_API const char * jw_err_message(jw_errcode code)
+LS_API const char * ls_err_message(ls_errcode code)
 {
     return _ERR_MSG_TABLE[code];
 }

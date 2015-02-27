@@ -20,24 +20,24 @@
 
 #include "pool_types.h"
 
-jw_data_malloc_func _malloc_func = malloc;
-jw_data_realloc_func _realloc_func = realloc;
-jw_data_free_func _free_func = free;
+ls_data_malloc_func _malloc_func = malloc;
+ls_data_realloc_func _realloc_func = realloc;
+ls_data_free_func _free_func = free;
 
 /*
  * malloc and free wrappers, _malloc_fnc checks errors and add cleaners as needed.
  */
-static bool _malloc_fnc(jw_pool pool, size_t size, void **ptr, jw_pool_cleaner cleaner, jw_err *err)
+static bool _malloc_fnc(ls_pool pool, size_t size, void **ptr, ls_pool_cleaner cleaner, ls_err *err)
 {
-    void *ret = jw_data_malloc(size);
+    void *ret = ls_data_malloc(size);
     if (!ret)
     {
-        JABBERWERX_ERROR(err, JW_ERR_NO_MEMORY);
+        LS_ERROR(err, LS_ERR_NO_MEMORY);
         return false;
     }
-    if (pool && cleaner && !jw_pool_add_cleaner(pool, cleaner, ret, err))
+    if (pool && cleaner && !ls_pool_add_cleaner(pool, cleaner, ret, err))
     {
-        jw_data_free(ret);
+        ls_data_free(ret);
         return false;
     }
 
@@ -71,13 +71,13 @@ void _free_page(void *arg)
 {
     _pool_page page = (struct pool_page*)arg;
 
-    jw_data_free(page->block);
-    jw_data_free(page);
+    ls_data_free(page->block);
+    ls_data_free(page);
 }
 /* Allocate and add a new page to the given pool
-   may result in a JW_ERR_NO_MEMORY err,
+   may result in a LS_ERR_NO_MEMORY err,
    incs pool->size as side-effect*/
-bool _add_page(jw_pool pool, jw_err* err)
+bool _add_page(ls_pool pool, ls_err* err)
 {
     _pool_page page;
 
@@ -87,13 +87,13 @@ bool _add_page(jw_pool pool, jw_err* err)
     }
     if (!_malloc_fnc(pool, pool->page_size, &(page->block), NULL, err))
     {
-        jw_data_free(page);
+        ls_data_free(page);
         return false;
     }
-    if (!jw_pool_add_cleaner(pool, _free_page, page, err))
+    if (!ls_pool_add_cleaner(pool, _free_page, page, err))
     {
-        jw_data_free(page->block);
-        jw_data_free(page);
+        ls_data_free(page->block);
+        ls_data_free(page);
         return false;
     }
 
@@ -108,9 +108,9 @@ bool _add_page(jw_pool pool, jw_err* err)
 }
 
 /* exported functions */
-JABBERWERX_API void jw_data_set_memory_funcs(jw_data_malloc_func malloc_func,
-                                             jw_data_realloc_func realloc_func,
-                                             jw_data_free_func free_func)
+LS_API void ls_data_set_memory_funcs(ls_data_malloc_func malloc_func,
+                                             ls_data_realloc_func realloc_func,
+                                             ls_data_free_func free_func)
 {
     _malloc_func = (malloc_func) ? malloc_func : malloc;
     _realloc_func = (realloc_func) ? realloc_func : realloc;
@@ -120,7 +120,7 @@ JABBERWERX_API void jw_data_set_memory_funcs(jw_data_malloc_func malloc_func,
     //event_set_mem_functions(_malloc_func, _realloc_func, _free_func);
 }
 
-JABBERWERX_API void jw_data_free(void *ptr)
+LS_API void ls_data_free(void *ptr)
 {
     if (ptr)
     {
@@ -128,23 +128,23 @@ JABBERWERX_API void jw_data_free(void *ptr)
     }
 }
 
-JABBERWERX_API void *jw_data_malloc(size_t size)
+LS_API void *ls_data_malloc(size_t size)
 {
     return _malloc_func(size);
 }
 
-JABBERWERX_API void *jw_data_realloc(void *ptr, size_t size)
+LS_API void *ls_data_realloc(void *ptr, size_t size)
 {
     return _realloc_func(ptr, size);
 }
 
-JABBERWERX_API char *jw_data_strdup(const char  *src)
+LS_API char *ls_data_strdup(const char  *src)
 {
     char   *ret = NULL;
     if (src)
     {
-        size_t len = jw_strlen(src);
-        ret = jw_data_malloc(len + 1);
+        size_t len = ls_strlen(src);
+        ret = ls_data_malloc(len + 1);
         if (!ret)
         {
             return NULL;
@@ -154,15 +154,15 @@ JABBERWERX_API char *jw_data_strdup(const char  *src)
     return ret;
 }
 
-JABBERWERX_API char *jw_data_strndup(const char  *src,
+LS_API char *ls_data_strndup(const char  *src,
                                     size_t len)
 {
     char   *ret = NULL;
     if (src)
     {
         /* Trim len down to the actual size of the string */
-        len = jw_strnlen(src, len);
-        ret = jw_data_malloc(len + 1);
+        len = ls_strnlen(src, len);
+        ret = ls_data_malloc(len + 1);
         if (!ret)
         {
             return NULL;
@@ -173,13 +173,13 @@ JABBERWERX_API char *jw_data_strndup(const char  *src,
     return ret;
 }
 
-JABBERWERX_API bool jw_pool_create(size_t size, jw_pool *pool, jw_err *err)
+LS_API bool ls_pool_create(size_t size, ls_pool *pool, ls_err *err)
 {
-    jw_pool ret;
+    ls_pool ret;
 
     assert(pool);
 
-    if (!_malloc_fnc(NULL, sizeof(struct _jw_pool_int), (void *) &ret, NULL, err))
+    if (!_malloc_fnc(NULL, sizeof(struct _ls_pool_int), (void *) &ret, NULL, err))
     {
         return false;
     }
@@ -191,13 +191,13 @@ JABBERWERX_API bool jw_pool_create(size_t size, jw_pool *pool, jw_err *err)
 
     if (size && !_add_page(ret, err))
     {
-        jw_data_free(ret);
+        ls_data_free(ret);
         return false;
     }
     *pool = ret;
     return true;
 }
-JABBERWERX_API void jw_pool_destroy(jw_pool pool)
+LS_API void ls_pool_destroy(ls_pool pool)
 {
     struct pool_cleaner_ctx *cur, *next;
 
@@ -208,17 +208,17 @@ JABBERWERX_API void jw_pool_destroy(jw_pool pool)
     {
         (*cur->cleaner)(cur->arg);
         next = cur->next;
-        jw_data_free(cur);
+        ls_data_free(cur);
         cur = next;
     }
 
-    jw_data_free(pool);
+    ls_data_free(pool);
 }
 
-JABBERWERX_API bool jw_pool_add_cleaner(jw_pool pool,
-                                        jw_pool_cleaner callback,
+LS_API bool ls_pool_add_cleaner(ls_pool pool,
+                                        ls_pool_cleaner callback,
                                         void   *arg,
-                                        jw_err *err)
+                                        ls_err *err)
 {
     _pool_cleaner_ctx ctx;
 
@@ -242,10 +242,10 @@ JABBERWERX_API bool jw_pool_add_cleaner(jw_pool pool,
     return true;
 }
 
-JABBERWERX_API bool jw_pool_malloc(jw_pool pool,
+LS_API bool ls_pool_malloc(ls_pool pool,
                                    size_t  size,
                                    void    **ptr,
-                                   jw_err  *err)
+                                   ls_err  *err)
 {
     void *ret = NULL;
 
@@ -258,7 +258,7 @@ JABBERWERX_API bool jw_pool_malloc(jw_pool pool,
         /* if request is too big for page, just malloc*/
         if (size > pool->page_size)
         {
-            if (!_malloc_fnc(pool, size, &ret, jw_data_free, err))
+            if (!_malloc_fnc(pool, size, &ret, ls_data_free, err))
             {
                 return false;
             }
@@ -279,26 +279,26 @@ JABBERWERX_API bool jw_pool_malloc(jw_pool pool,
     *ptr = ret;
     return true;
 }
-JABBERWERX_API bool jw_pool_calloc(jw_pool pool,
+LS_API bool ls_pool_calloc(ls_pool pool,
                                    size_t num,
                                    size_t size,
                                    void   **ptr,
-                                   jw_err *err)
+                                   ls_err *err)
 {
-    return jw_pool_malloc(pool, num * size, ptr, err);
+    return ls_pool_malloc(pool, num * size, ptr, err);
 }
-JABBERWERX_API bool jw_pool_strdup(jw_pool pool,
+LS_API bool ls_pool_strdup(ls_pool pool,
                                    const char  *src,
                                    char  **cpy,
-                                   jw_err *err)
+                                   ls_err *err)
 {
     assert(cpy);
 
     char   *ret = NULL;
     if (src)
     {
-        size_t len = jw_strlen(src);
-        if (!jw_pool_malloc(pool, len + 1, (void *) &ret, err))
+        size_t len = ls_strlen(src);
+        if (!ls_pool_malloc(pool, len + 1, (void *) &ret, err))
         {
             return false;
         }

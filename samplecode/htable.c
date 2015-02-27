@@ -21,24 +21,24 @@
 
 #define HASH_NUM_BUCKETS   509          /* should be a prime number; see Knuth */
 
-typedef struct _jw_hnode_int
+typedef struct _ls_hnode_int
 {
-    struct _jw_hnode_int *next; /* next node in list */
+    struct _ls_hnode_int *next; /* next node in list */
     const void *key;                    /* key pointer */
     void *value;                        /* value pointer */
     int bucket;
     unsigned int khash;
-} jw_hnode_int;
+} ls_hnode_int;
 
-typedef struct _jw_htable_int
+typedef struct _ls_htable_int
 {
-    jw_htable_hashfunc hash;    /* hash function */
-    jw_htable_cmpfunc cmp;      /* comparison function */
+    ls_htable_hashfunc hash;    /* hash function */
+    ls_htable_cmpfunc cmp;      /* comparison function */
     unsigned int count;                 /* table entry count */
     unsigned int bcount;                /* bucket count */
     unsigned int resize_count;          /* number of time resized */
-    jw_hnode_int **buckets;     /* the hash buckets */
-} jw_htable_int;
+    ls_hnode_int **buckets;     /* the hash buckets */
+} ls_htable_int;
 
 #define _hash_key(tb, key)             ((*((tb)->hash))(key))
 #define _bucket_from_khash(tb, khash)  ((khash) % ((tb)->bcount))
@@ -51,12 +51,12 @@ typedef struct _jw_htable_int
  * walks a hash bucket to find a node whose key matches the named key value.
  * Returns the node pointer, or NULL if it's not found.
  */
-static jw_hnode _find_node(jw_htable tab,
+static ls_hnode _find_node(ls_htable tab,
                            const void *key,
                            int bucket,
                            unsigned int khash)
 {
-    register jw_hnode p;  /* search pointer/return from this function */
+    register ls_hnode p;  /* search pointer/return from this function */
 
     if (bucket < 0)
     {
@@ -78,24 +78,24 @@ static jw_hnode _find_node(jw_htable tab,
 /**
  * Resizes the hashtable.
  */
-static bool _resize_hashtable(jw_htable tab,
+static bool _resize_hashtable(ls_htable tab,
                               unsigned int buckets,
-                              jw_err *err)
+                              ls_err *err)
 {
-    jw_hnode_int **old_buckets = tab->buckets;
+    ls_hnode_int **old_buckets = tab->buckets;
     unsigned int old_bcount = tab->bcount;
-    jw_hnode_int **new_buckets;
-    jw_hnode_int *node, *next_node;
+    ls_hnode_int **new_buckets;
+    ls_hnode_int *node, *next_node;
     unsigned int c;
 
     new_buckets =
-        (jw_hnode_int **)jw_data_malloc(buckets * sizeof(jw_hnode_int*));
+        (ls_hnode_int **)ls_data_malloc(buckets * sizeof(ls_hnode_int*));
     if (!new_buckets)
     {
-        JABBERWERX_ERROR(err, JW_ERR_NO_MEMORY);
+        LS_ERROR(err, LS_ERR_NO_MEMORY);
         return false;
     }
-    memset(new_buckets, 0, buckets * sizeof(jw_hnode_int*));
+    memset(new_buckets, 0, buckets * sizeof(ls_hnode_int*));
 
     tab->buckets = new_buckets;
     tab->bcount = buckets;
@@ -117,23 +117,23 @@ static bool _resize_hashtable(jw_htable tab,
         }
     }
 
-    jw_data_free(old_buckets);
+    ls_data_free(old_buckets);
     return true;
 }
 
-JABBERWERX_API const void *jw_hnode_get_key(jw_hnode node)
+LS_API const void *ls_hnode_get_key(ls_hnode node)
 {
     assert(node);
 
     return node->key;
 }
-JABBERWERX_API void *jw_hnode_get_value(jw_hnode node)
+LS_API void *ls_hnode_get_value(ls_hnode node)
 {
     assert(node);
 
     return node->value;
 }
-JABBERWERX_API void *jw_hnode_put_value(jw_hnode node,
+LS_API void *ls_hnode_put_value(ls_hnode node,
                                         void *data)
 {
     void *pvalue;
@@ -145,13 +145,13 @@ JABBERWERX_API void *jw_hnode_put_value(jw_hnode node,
     return pvalue;
 }
 
-JABBERWERX_API bool jw_htable_create(int buckets,
-                                     jw_htable_hashfunc hash,
-                                     jw_htable_cmpfunc cmp,
-                                     jw_htable *tbl,
-                                     jw_err *err)
+LS_API bool ls_htable_create(int buckets,
+                                     ls_htable_hashfunc hash,
+                                     ls_htable_cmpfunc cmp,
+                                     ls_htable *tbl,
+                                     ls_err *err)
 {
-    jw_htable tmp_table;  /* new table structure, used temporarily for
+    ls_htable tmp_table;  /* new table structure, used temporarily for
                            * creation; memory will be given to the out
                            * parameter 'tbl' upon success
                            */
@@ -165,25 +165,25 @@ JABBERWERX_API bool jw_htable_create(int buckets,
         buckets = HASH_NUM_BUCKETS;
     }
 
-    tmp_table = (jw_htable)jw_data_malloc(sizeof(jw_htable_int));
+    tmp_table = (ls_htable)ls_data_malloc(sizeof(ls_htable_int));
     if (!tmp_table)
     {
-        JABBERWERX_ERROR(err, JW_ERR_NO_MEMORY);
+        LS_ERROR(err, LS_ERR_NO_MEMORY);
         return false;
     }
-    memset(tmp_table, 0, sizeof(jw_htable_int));
+    memset(tmp_table, 0, sizeof(ls_htable_int));
 
     tmp_table->buckets =
-        (jw_hnode_int **)jw_data_malloc(buckets * sizeof(jw_hnode_int*));
+        (ls_hnode_int **)ls_data_malloc(buckets * sizeof(ls_hnode_int*));
     if (!tmp_table->buckets)
     {
-        jw_data_free(tmp_table);
+        ls_data_free(tmp_table);
         tmp_table = NULL;
 
-        JABBERWERX_ERROR(err, JW_ERR_NO_MEMORY);
+        LS_ERROR(err, LS_ERR_NO_MEMORY);
         return false;
     }
-    memset(tmp_table->buckets, 0, buckets * sizeof(jw_hnode_int*));
+    memset(tmp_table->buckets, 0, buckets * sizeof(ls_hnode_int*));
 
     /* fill the fields of the hash table */
     tmp_table->hash = hash;
@@ -194,9 +194,9 @@ JABBERWERX_API bool jw_htable_create(int buckets,
     return true;
 }
 
-JABBERWERX_API void jw_htable_destroy(jw_htable tbl)
+LS_API void ls_htable_destroy(ls_htable tbl)
 {
-    jw_hnode_int *cur, *next;
+    ls_hnode_int *cur, *next;
     unsigned int i;
 
     assert(tbl);
@@ -207,23 +207,23 @@ JABBERWERX_API void jw_htable_destroy(jw_htable tbl)
         while (cur)
         {
             next = cur->next;
-            jw_data_free(cur);
+            ls_data_free(cur);
             cur = next;
         }
     }
-    jw_data_free(tbl->buckets);
-    jw_data_free(tbl);
+    ls_data_free(tbl->buckets);
+    ls_data_free(tbl);
 }
 
-JABBERWERX_API unsigned int jw_htable_get_count(jw_htable tbl)
+LS_API unsigned int ls_htable_get_count(ls_htable tbl)
 {
     assert(tbl);
     return tbl->count;
 }
-JABBERWERX_API jw_hnode jw_htable_get_node(jw_htable tbl,
+LS_API ls_hnode ls_htable_get_node(ls_htable tbl,
                                            const void* key)
 {
-    jw_hnode node;
+    ls_hnode node;
 
     assert(tbl);
 
@@ -231,25 +231,25 @@ JABBERWERX_API jw_hnode jw_htable_get_node(jw_htable tbl,
     return node;
 }
 
-JABBERWERX_API void *jw_htable_get(jw_htable tbl,
+LS_API void *ls_htable_get(ls_htable tbl,
                                    const void *key)
 {
-    jw_hnode_int *node;
+    ls_hnode_int *node;
 
     assert(tbl);
 
     node = _find_node(tbl, key, -1, 0);
     return node ? node->value : NULL;
 }
-JABBERWERX_API bool jw_htable_put(jw_htable tbl,
+LS_API bool ls_htable_put(ls_htable tbl,
                                   const void *key,
                                   void *value,
                                   void **pvalue,
-                                  jw_err *err)
+                                  ls_err *err)
 {
     unsigned int khash;
     unsigned int bucket;
-    jw_hnode_int *node;
+    ls_hnode_int *node;
 
 
     assert(tbl);
@@ -269,10 +269,10 @@ JABBERWERX_API bool jw_htable_put(jw_htable tbl,
     node = _find_node(tbl, key, bucket, khash);
     if (!node)
     {
-        node = (jw_hnode_int *)jw_data_malloc(sizeof(jw_hnode_int));
+        node = (ls_hnode_int *)ls_data_malloc(sizeof(ls_hnode_int));
         if (!node)
         {
-            JABBERWERX_ERROR(err, JW_ERR_NO_MEMORY);
+            LS_ERROR(err, LS_ERR_NO_MEMORY);
             return false;
         }
 
@@ -301,13 +301,13 @@ JABBERWERX_API bool jw_htable_put(jw_htable tbl,
 
     return true;
 }
-JABBERWERX_API void *jw_htable_remove(jw_htable tbl,
+LS_API void *ls_htable_remove(ls_htable tbl,
                                       const void *key)
 {
     unsigned int khash;
     int bucket;
-    jw_hnode_int *node;
-    register jw_hnode_int *p;
+    ls_hnode_int *node;
+    register ls_hnode_int *p;
     void *pvalue = NULL;
 
     assert(tbl);
@@ -329,18 +329,18 @@ JABBERWERX_API void *jw_htable_remove(jw_htable tbl,
             p->next = node->next;
         }
 
-        jw_data_free(node);
+        ls_data_free(node);
         tbl->count--;
     }
 
     return pvalue;
 }
-JABBERWERX_API void jw_htable_clear(jw_htable tbl,
-                                    jw_htable_walkfunc cleanup,
+LS_API void ls_htable_clear(ls_htable tbl,
+                                    ls_htable_walkfunc cleanup,
                                     void *user_data)
 {
     unsigned int i;
-    register jw_hnode_int *cur, *next;
+    register ls_hnode_int *cur, *next;
 
     assert(tbl);
 
@@ -353,7 +353,7 @@ JABBERWERX_API void jw_htable_clear(jw_htable tbl,
             next = cur->next;
             if (cleanup)
                 (*cleanup)(user_data, cur->key, cur->value);
-            jw_data_free(cur);
+            ls_data_free(cur);
             cur = next;
         }
         tbl->buckets[i] = NULL;
@@ -361,8 +361,8 @@ JABBERWERX_API void jw_htable_clear(jw_htable tbl,
     tbl->count = 0;  /* no elements */
 }
 
-JABBERWERX_API jw_hnode_int *jw_htable_get_first_node(
-        jw_htable tbl)
+LS_API ls_hnode_int *ls_htable_get_first_node(
+        ls_htable tbl)
 {
     unsigned int i = 0;
 
@@ -375,8 +375,8 @@ JABBERWERX_API jw_hnode_int *jw_htable_get_first_node(
     }
     return NULL;
 }
-JABBERWERX_API jw_hnode_int *jw_htable_get_next_node(jw_htable tbl,
-                                                     jw_hnode_int *cur)
+LS_API ls_hnode_int *ls_htable_get_next_node(ls_htable tbl,
+                                                     ls_hnode_int *cur)
 {
     unsigned int i;
 
@@ -398,13 +398,13 @@ JABBERWERX_API jw_hnode_int *jw_htable_get_next_node(jw_htable tbl,
     return NULL;
 }
 
-JABBERWERX_API unsigned int jw_htable_walk(jw_htable tbl,
-                                           jw_htable_walkfunc func,
+LS_API unsigned int ls_htable_walk(ls_htable tbl,
+                                           ls_htable_walkfunc func,
                                            void *user_data)
 {
     unsigned int i, count = 0;
     int running = 1;
-    register jw_hnode_int *cur, *next;
+    register ls_hnode_int *cur, *next;
 
     assert(tbl);
     assert(func);
@@ -424,7 +424,7 @@ JABBERWERX_API unsigned int jw_htable_walk(jw_htable tbl,
 }
 
 /* hashcode/compare functions */
-JABBERWERX_API unsigned int jw_str_hashcode(const void *key)
+LS_API unsigned int ls_str_hashcode(const void *key)
 {
     const char *s = (const char *)key;
     unsigned long h = 0;
@@ -437,10 +437,10 @@ JABBERWERX_API unsigned int jw_str_hashcode(const void *key)
     }
     return (unsigned int) h;
 }
-JABBERWERX_API jw_htable_cmpfunc jw_str_compare =
-               (jw_htable_cmpfunc)strcmp;
+LS_API ls_htable_cmpfunc ls_str_compare =
+               (ls_htable_cmpfunc)strcmp;
 
-JABBERWERX_API unsigned int jw_strcase_hashcode(const void *key){
+LS_API unsigned int ls_strcase_hashcode(const void *key){
     const char *s = (const char *)key;
     unsigned long h = 0;
     const char*   p;
@@ -452,10 +452,10 @@ JABBERWERX_API unsigned int jw_strcase_hashcode(const void *key){
     }
     return (unsigned int) h;
 }
-JABBERWERX_API jw_htable_cmpfunc jw_strcase_compare =
-               (jw_htable_cmpfunc)strcasecmp;
+LS_API ls_htable_cmpfunc ls_strcase_compare =
+               (ls_htable_cmpfunc)strcasecmp;
 
-JABBERWERX_API unsigned int jw_int_hashcode(const void *key)
+LS_API unsigned int ls_int_hashcode(const void *key)
 {
     /* Taken from Thomas Wangs article on integer hash functions.
      * http://www.concentric.net/~Ttwang/tech/inthash.htm
@@ -470,7 +470,7 @@ JABBERWERX_API unsigned int jw_int_hashcode(const void *key)
     a = (a^0xb55a4f09) ^ (a>>16);
     return (unsigned int)a;
 }
-JABBERWERX_API int jw_int_compare(const void *key1, const void *key2)
+LS_API int ls_int_compare(const void *key1, const void *key2)
 {
     /* NOTE: assumed to be int; casting to long to minimize warnings */
     long i1 = (long)key1;

@@ -10,13 +10,7 @@
  * Copyright (c) 2010 Cisco Systems, Inc.  All Rights Reserved.
  */
 
-#ifndef JW_INCLUDE_POOL_TYPES_H
-#define JW_INCLUDE_POOL_TYPES_H
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
+#pragma once
 
 #include <stdlib.h>
 
@@ -57,7 +51,7 @@ typedef struct pool_page
  */
 typedef struct pool_cleaner_ctx
 {
-    jw_pool_cleaner cleaner;
+    ls_pool_cleaner cleaner;
     void*           arg;
     struct pool_cleaner_ctx *next;
 } *_pool_cleaner_ctx;
@@ -68,17 +62,11 @@ typedef struct pool_cleaner_ctx
  * allocated by this pool (pages*page size)+off page allocations
  * and the page size given to the pool at creation.
  */
-typedef struct _jw_pool_int
+typedef struct _ls_pool_int
 {
     size_t size;
     size_t page_size;
     struct pool_cleaner_ctx *cleaners;
     struct pool_cleaner_ctx *tail;
     struct pool_page        *pages;
-} _jw_pool;
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif  /* JW_INCLUDE_POOL_TYPES_H */
+} _ls_pool;
