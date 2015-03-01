@@ -118,7 +118,7 @@ LS_API bool tube_send(tube t,
 
     memset(&msg, 0, sizeof(msg));
     msg.msg_name = &t->peer;
-    msg.msg_namelen = ls_sockaddr_get_length( (struct sockaddr *)&t->peer );
+    msg.msg_namelen = ls_sockaddr_get_length((struct sockaddr *)&t->peer);
     msg.msg_iov = iov;
     msg.msg_iovlen = (data==NULL) ? 1 : 2;
 
