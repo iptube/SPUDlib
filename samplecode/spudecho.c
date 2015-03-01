@@ -25,14 +25,14 @@ typedef struct _context_t {
 } context_t;
 
 context_t *new_context() {
-    context_t *c = malloc(sizeof(context_t));
+    context_t *c = ls_data_malloc(sizeof(context_t));
     c->count = 0;
     return c;
 }
 
 void teardown()
 {
-    printf("Quitting...\n");
+    ls_log(LS_LOG_INFO, "Quitting...");
     if (sockfd >= 0) {
         close(sockfd);
     }
@@ -45,9 +45,12 @@ static void read_cb(tube t,
                     const struct sockaddr* addr)
 {
     UNUSED_PARAM(addr);
+    ls_err err;
 
     // echo
-    tube_data(t, (uint8_t*)data, length);
+    if (!tube_data(t, (uint8_t*)data, length, &err)) {
+        LS_LOG_ERR(err, "tube_data");
+    }
     ((context_t*)t->data)->count++;
 }
 
@@ -58,17 +61,18 @@ static void close_cb(tube t,
     context_t *c = (context_t*)t->data;
     char idStr[SPUD_ID_STRING_SIZE+1];
 
-    printf("Spud ID: %s CLOSED: %zd data packets\n",
+    ls_log(LS_LOG_INFO,
+           "Spud ID: %s CLOSED: %zd data packets",
            spud_idToString(idStr,
                            sizeof(idStr),
                            &t->id),
            c->count);
     tube old = ls_htable_remove(clients, &t->id);
     if (old != t) {
-        fprintf(stderr, "Invalid state closing tube\n");
+        ls_log(LS_LOG_ERROR, "Invalid state closing tube\n");
     }
+    ls_data_free(c);
     tube_destroy(t);
-    free(c);
 }
 
 static int socketListen() {
@@ -115,11 +119,13 @@ static int socketListen() {
                 LS_LOG_ERR(err, "ls_htable_put");
             }
 
-            ls_log(LS_LOG_INFO, "Spud ID: %s created\n",
+            ls_log(LS_LOG_INFO, "Spud ID: %s created",
                    spud_idToString(idStr, sizeof(idStr), &uid));
 
         }
-        tube_recv(t, &sMsg, (struct sockaddr *)&their_addr);
+        if (!tube_recv(t, &sMsg, (struct sockaddr *)&their_addr, &err)) {
+            LS_LOG_ERR(err, "tube_recv");
+        }
     }
     return 0;
 }

@@ -70,17 +70,22 @@ LS_API bool tube_create(int sock, tube *t, ls_err *err);
 LS_API void tube_destroy(tube t);
 
 // print [local address]:port to stdout
-LS_API bool tube_print(const tube t);
-LS_API bool tube_open(tube t, const struct sockaddr *dest);
+LS_API bool tube_print(const tube t, ls_err *err);
+LS_API bool tube_open(tube t, const struct sockaddr *dest, ls_err *err);
 LS_API bool tube_ack(tube t,
                      const spud_flags_id_t *id,
-                     const struct sockaddr *dest);
-LS_API bool tube_data(tube t, uint8_t *data, size_t len);
-LS_API bool tube_close(tube t);
+                     const struct sockaddr *dest,
+                     ls_err *err);
+LS_API bool tube_data(tube t, uint8_t *data, size_t len, ls_err *err);
+LS_API bool tube_close(tube t, ls_err *err);
 
 LS_API bool tube_send(tube t,
                       spud_command_t cmd,
                       bool adec, bool pdec,
-                      uint8_t *data, size_t len);
+                      uint8_t *data, size_t len,
+                      ls_err *err);
 
-LS_API bool tube_recv(tube t, spud_message_t *msg, const struct sockaddr* addr);
+LS_API bool tube_recv(tube t,
+                      spud_message_t *msg,
+                      const struct sockaddr* addr,
+                      ls_err *err);

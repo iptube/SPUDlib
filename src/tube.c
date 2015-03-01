@@ -52,12 +52,12 @@ LS_API bool tube_create(int sock, tube *t, ls_err *err)
 LS_API void tube_destroy(tube t)
 {
     if (t->state == TS_RUNNING) {
-        tube_close(t);
+        tube_close(t, NULL); // ignore error for now
     }
     ls_data_free(t);
 }
 
-LS_API bool tube_print(const tube t)
+LS_API bool tube_print(const tube t, ls_err *err)
 {
     struct sockaddr_storage addr;
     socklen_t addr_len = sizeof(addr);
@@ -66,7 +66,7 @@ LS_API bool tube_print(const tube t)
 
     assert(t!=NULL);
     if (getsockname(t->sock, (struct sockaddr *)&addr, &addr_len) != 0) {
-        perror("getsockname");
+        LS_ERROR(err, -errno);
         return false;
     }
 
@@ -74,18 +74,22 @@ LS_API bool tube_print(const tube t)
                     host, sizeof(host),
                     serv, sizeof(serv),
                     NI_NUMERICHOST|NI_NUMERICSERV) != 0) {
-        perror("getnameinfo");
+        LS_ERROR(err, -errno);
         return false;
     }
 
-    printf("[%s]:%s\n", host, serv);
+    if (printf("[%s]:%s\n", host, serv) < 0) {
+        LS_ERROR(err, -errno);
+        return false;
+    }
     return true;
 }
 
 LS_API bool tube_send(tube t,
                spud_command_t cmd,
                bool adec, bool pdec,
-               uint8_t *data, size_t len)
+               uint8_t *data, size_t len,
+               ls_err *err)
 {
     spud_header_t smh;
     uint8_t flags = 0;
@@ -116,16 +120,14 @@ LS_API bool tube_send(tube t,
     msg.msg_iov = iov;
     msg.msg_iovlen = (data==NULL) ? 1 : 2;
 
-    int ret = sendmsg(t->sock, &msg, 0);
-    if (ret <= 0) {
-        perror("sendmsg");
-        printf("ret: %d\n", ret);
+    if (sendmsg(t->sock, &msg, 0) <= 0) {
+        LS_ERROR(err, -errno)
         return false;
     }
     return true;
 }
 
-LS_API bool tube_open(tube t, const struct sockaddr *dest)
+LS_API bool tube_open(tube t, const struct sockaddr *dest, ls_err *err)
 {
     assert(t!=NULL);
     assert(dest!=NULL);
@@ -134,12 +136,13 @@ LS_API bool tube_open(tube t, const struct sockaddr *dest)
         return false;
     }
     t->state = TS_OPENING;
-    return tube_send(t, SPUD_OPEN, false, false, NULL, 0);
+    return tube_send(t, SPUD_OPEN, false, false, NULL, 0, err);
 }
 
 LS_API bool tube_ack(tube t,
               const spud_flags_id_t *id,
-              const struct sockaddr *dest)
+              const struct sockaddr *dest,
+              ls_err *err)
 {
     assert(t!=NULL);
     assert(id!=NULL);
@@ -149,28 +152,31 @@ LS_API bool tube_ack(tube t,
 
     memcpy(&t->peer, dest, dest->sa_len);
     t->state = TS_RUNNING;
-    return tube_send(t, SPUD_ACK, false, false, NULL, 0);
+    return tube_send(t, SPUD_ACK, false, false, NULL, 0, err);
 }
 
-LS_API bool tube_data(tube t, uint8_t *data, size_t len)
+LS_API bool tube_data(tube t, uint8_t *data, size_t len, ls_err *err)
 {
-    return tube_send(t, SPUD_DATA, false, false, data, len);
+    return tube_send(t, SPUD_DATA, false, false, data, len, err);
 }
 
-LS_API bool tube_close(tube t)
+LS_API bool tube_close(tube t, ls_err *err)
 {
     t->state = TS_UNKNOWN;
-    return tube_send(t, SPUD_CLOSE, false, false, NULL, 0);
+    return tube_send(t, SPUD_CLOSE, false, false, NULL, 0, err);
 }
 
-LS_API bool tube_recv(tube t, spud_message_t *msg, const struct sockaddr* addr)
+LS_API bool tube_recv(tube t,
+                      spud_message_t *msg,
+                      const struct sockaddr* addr,
+                      ls_err *err)
 {
     spud_command_t cmd;
     assert(t!=NULL);
     assert(msg!=NULL);
 
     if (t->state == TS_START) {
-        fprintf(stderr, "Invalid state\n");
+        LS_ERROR(err, LS_ERR_INVALID_STATE);
         return false;
     }
 
@@ -198,7 +204,8 @@ LS_API bool tube_recv(tube t, spud_message_t *msg, const struct sockaddr* addr)
         // TODO: check if we're in server policy
         return tube_ack(t,
                         &msg->header->flags_id,
-                        addr);
+                        addr,
+                        err);
     case SPUD_ACK:
         if (t->state == TS_OPENING) {
             t->state = TS_RUNNING;

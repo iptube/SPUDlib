@@ -6,6 +6,7 @@
  * Copyright (c) 2015 Cisco Systems, Inc.  All Rights Reserved.
  */
 
+#include <stdio.h>
 #include "ls_error.h"
 
 /*****************************************************************************
@@ -31,5 +32,8 @@ static const char *_ERR_MSG_TABLE[] = {
 
 LS_API const char * ls_err_message(ls_errcode code)
 {
+    if ((int)code < 0) {
+        return sys_errlist[-(int)code];
+    }
     return _ERR_MSG_TABLE[code];
 }

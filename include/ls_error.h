@@ -14,6 +14,7 @@
 
 /**
  * Enumeration of defined error codes.
+ * errno errors are made negative
  */
 typedef enum
 {

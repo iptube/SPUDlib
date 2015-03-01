@@ -8,6 +8,8 @@
 #include "tube.h"
 #include "iphelper.h"
 #include "sockethelper.h"
+#include "ls_error.h"
+#include "ls_log.h"
 
 #ifdef ANDROID
 #include <jni.h>
@@ -22,8 +24,8 @@
 
 #else
 #define LOGI(...) printf(__VA_ARGS__)
-#define LOGV(...) printf(__VA_ARGS__)
-#define LOGE(...) printf(__VA_ARGS__)
+#define LOGV(...) ls_log(LS_LOG_VERBOSE, __VA_ARGS__)
+#define LOGE(...) ls_log(LS_LOG_ERROR, __VA_ARGS__)
 
 #define ESC_7C 	"\033[7C"
 
@@ -57,6 +59,7 @@ static void *sendData(struct test_config *config)
     struct timespec remaining;
     unsigned char buf[1024];
     int i;
+    ls_err err;
 
     //How fast? Pretty fast..
     timer.tv_sec = 0;
@@ -75,7 +78,9 @@ static void *sendData(struct test_config *config)
             // TODO: parse this.
             memcpy(buf+len, s1+(config->numSentPkts%numChar)+(numChar*i), numChar);
         }
-        tube_data(config->t, buf, strlen(s1));
+        if (!tube_data(config->t, buf, strlen(s1), &err)) {
+            LS_LOG_ERR(err, "tube_data");
+        }
     }
     return NULL;
 }
@@ -87,6 +92,7 @@ static void *socketListen(void *ptr){
     socklen_t addr_len;
     int numbytes;
     spud_message_t sMsg;
+    ls_err err;
 
     while (keepGoing) {
         addr_len = sizeof(their_addr);
@@ -105,9 +111,13 @@ static void *socketListen(void *ptr){
             // it's another kind of attack
             continue;
         }
-        tube_recv(config->t, &sMsg, (struct sockaddr *)&their_addr);
+        if (!tube_recv(config->t, &sMsg, (struct sockaddr *)&their_addr, &err)) {
+            LS_LOG_ERR(err, "tube_recv");
+        }
     }
-    tube_close(config->t);
+    if (!tube_close(config->t, &err)) {
+        LS_LOG_ERR(err, "tube_close");
+    }
     return NULL;
 }
 
@@ -185,9 +195,11 @@ int spudtest(int argc, char **argv)
     config.t->data_cb = data_cb;
     config.t->running_cb = running_cb;
     config.t->close_cb = close_cb;
-    tube_print(config.t);
-    printf("-> %s\n", sockaddr_toString((struct sockaddr*)&config.remoteAddr, buf, sizeof(buf), true));
-
+    if (!tube_print(config.t, &err)) {
+        LS_LOG_ERR(err, "tube_print");
+        return 1;
+    }
+    ls_log(LS_LOG_INFO, "-> %s\n", sockaddr_toString((struct sockaddr*)&config.remoteAddr, buf, sizeof(buf), true));
 
     //Start and listen to the sockets.
     pthread_create(&listenThread, NULL, (void *)socketListen, &config);
@@ -195,7 +207,10 @@ int spudtest(int argc, char **argv)
     signal(SIGINT, done);
 #endif
 
-    tube_open(config.t, (const struct sockaddr*)&config.remoteAddr);
+    if (!tube_open(config.t, (const struct sockaddr*)&config.remoteAddr, &err)) {
+        LS_LOG_ERR(err, "tube_open");
+        return 1;
+    }
 
     //Just wait a bit
     sleep(5);
