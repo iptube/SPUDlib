@@ -181,7 +181,7 @@ LS_API bool tube_recv(tube t,
         return false;
     }
 
-    cmd = msg->header->tube_id.octet[0] & SPUD_COMMAND;
+    cmd = msg->header->flags & SPUD_COMMAND;
     switch(cmd) {
     case SPUD_DATA:
         if (t->state == TS_RUNNING) {
