@@ -41,6 +41,11 @@ void teardown()
     exit(0);
 }
 
+void print_stats()
+{
+    ls_log(LS_LOG_INFO, "Tube count: %d", ls_htable_get_count(clients));
+}
+
 static void read_cb(tube t,
                     const uint8_t *data,
                     ssize_t length,
@@ -63,7 +68,7 @@ static void close_cb(tube t,
     context_t *c = (context_t*)t->data;
     char idStr[SPUD_ID_STRING_SIZE+1];
 
-    ls_log(LS_LOG_INFO,
+    ls_log(LS_LOG_VERBOSE,
            "Spud ID: %s CLOSED: %zd data packets",
            spud_idToString(idStr,
                            sizeof(idStr),
@@ -124,7 +129,7 @@ static int socketListen() {
                 LS_LOG_ERR(err, "ls_htable_put");
             }
 
-            ls_log(LS_LOG_INFO, "Spud ID: %s created",
+            ls_log(LS_LOG_VERBOSE, "Spud ID: %s created",
                    spud_idToString(idStr, sizeof(idStr), &uid));
 
         }
@@ -167,6 +172,7 @@ int main(void)
     struct sockaddr_in6 servaddr;
     ls_err err;
     signal(SIGINT, teardown);
+    signal(SIGUSR1, print_stats);
 
     // 65521 is max prime under 65535, which seems like an interesting
     // starting point for scale.

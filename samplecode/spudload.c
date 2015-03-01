@@ -36,7 +36,7 @@ static int markov()
     void *g = gauss_create(50000000, 10000000); //somewhere around 50ms
 
     timer.tv_sec = 0;
-    
+
     while (keepGoing) {
         timer.tv_nsec = gauss(g);
         nanosleep(&timer, &remaining);
@@ -93,6 +93,7 @@ static int markov()
             break;
         }
     }
+    gauss_destroy(g);
     return 0;
 }
 
