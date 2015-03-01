@@ -97,7 +97,7 @@ LS_API bool tube_send(tube t,
     struct iovec iov[2];
 
     assert(t!=NULL);
-    if (!spud_init(&smh, &t->id)) {
+    if (!spud_init(&smh, &t->id, err)) {
         return false;
     }
     flags |= cmd;
@@ -132,7 +132,7 @@ LS_API bool tube_open(tube t, const struct sockaddr *dest, ls_err *err)
     assert(t!=NULL);
     assert(dest!=NULL);
     memcpy(&t->peer, dest, dest->sa_len);
-    if (!spud_createId(&t->id)) {
+    if (!spud_createId(&t->id, err)) {
         return false;
     }
     t->state = TS_OPENING;
@@ -140,15 +140,15 @@ LS_API bool tube_open(tube t, const struct sockaddr *dest, ls_err *err)
 }
 
 LS_API bool tube_ack(tube t,
-              const spud_flags_id_t *id,
-              const struct sockaddr *dest,
-              ls_err *err)
+                     const spud_flags_id_t *id,
+                     const struct sockaddr *dest,
+                     ls_err *err)
 {
     assert(t!=NULL);
     assert(id!=NULL);
     assert(dest!=NULL);
 
-    spud_copyId(id, &t->id);
+    spud_copyId(id, &t->id, err);
 
     memcpy(&t->peer, dest, dest->sa_len);
     t->state = TS_RUNNING;

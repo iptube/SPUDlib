@@ -98,12 +98,15 @@ static int socketListen() {
             return 1;
         }
 
-        if (!spud_cast(buf, numbytes, &sMsg)) {
+        if (!spud_cast(buf, numbytes, &sMsg, &err)) {
             // it's an attack.  Move along.
             continue;
         }
 
-        spud_copyId(&sMsg.header->flags_id, &uid);
+        if (!spud_copyId(&sMsg.header->flags_id, &uid, &err)) {
+            LS_LOG_ERR(err, "spud_copyId");
+            continue;
+        }
 
         t = (tube)ls_htable_get(clients, &uid);
         if (!t) {

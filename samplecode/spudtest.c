@@ -103,7 +103,7 @@ static void *socketListen(void *ptr){
             LOGE("recvfrom (data)");
             continue;
         }
-        if (!spud_cast(buf, numbytes, &sMsg)) {
+        if (!spud_cast(buf, numbytes, &sMsg, &err)) {
             // It's an attack
             continue;
         }

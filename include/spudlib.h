@@ -1,10 +1,9 @@
-#ifndef SPUDLIB_H
-#define SPUDLIB_H
-
+#pragma once
 
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include "ls_error.h"
 
 #define SPUD_FLAGS_ID_SIZE              8
 #define SPUD_ID_STRING_SIZE             (2*SPUD_FLAGS_ID_SIZE)
@@ -76,19 +75,17 @@ typedef struct _spud_message_t
 
 bool spud_isSpud(const uint8_t *payload, size_t length);
 
-bool spud_cast(const uint8_t *payload, size_t length, spud_message_t *msg);
+bool spud_cast(const uint8_t *payload, size_t length, spud_message_t *msg, ls_err *err);
 
-bool spud_init(spud_header_t *hdr, spud_flags_id_t *id);
+bool spud_init(spud_header_t *hdr, spud_flags_id_t *id, ls_err *err);
 
-bool spud_createId(spud_flags_id_t *id);
+bool spud_createId(spud_flags_id_t *id, ls_err *err);
 
 bool spud_isIdEqual(const spud_flags_id_t *a,
                     const spud_flags_id_t *b);
 
-bool spud_setId(spud_header_t *hdr, const spud_flags_id_t *id);
+bool spud_setId(spud_header_t *hdr, const spud_flags_id_t *id, ls_err *err);
 
 char* spud_idToString(char* buf, size_t len, const spud_flags_id_t *id);
 
-void spud_copyId(const spud_flags_id_t *src, spud_flags_id_t *dest);
-
-#endif
+bool spud_copyId(const spud_flags_id_t *src, spud_flags_id_t *dest, ls_err *err);
