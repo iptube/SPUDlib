@@ -10,6 +10,8 @@
  */
 #include <stdarg.h>
 #include <stdio.h>
+#include <sys/errno.h>
+
 #include "ls_basics.h"
 
 typedef enum
