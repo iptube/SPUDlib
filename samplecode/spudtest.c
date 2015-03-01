@@ -11,6 +11,7 @@
 #include "sockethelper.h"
 #include "ls_error.h"
 #include "ls_log.h"
+#include "ls_sockaddr.h"
 
 #ifdef ANDROID
 #include <jni.h>
@@ -184,7 +185,7 @@ int spudtest(int argc, char **argv)
 
     if (bind(sockfd,
              (struct sockaddr *)&config.localAddr,
-             tube_getSockAddrLen((struct sockaddr*) &config.localAddr)) != 0) {
+             ls_sockaddr_get_length((struct sockaddr*) &config.localAddr)) != 0) {
         perror("bind");
         return 1;
     }

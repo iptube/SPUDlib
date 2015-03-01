@@ -13,6 +13,7 @@
 #include "sockethelper.h"
 #include "htable.h"
 #include "ls_log.h"
+#include "ls_sockaddr.h"
 
 #define MYPORT 1402    // the port users will be connecting to
 #define MAXBUFLEN 2048
@@ -180,8 +181,10 @@ int main(void)
         return 1;
     }
     sockaddr_initAsIPv6Any(&servaddr, MYPORT);
-    if (bind(sockfd, (struct sockaddr*)&servaddr, tube_getSockAddrLen( (struct sockaddr*)&servaddr )) != 0) {
-        perror("bind");
+    if (bind(sockfd,
+             (struct sockaddr*)&servaddr,
+             ls_sockaddr_get_length((struct sockaddr*)&servaddr)) != 0) {
+        LS_LOG_PERROR("bind");
         return 1;
     }
 
