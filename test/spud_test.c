@@ -6,10 +6,8 @@
 
 #include <check.h>
 
-
 #include "spudlib.h"
-
-
+#include "ls_error.h"
 
 void spudlib_setup (void);
 void spudlib_teardown (void);
@@ -21,15 +19,11 @@ spudlib_setup (void)
 
 }
 
-
-
 void
 spudlib_teardown (void)
 {
 
 }
-
-
 
 START_TEST (empty)
 {
@@ -62,10 +56,11 @@ START_TEST (createId)
     int len = 1024;
     unsigned char buf[len];
     char idStr[len];
+    ls_err err;
 
     spud_header_t hdr;
     //should this be in init() instead?
-    spud_init(&hdr, NULL);
+    fail_unless(spud_init(&hdr, NULL, &err));
 
     printf("ID: %s\n", spud_idToString(idStr, len, &hdr.flags_id));
 
@@ -83,14 +78,16 @@ END_TEST
 
 START_TEST (isIdEqual)
 {
+    ls_err err;
+
     spud_header_t msgA;
     spud_header_t msgB;//Equal to A
     spud_header_t msgC;//New random
 
     //should this be in init() instead?
-    spud_init(&msgA, NULL);
-    spud_init(&msgB, &msgA.flags_id);
-    spud_init(&msgC, NULL);
+    fail_unless(spud_init(&msgA, NULL, &err));
+    fail_unless(spud_init(&msgB, &msgA.flags_id, &err));
+    fail_unless(spud_init(&msgC, NULL, &err));
 
     fail_unless( spud_isIdEqual(&msgA.flags_id, &msgB.flags_id));
     fail_if( spud_isIdEqual(&msgA.flags_id, &msgC.flags_id));

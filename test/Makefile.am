@@ -1,11 +1,11 @@
 AUTOMAKE_OPTIONS = subdir-objects
 if CHECK
-  MY_CFLAGS_1 = -I../include	
+  MY_CFLAGS_1 = -I../include
   MY_LDFLAGS_1 = -lcheck
   TESTS = check_spudlib
   check_PROGRAMS = check_spudlib
   check_spudlib_SOURCES = spud_test.c testmain.c ../src/spudlib.c
-
+  check_spudlib_LDADD = ../src/libspud.la
 if GCOV
   MY_CFLAGS_3 =  -fprofile-arcs -ftest-coverage
   MY_LDFLAGS_3 = -lgcov
