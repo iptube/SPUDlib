@@ -1,10 +1,11 @@
-#include <bitstring.h>
+//#include <bitstring.h>
 #include <errno.h>
 #include <netinet/in.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <strings.h>
 #include <sys/socket.h>
+#include <signal.h>
 
 #include "spudlib.h"
 #include "tube.h"
@@ -179,7 +180,7 @@ int main(void)
         return 1;
     }
     sockaddr_initAsIPv6Any(&servaddr, MYPORT);
-    if (bind(sockfd, (struct sockaddr*)&servaddr, servaddr.sin6_len) != 0) {
+    if (bind(sockfd, (struct sockaddr*)&servaddr, tube_getSockAddrLen( (struct sockaddr*)&servaddr )) != 0) {
         perror("bind");
         return 1;
     }

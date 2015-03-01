@@ -89,3 +89,4 @@ LS_API bool tube_recv(tube t,
                       spud_message_t *msg,
                       const struct sockaddr* addr,
                       ls_err *err);
+size_t tube_getSockAddrLen( const struct sockaddr *addr);

@@ -3,6 +3,7 @@
 
 #include <netinet/ip.h>
 #include <pthread.h>
+#include <signal.h>
 
 #include "spudlib.h"
 #include "tube.h"
@@ -183,7 +184,7 @@ int spudtest(int argc, char **argv)
 
     if (bind(sockfd,
              (struct sockaddr *)&config.localAddr,
-             config.localAddr.ss_len) != 0) {
+             tube_getSockAddrLen((struct sockaddr*) &config.localAddr)) != 0) {
         perror("bind");
         return 1;
     }
