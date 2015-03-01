@@ -58,7 +58,7 @@ autom4te.cache/*
 
 *.sub
 
-src/.deps/.dirstamp
+.deps/
 
 *.Po
 
