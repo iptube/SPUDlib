@@ -202,7 +202,7 @@ LS_API void *ls_htable_remove(ls_htable tbl,
  * \param tbl Hash table to clear out.
  * \param cleanup The callback to be called for each node, NULL if not needed
  * \param user_data Value to use as the first parameter for the cleanup
- *                  function, f any.
+ *                  function, if any.
  */
 LS_API void ls_htable_clear(ls_htable tbl,
                             ls_htable_walkfunc cleanup,

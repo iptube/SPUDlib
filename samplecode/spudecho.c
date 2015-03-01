@@ -1,7 +1,5 @@
-//#include <bitstring.h>
 #include <errno.h>
 #include <netinet/in.h>
-#include <pthread.h>
 #include <stdio.h>
 #include <strings.h>
 #include <sys/socket.h>
@@ -21,6 +19,7 @@
 
 int sockfd = -1;
 ls_htable clients = NULL;
+bool keepGoing = true;
 
 typedef struct _context_t {
     size_t count;
@@ -35,10 +34,11 @@ context_t *new_context() {
 void teardown()
 {
     ls_log(LS_LOG_INFO, "Quitting...");
-    if (sockfd >= 0) {
-        close(sockfd);
-    }
-    exit(0);
+    keepGoing = false;
+    // if (sockfd >= 0) {
+    //     close(sockfd);
+    // }
+    // exit(0);
 }
 
 void print_stats()
@@ -82,6 +82,16 @@ static void close_cb(tube t,
     tube_destroy(t);
 }
 
+static int clean_tube(void *user_data, const void *key, void *data) {
+    UNUSED_PARAM(user_data);
+    UNUSED_PARAM(key);
+    tube t = data;
+    context_t *c = t->data;
+    ls_data_free(c);
+    tube_destroy(t);
+    return 1;
+}
+
 static int socketListen() {
     struct sockaddr_storage their_addr;
     uint8_t buf[MAXBUFLEN];
@@ -95,13 +105,16 @@ static int socketListen() {
 
     addr_len = sizeof their_addr;
 
-    while(1) {
+    while (keepGoing) {
         addr_len = sizeof(their_addr);
         if ((numbytes = recvfrom(sockfd, buf,
                                  MAXBUFLEN , 0,
                                  (struct sockaddr *)&their_addr,
                                  &addr_len)) == -1) {
-            perror("recvfrom (data)");
+            if (errno == EINTR) {
+                break;
+            }
+            LS_LOG_PERROR("recvfrom (data)");
             return 1;
         }
 
@@ -137,6 +150,8 @@ static int socketListen() {
             LS_LOG_ERR(err, "tube_recv");
         }
     }
+    ls_htable_clear(clients, clean_tube, NULL);
+    ls_htable_destroy(clients);
     return 0;
 }
 
@@ -171,7 +186,37 @@ int main(void)
 {
     struct sockaddr_in6 servaddr;
     ls_err err;
-    signal(SIGINT, teardown);
+    struct sigaction sigact;
+    sigset_t sigs;
+
+    // Unblock SIGUSR1 and SIGUSR2, because Apple thinks it knows better
+    sigemptyset(&sigs);
+    sigaddset(&sigs, SIGUSR1);
+    sigaddset(&sigs, SIGUSR2);
+    sigaddset(&sigs, SIGINFO);
+
+    if (sigprocmask(SIG_UNBLOCK, &sigs, NULL) != 0) {
+        LS_LOG_PERROR("sigprocmask");
+    }
+
+    if (sigprocmask(0, NULL, &sigs) != 0) {
+        LS_LOG_PERROR("sigprocmask");
+    } else {
+        for (int sig = 1; sig < NSIG; sig++) {
+            if (sigismember(&sigs, sig)) {
+                fprintf(stderr, "%d (%s)\n", sig, strsignal(sig));
+            }
+        }
+        fprintf(stderr, "done\n");
+    }
+
+    sigact.sa_handler = teardown;
+    sigemptyset(&sigact.sa_mask);
+    sigact.sa_flags = 0;
+    sigaction(SIGINT, &sigact, NULL);
+    sigaction(SIGUSR2, &sigact, NULL);
+    sigaction(SIGINFO, &sigact, NULL);
+
     signal(SIGUSR1, print_stats);
 
     // 65521 is max prime under 65535, which seems like an interesting

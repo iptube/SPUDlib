@@ -94,5 +94,5 @@ LS_API ls_loglevel ls_log_get_level(void);
  */
 LS_API void ls_log(ls_loglevel level, const char *fmt, ...);
 
-#define LS_LOG_ERR(err, what) ls_log(LS_LOG_ERROR, "%s:%d(%s) %d, %s", __FILE__, __LINE__, (what), (err).code, ls_err_message((err).code))
-#define LS_LOG_PERROR(what) ls_log(LS_LOG_ERROR, "%s:%d(%s) %d, %s", __FILE__, __LINE__, (what), errno, strerror(errno))
+#define LS_LOG_ERR(err, what) ls_log(LS_LOG_ERROR, "%s:%d (%s) %d, %s", __FILE__, __LINE__, (what), (err).code, ls_err_message((err).code))
+#define LS_LOG_PERROR(what) ls_log(LS_LOG_ERROR, "%s:%d (%s) %d, %s", __FILE__, __LINE__, (what), errno, strerror(errno))
