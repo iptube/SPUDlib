@@ -154,7 +154,7 @@ static void close_cb(tube t,
 
 void done() {
     keepGoing = false;
-    pthread_join(listenThread, NULL);
+    pthread_join(sendDataThread, NULL);
     LOGI("\nDONE!\n");
     exit(0);
 }

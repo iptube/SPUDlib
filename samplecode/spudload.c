@@ -8,47 +8,85 @@
 #include "tube.h"
 #include "iphelper.h"
 #include "sockethelper.h"
+#include "ls_log.h"
+#include "ls_sockaddr.h"
+#include "htable.h"
+#include "gauss.h"
 
 #define MAXBUFLEN 2048
-#define NUM_TUBES 100
+#define NUM_TUBES 1024
 
 bool keepGoing = true;
 
-pthread_t sendDataThread;
 pthread_t listenThread;
 int sockfd = -1;
-tube_t tubes[NUM_TUBES];
+tube tubes[NUM_TUBES];
+ls_htable tube_table;
 struct sockaddr_in6 remoteAddr;
+struct sockaddr_in6 localAddr;
+uint8_t data[1024];
 
 static int markov()
 {
     struct timespec timer;
     struct timespec remaining;
-    unsigned char buf[1024];
-    tube_t *tube;
+    tube t;
+    tube old = NULL;
+    ls_err err;
+    void *g = gauss_create(50000000, 10000000); //somewhere around 50ms
 
-    //How fast? Pretty fast..
     timer.tv_sec = 0;
-    timer.tv_nsec = 50000000;
-
+    
     while (keepGoing) {
+        timer.tv_nsec = gauss(g);
         nanosleep(&timer, &remaining);
-        tube = &tubes[arc4random_uniform(NUM_TUBES)];
-        switch (tube->state) {
+        t = tubes[random() % NUM_TUBES];
+        switch (t->state) {
         case TS_START:
-            fprintf(stderr, "invalid tube state\n");
+            ls_log(LS_LOG_ERROR, "invalid tube state");
             return 1;
         case TS_UNKNOWN:
-            tube_open(tube, (struct sockaddr*)&remoteAddr);
+            // tube_open(t, (struct sockaddr*)&remoteAddr, &err);
+            // TODO: tube_open as a race condition
+            if (!spud_createId(&t->id, &err)) {
+                LS_LOG_ERR(err, "spud_createId");
+                return 1;
+            }
+            t->state = TS_OPENING;
+            if (!ls_htable_put(tube_table, &t->id, t, (void**)&old, &err)) {
+                LS_LOG_ERR(err, "ls_htable_put");
+                return 1;
+            }
+            ls_log(LS_LOG_VERBOSE, "Created.  Hashtable size: %d",
+                   ls_htable_get_count(tube_table));
+            if (old) {
+                ls_log(LS_LOG_WARN, "state fail: old id in hashtable");
+            }
+            if (!tube_send(t, SPUD_OPEN, false, false, NULL, 0, &err)) {
+                LS_LOG_ERR(err, "tube_send");
+                return 1;
+            }
+
             break;
         case TS_OPENING:
             // keep waiting by the mailbox, Charlie Brown
             break;
         case TS_RUNNING:
-            if (arc4random_uniform(100) < 10) {
-                tube_close(tube);
+            // .1% chance of close
+            if ((random()%10000) < 10) {
+                if (!tube_close(t, &err)) {
+                    LS_LOG_ERR(err, "tube_close");
+                    return 1;
+                }
+                if (!ls_htable_remove(tube_table, &t->id)) {
+                    ls_log(LS_LOG_WARN, "state fail: old id did not exist");
+                }
             } else {
-                tube_data(tube, buf, sizeof(buf));
+                // TODO: put something intersting in the buffer
+                if (!tube_data(t, data, random() % sizeof(data), &err)) {
+                    LS_LOG_ERR(err, "tube_data");
+                    return 1;
+                }
             }
         case TS_RESUMING:
             // can't get here yet
@@ -60,12 +98,16 @@ static int markov()
 
 static void *socketListen(void *ptr)
 {
-    struct test_config *config = (struct test_config *)ptr;
+    UNUSED_PARAM(ptr);
     struct sockaddr_storage their_addr;
     unsigned char buf[MAXBUFLEN];
     socklen_t addr_len;
     int numbytes;
     spud_message_t sMsg;
+    ls_err err;
+    tube t;
+    char idStr[SPUD_ID_STRING_SIZE+1];
+    spud_flags_id_t uid;
 
     while (keepGoing) {
         addr_len = sizeof(their_addr);
@@ -73,60 +115,112 @@ static void *socketListen(void *ptr)
                                  MAXBUFLEN , 0,
                                  (struct sockaddr *)&their_addr,
                                  &addr_len)) == -1) {
-            LOGE("recvfrom (data)");
+            LS_LOG_PERROR("recvfrom (data)");
             continue;
         }
-        if (!spud_cast(buf, numbytes, &sMsg)) {
+        if (!spud_cast(buf, numbytes, &sMsg, &err)) {
             // It's an attack
+            ls_log(LS_LOG_WARN, "spud_cast %d, %s",
+                   err.code, ls_err_message(err.code));
             continue;
         }
-        if (!spud_isIdEqual(&config->tube.id, &sMsg.header->flags_id)) {
-            // it's another kind of attack
+        if (!spud_copyId(&sMsg.header->flags_id, &uid, &err)) {
+            LS_LOG_ERR(err, "spud_copyId");
             continue;
         }
-        tube_recv(&config->tube, &sMsg, (struct sockaddr *)&their_addr);
+
+        t = ls_htable_get(tube_table, &uid);
+        if (!t) {
+             // it's another kind of attack
+            ls_log(LS_LOG_WARN, "Unknown ID: %s",
+                   spud_idToString(idStr,
+                                   sizeof(idStr),
+                                   &sMsg.header->flags_id));
+            continue;
+        }
+        // TODO: figure out which socket this came in on
+        tube_recv(t, &sMsg, (struct sockaddr *)&their_addr, &err);
     }
-    close(sockfd)
     return NULL;
 }
 
-static void data_cb(tube_t *tube,
+static void data_cb(tube t,
                     const uint8_t *data,
                     ssize_t length,
                     const struct sockaddr* addr)
 {
-    UNUSED(addr);
-    UNUSED(length);
+    UNUSED_PARAM(t);
+    UNUSED_PARAM(data);
+    UNUSED_PARAM(length);
+    UNUSED_PARAM(addr);
 }
 
-static void running_cb(struct _tube_t* tube,
+static void running_cb(tube t,
                        const struct sockaddr* addr)
 {
-    UNUSED(addr);
+    UNUSED_PARAM(t);
+    UNUSED_PARAM(addr);
 }
 
-static void close_cb(struct _tube_t* tube,
+static void close_cb(tube t,
                      const struct sockaddr* addr)
 {
-    UNUSED(tube);
-    UNUSED(addr);
+    UNUSED_PARAM(addr);
+    if (!ls_htable_remove(tube_table, &t->id)) {
+        ls_log(LS_LOG_WARN, "state fail: old id did not exist");
+    }
 }
 
 void done() {
     keepGoing = false;
+    pthread_cancel(listenThread);
     pthread_join(listenThread, NULL);
-    LOGI("\nDONE!\n");
+    close(sockfd);
+    ls_log(LS_LOG_INFO, "DONE!");
     exit(0);
+}
+
+unsigned int hash_id(const void *id) {
+    // treat the 8 bytes of tube ID like a long long.
+    uint64_t key = *(uint64_t *)id;
+
+    // from
+    // https://gist.github.com/badboy/6267743#64-bit-to-32-bit-hash-functions
+    key = (~key) + (key << 18);
+    key = key ^ (key >> 31);
+    key = key * 21;
+    key = key ^ (key >> 11);
+    key = key + (key << 6);
+    key = key ^ (key >> 22);
+    return (unsigned int) key;
+}
+
+int compare_id(const void *key1, const void *key2) {
+    int ret = 0;
+    uint64_t k1 = *(uint64_t *)key1;
+    uint64_t k2 = *(uint64_t *)key2;
+    if (k1<k2) {
+        ret = -1;
+    } else {
+        ret = (k1==k2) ? 0 : 1;
+    }
+    return ret;
 }
 
 int spudtest(int argc, char **argv)
 {
-    struct test_config config;
-    char buf[1024];
+    ls_err err;
+    size_t i;
+    const char nums[] = "0123456789";
 
     if (argc < 2) {
         fprintf(stderr, "spudload <destination>\n");
         exit(64);
+    }
+
+    srandomdev();
+    for (i=0; i<sizeof(data); i++) {
+        data[i] = nums[i % 10];
     }
 
     if(!getRemoteIpAddr(&remoteAddr,
@@ -136,24 +230,33 @@ int spudtest(int argc, char **argv)
     }
 
     sockfd = socket(PF_INET6, SOCK_DGRAM, 0);
-    sockaddr_initAsIPv6Any((struct sockaddr_in6 *)&config.localAddr, 0);
+    sockaddr_initAsIPv6Any(&localAddr, 0);
 
     if (bind(sockfd,
-             (struct sockaddr *)&config.localAddr,
-             config.localAddr.ss_len) != 0) {
-        perror("bind");
+             (struct sockaddr *)&localAddr,
+             ls_sockaddr_get_length((struct sockaddr *)&localAddr)) != 0) {
+        LS_LOG_PERROR("bind");
+        return 1;
+    }
+
+    if (!ls_htable_create(65521, hash_id, compare_id, &tube_table, &err)) {
+        LS_LOG_ERR(err, ls_htable_create);
         return 1;
     }
 
     for (int i=0; i<NUM_TUBES; i++) {
-        tube_init(&tubes[i], sockfd);
-        tubes[i].tube.data_cb = data_cb;
-        tubes[i].running_cb   = running_cb;
-        tubes[i].close_cb     = close_cb;
+        tube_create(sockfd, &tubes[i], &err);
+        memcpy(&tubes[i]->peer,
+               &remoteAddr,
+               ls_sockaddr_get_length((struct sockaddr*)&remoteAddr));
+
+        tubes[i]->data_cb    = data_cb;
+        tubes[i]->running_cb = running_cb;
+        tubes[i]->close_cb   = close_cb;
     }
 
     //Start and listen to the sockets.
-    pthread_create(&listenThread, NULL, (void *)socketListen, &config);
+    pthread_create(&listenThread, NULL, socketListen, NULL);
     signal(SIGINT, done);
 
     return markov();

@@ -49,27 +49,16 @@ autom4te.cache/*
 *#
 .#*
 
-
-
 *.Plo
-
-*.lai
-
-
-*.sub
-
-.deps/
-
 *.Po
-
-src/.dirstamp
-
+*.lai
+*.sub
 *.trs
+.deps/
+.dirstamp
 
 test/check_spudlib
-
-
 samplecode/spudtest
-
 samplecode/spudecho
+samplecode/spudload
 cscope.files
