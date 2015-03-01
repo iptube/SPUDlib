@@ -72,7 +72,7 @@ static void close_cb(tube t,
            "Spud ID: %s CLOSED: %zd data packets",
            spud_idToString(idStr,
                            sizeof(idStr),
-                           &t->id),
+                           &t->id, NULL),
            c->count);
     tube old = ls_htable_remove(clients, &t->id);
     if (old != t) {
@@ -101,7 +101,7 @@ static int socketListen() {
     tube t;
     spud_message_t sMsg;
     ls_err err;
-    spud_flags_id_t uid;
+    spud_tube_id_t uid;
 
     addr_len = sizeof their_addr;
 
@@ -123,7 +123,7 @@ static int socketListen() {
             continue;
         }
 
-        if (!spud_copyId(&sMsg.header->flags_id, &uid, &err)) {
+        if (!spud_copyId(&sMsg.header->tube_id, &uid, &err)) {
             LS_LOG_ERR(err, "spud_copyId");
             continue;
         }
@@ -143,7 +143,7 @@ static int socketListen() {
             }
 
             ls_log(LS_LOG_VERBOSE, "Spud ID: %s created",
-                   spud_idToString(idStr, sizeof(idStr), &uid));
+                   spud_idToString(idStr, sizeof(idStr), &uid, NULL));
 
         }
         if (!tube_recv(t, &sMsg, (struct sockaddr *)&their_addr, &err)) {

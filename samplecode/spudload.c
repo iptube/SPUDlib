@@ -108,7 +108,7 @@ static void *socketListen(void *ptr)
     ls_err err;
     tube t;
     char idStr[SPUD_ID_STRING_SIZE+1];
-    spud_flags_id_t uid;
+    spud_tube_id_t uid;
 
     while (keepGoing) {
         addr_len = sizeof(their_addr);
@@ -125,7 +125,7 @@ static void *socketListen(void *ptr)
                    err.code, ls_err_message(err.code));
             continue;
         }
-        if (!spud_copyId(&sMsg.header->flags_id, &uid, &err)) {
+        if (!spud_copyId(&sMsg.header->tube_id, &uid, &err)) {
             LS_LOG_ERR(err, "spud_copyId");
             continue;
         }
@@ -136,7 +136,7 @@ static void *socketListen(void *ptr)
             ls_log(LS_LOG_WARN, "Unknown ID: %s",
                    spud_idToString(idStr,
                                    sizeof(idStr),
-                                   &sMsg.header->flags_id));
+                                   &sMsg.header->tube_id, NULL));
             continue;
         }
         // TODO: figure out which socket this came in on

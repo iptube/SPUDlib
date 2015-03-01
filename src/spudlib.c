@@ -14,14 +14,14 @@ bool spud_isSpud(const uint8_t *payload, size_t length)
     return (memcmp(payload, (void *)SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE) == 0);
 }
 
-bool spud_init(spud_header_t *hdr, spud_flags_id_t *id, ls_err *err)
+bool spud_init(spud_header_t *hdr, spud_tube_id_t *id, ls_err *err)
 {
     memcpy(hdr->magic, SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE);
-    SPUD_SET_FLAGS(hdr->flags_id, 0);
+    hdr->flags = 0;
     if (id != NULL) {
         return spud_setId(hdr, id, err);
     } else {
-        return spud_createId(&hdr->flags_id, err);
+        return spud_createId(&hdr->tube_id, err);
     }
 }
 
@@ -52,19 +52,16 @@ static bool get_randBuf(void *buf, size_t sz, ls_err *err)
 #endif
 }
 
-bool spud_createId(spud_flags_id_t *id, ls_err *err)
+bool spud_createId(spud_tube_id_t *id, ls_err *err)
 {
-    uint8_t flags;
     if (id == NULL) {
         LS_ERROR(err, LS_ERR_INVALID_ARG);
         return false;
     }
-    flags = SPUD_GET_FLAGS(*id);
 
     if (!get_randBuf(id, sizeof(*id), err)) {
         return false;
     }
-    SPUD_SET_FLAGS(*id, flags);
     return true;
 }
 
@@ -80,48 +77,47 @@ bool spud_cast(const uint8_t *payload, size_t length, spud_message_t *msg, ls_er
     return true;
 }
 
-bool spud_setId(spud_header_t *hdr, const spud_flags_id_t *id, ls_err *err)
+bool spud_setId(spud_header_t *hdr, const spud_tube_id_t *id, ls_err *err)
 {
-    uint8_t flags;
     if (hdr == NULL || id == NULL) {
         LS_ERROR(err, LS_ERR_INVALID_ARG);
         return false;
     }
-    flags = SPUD_GET_FLAGS(hdr->flags_id);
-    memcpy(&hdr->flags_id, id, SPUD_FLAGS_ID_SIZE);
-    SPUD_SET_FLAGS(hdr->flags_id, flags);
+    memcpy(&hdr->tube_id, id, SPUD_TUBE_ID_SIZE);
     return true;
 }
 
-bool spud_isIdEqual(const spud_flags_id_t *a,const spud_flags_id_t *b)
+bool spud_isIdEqual(const spud_tube_id_t *a, const spud_tube_id_t *b)
 {
-    return ((a->octet[0] & SPUD_FLAGS_EXCLUDE_MASK) ==
-            (b->octet[0] & SPUD_FLAGS_EXCLUDE_MASK)) &&
-           (memcmp(&a->octet[1], &b->octet[1], SPUD_FLAGS_ID_SIZE-1) == 0);
+    if (a == NULL || b == NULL) {
+        return false;
+    }
+
+    return memcmp(a, b, SPUD_TUBE_ID_SIZE) == 0;
 }
 
-char* spud_idToString(char* buf, size_t len, const spud_flags_id_t *id)
+char* spud_idToString(char* buf, size_t len, const spud_tube_id_t *id, ls_err *err)
 {
     size_t i;
 
     if(len < SPUD_ID_STRING_SIZE+1){
+        LS_ERROR(err, LS_ERR_INVALID_ARG);
         return NULL;
     }
 
-    for(i=0;i<SPUD_FLAGS_ID_SIZE;i++){
-        sprintf(buf+2*i,"%02x",
-        (i==0) ? (id->octet[i] & SPUD_FLAGS_EXCLUDE_MASK) : id->octet[i]);
+    for(i=0;i<SPUD_TUBE_ID_SIZE;i++){
+        sprintf(buf+2*i,"%02x", id->octet[i]);
     }
+    buf[i] = 0;
     return buf;
 }
 
-bool spud_copyId(const spud_flags_id_t *src, spud_flags_id_t *dest, ls_err *err) {
+bool spud_copyId(const spud_tube_id_t *src, spud_tube_id_t *dest, ls_err *err) {
     if (src == NULL || dest == NULL) {
         LS_ERROR(err, LS_ERR_INVALID_ARG);
         return false;
     }
 
-    memcpy(dest, src, sizeof(spud_flags_id_t));
-    dest->octet[0] &= SPUD_FLAGS_EXCLUDE_MASK;
+    memcpy(dest, src, sizeof(spud_tube_id_t));
     return true;
 }

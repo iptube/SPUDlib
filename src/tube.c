@@ -88,13 +88,12 @@ LS_API bool tube_print(const tube t, ls_err *err)
 }
 
 LS_API bool tube_send(tube t,
-               spud_command_t cmd,
-               bool adec, bool pdec,
-               uint8_t *data, size_t len,
-               ls_err *err)
+                      spud_command_t cmd,
+                      bool adec, bool pdec,
+                      uint8_t *data, size_t len,
+                      ls_err *err)
 {
     spud_header_t smh;
-    uint8_t flags = 0;
     struct msghdr msg;
     struct iovec iov[2];
 
@@ -102,14 +101,14 @@ LS_API bool tube_send(tube t,
     if (!spud_init(&smh, &t->id, err)) {
         return false;
     }
-    flags |= cmd;
+    smh.flags = 0;
+    smh.flags |= cmd;
     if (adec) {
-        flags |= SPUD_ADEC;
+        smh.flags |= SPUD_ADEC;
     }
     if (pdec) {
-        flags |= SPUD_PDEC;
+        smh.flags |= SPUD_PDEC;
     }
-    smh.flags_id.octet[0] |= flags;
 
     iov[0].iov_base = &smh;
     iov[0].iov_len  = sizeof(smh);
@@ -142,7 +141,7 @@ LS_API bool tube_open(tube t, const struct sockaddr *dest, ls_err *err)
 }
 
 LS_API bool tube_ack(tube t,
-                     const spud_flags_id_t *id,
+                     const spud_tube_id_t *id,
                      const struct sockaddr *dest,
                      ls_err *err)
 {
@@ -182,7 +181,7 @@ LS_API bool tube_recv(tube t,
         return false;
     }
 
-    cmd = msg->header->flags_id.octet[0] & SPUD_COMMAND;
+    cmd = msg->header->tube_id.octet[0] & SPUD_COMMAND;
     switch(cmd) {
     case SPUD_DATA:
         if (t->state == TS_RUNNING) {
@@ -205,7 +204,7 @@ LS_API bool tube_recv(tube t,
     case SPUD_OPEN:
         // TODO: check if we're in server policy
         return tube_ack(t,
-                        &msg->header->flags_id,
+                        &msg->header->tube_id,
                         addr,
                         err);
     case SPUD_ACK:

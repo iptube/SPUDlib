@@ -5,8 +5,8 @@
 #include <stdbool.h>
 #include "ls_error.h"
 
-#define SPUD_FLAGS_ID_SIZE              8
-#define SPUD_ID_STRING_SIZE             (2*SPUD_FLAGS_ID_SIZE)
+#define SPUD_TUBE_ID_SIZE               8
+#define SPUD_ID_STRING_SIZE             (2*SPUD_TUBE_ID_SIZE)
 #define SPUD_FLAGS_SELECT_MASK          0xF0
 #define SPUD_FLAGS_EXCLUDE_MASK         0x0F
 #define SPUD_GET_FLAGS(flags_id) \
@@ -36,22 +36,22 @@ typedef enum {
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  *  |                magic cookie = 0xd80000d8                      |
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |cmd|a|p|                  tube ID                              |
- *  +-+-+-+-+                  (60 bit)                             +
+ *  |                          tube ID                              |
+ *  +                          (60 bit)                             +
  *  |                                                               |
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |                           CBOR Map                            |
+ *  |cmd|a|p|  resv |           CBOR Map                            |
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  *
  *  From:
- *  https://tools.ietf.org/html/draft-hildebrand-spud-prototype-01
+ *  https://tools.ietf.org/html/draft-hildebrand-spud-prototype-02
  */
 
 
-typedef struct _spud_flags_id_t {
-    //56 bits
-    uint8_t octet[SPUD_FLAGS_ID_SIZE];
-} spud_flags_id_t;
+typedef struct _spud_tube_id_t {
+    // 64 bits
+    uint8_t octet[SPUD_TUBE_ID_SIZE];
+} spud_tube_id_t;
 
 /*
  * SPUD message header.
@@ -59,7 +59,8 @@ typedef struct _spud_flags_id_t {
 typedef struct _spud_header_t
 {
     uint8_t magic[SPUD_MAGIC_COOKIE_SIZE];
-    spud_flags_id_t flags_id;
+    spud_tube_id_t tube_id;
+    uint8_t flags;
 } spud_header_t;
 
 
@@ -77,15 +78,15 @@ bool spud_isSpud(const uint8_t *payload, size_t length);
 
 bool spud_cast(const uint8_t *payload, size_t length, spud_message_t *msg, ls_err *err);
 
-bool spud_init(spud_header_t *hdr, spud_flags_id_t *id, ls_err *err);
+bool spud_init(spud_header_t *hdr, spud_tube_id_t *id, ls_err *err);
 
-bool spud_createId(spud_flags_id_t *id, ls_err *err);
+bool spud_createId(spud_tube_id_t *id, ls_err *err);
 
-bool spud_isIdEqual(const spud_flags_id_t *a,
-                    const spud_flags_id_t *b);
+bool spud_isIdEqual(const spud_tube_id_t *a,
+                    const spud_tube_id_t *b);
 
-bool spud_setId(spud_header_t *hdr, const spud_flags_id_t *id, ls_err *err);
+bool spud_setId(spud_header_t *hdr, const spud_tube_id_t *id, ls_err *err);
 
-char* spud_idToString(char* buf, size_t len, const spud_flags_id_t *id);
+char* spud_idToString(char* buf, size_t len, const spud_tube_id_t *id, ls_err *err);
 
-bool spud_copyId(const spud_flags_id_t *src, spud_flags_id_t *dest, ls_err *err);
+bool spud_copyId(const spud_tube_id_t *src, spud_tube_id_t *dest, ls_err *err);

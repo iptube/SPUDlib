@@ -109,7 +109,7 @@ static void *socketListen(void *ptr){
             // It's an attack
             continue;
         }
-        if (!spud_isIdEqual(&config->t->id, &sMsg.header->flags_id)) {
+        if (!spud_isIdEqual(&config->t->id, &sMsg.header->tube_id)) {
             // it's another kind of attack
             continue;
         }

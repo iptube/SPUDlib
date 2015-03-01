@@ -62,7 +62,7 @@ START_TEST (createId)
     //should this be in init() instead?
     fail_unless(spud_init(&hdr, NULL, &err));
 
-    printf("ID: %s\n", spud_idToString(idStr, len, &hdr.flags_id));
+    printf("ID: %s\n", spud_idToString(idStr, len, &hdr.tube_id, NULL));
 
     fail_if(spud_isSpud((const uint8_t *)&buf,len),
             "isSpud() failed");
@@ -86,12 +86,12 @@ START_TEST (isIdEqual)
 
     //should this be in init() instead?
     fail_unless(spud_init(&msgA, NULL, &err));
-    fail_unless(spud_init(&msgB, &msgA.flags_id, &err));
+    fail_unless(spud_init(&msgB, &msgA.tube_id, &err));
     fail_unless(spud_init(&msgC, NULL, &err));
 
-    fail_unless( spud_isIdEqual(&msgA.flags_id, &msgB.flags_id));
-    fail_if( spud_isIdEqual(&msgA.flags_id, &msgC.flags_id));
-    fail_if( spud_isIdEqual(&msgB.flags_id, &msgC.flags_id));
+    fail_unless( spud_isIdEqual(&msgA.tube_id, &msgB.tube_id));
+    fail_if( spud_isIdEqual(&msgA.tube_id, &msgC.tube_id));
+    fail_if( spud_isIdEqual(&msgB.tube_id, &msgC.tube_id));
 }
 END_TEST
 
