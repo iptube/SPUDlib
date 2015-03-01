@@ -41,6 +41,7 @@ typedef struct _ls_hnode_int *ls_hnode;
  * \see ls_strcase_hashcode
  */
 typedef unsigned int (*ls_htable_hashfunc)(const void *key);
+
 /**
  * Pointer to a function for comparing keys.
  *
@@ -52,6 +53,7 @@ typedef unsigned int (*ls_htable_hashfunc)(const void *key);
  * \see ls_int_compare
  */
 typedef int (*ls_htable_cmpfunc)(const void *key1, const void *key2);
+
 /**
  * Function pointer for walking all the elements in a hashtable
  *
@@ -70,6 +72,7 @@ typedef int (*ls_htable_walkfunc)(void *user_data, const void *key, void *data);
  * \retval void *The key of node
  */
 LS_API const void *ls_hnode_get_key(ls_hnode node);
+
 /**
  * Retrieves the value for the given hashtable node
  *
@@ -78,6 +81,7 @@ LS_API const void *ls_hnode_get_key(ls_hnode node);
  * \retval void *The value of node
  */
 LS_API void *ls_hnode_get_value(ls_hnode node);
+
 /**
  * Changes the value of the given hashtable node
  *
@@ -87,7 +91,7 @@ LS_API void *ls_hnode_get_value(ls_hnode node);
  * \retval void *The previous value, or NULL if not set
  */
 LS_API void *ls_hnode_put_value(ls_hnode node,
-                                        void *data);
+                                void *data);
 
 /**
  * Creates a new hashtable.
@@ -107,12 +111,12 @@ LS_API void *ls_hnode_put_value(ls_hnode node,
  * \param[out] err The error information (provide NULL to ignore)
  * \retval bool true if successful, false otherwise.
  */
-LS_API bool ls_htable_create(
-                        int buckets,
-                        ls_htable_hashfunc hash,
-                        ls_htable_cmpfunc cmp,
-                        ls_htable *tbl,
-                        ls_err *err);
+LS_API bool ls_htable_create(int buckets,
+                             ls_htable_hashfunc hash,
+                             ls_htable_cmpfunc cmp,
+                             ls_htable *tbl,
+                             ls_err *err);
+
 /**
  * Destroys a hashtable.
  *
@@ -134,6 +138,7 @@ LS_API void ls_htable_destroy(ls_htable tbl);
  * \retval unsigned int The number of elements in tbl
  */
 LS_API unsigned int ls_htable_get_count(ls_htable tbl);
+
 /**
  * Retrieves the node stored in the hashtable.
  *
@@ -143,9 +148,9 @@ LS_API unsigned int ls_htable_get_count(ls_htable tbl);
  * \retval ls_hnode the node corresponding to the specified key,
  *         or NULL if not found.
  */
-LS_API ls_hnode ls_htable_get_node(
-                            ls_htable tbl,
-                            const void* key);
+LS_API ls_hnode ls_htable_get_node(ls_htable tbl,
+                                   const void* key);
+
 /**
  * Retrieves a value stored in the hashtable.
  *
@@ -155,7 +160,8 @@ LS_API ls_hnode ls_htable_get_node(
  * \retval void * Value corresponding to the specified key, NULL if not found.
  */
 LS_API void *ls_htable_get(ls_htable tbl,
-                                   const void *key);
+                           const void *key);
+
 /**
  * Associates a key with a value in this hashtable. If there is already
  * a value for this key, it is replaced. If pvalue is not NULL, it will be set
@@ -173,10 +179,10 @@ LS_API void *ls_htable_get(ls_htable tbl,
  * \retval bool if successful; false otherwise.
  */
 LS_API bool ls_htable_put(ls_htable tbl,
-                                  const void *key,
-                                  void *value,
-                                  void **pvalue,
-                                  ls_err *err);
+                          const void *key,
+                          void *value,
+                          void **pvalue,
+                          ls_err *err);
 /**
  * Removes an entry from a hashtable, given its key.
  *
@@ -186,7 +192,8 @@ LS_API bool ls_htable_put(ls_htable tbl,
  * \retval void * previous value for the key, or NULL if none.
  */
 LS_API void *ls_htable_remove(ls_htable tbl,
-                                      const void *key);
+                              const void *key);
+
 /**
  * Frees all elements in a hashtable, possibly calling a callback function for
  * each element to free it.
@@ -198,8 +205,8 @@ LS_API void *ls_htable_remove(ls_htable tbl,
  *                  function, f any.
  */
 LS_API void ls_htable_clear(ls_htable tbl,
-                                    ls_htable_walkfunc cleanup,
-                                    void *user_data);
+                            ls_htable_walkfunc cleanup,
+                            void *user_data);
 
 /**
  * Returns the first element in the hashtable.
@@ -210,6 +217,7 @@ LS_API void ls_htable_clear(ls_htable tbl,
  *                          isn't one.
  */
 LS_API ls_hnode ls_htable_get_first_node(ls_htable tbl);
+
 /**
  * Returns the next node in the hashtable
  *
@@ -220,7 +228,8 @@ LS_API ls_hnode ls_htable_get_first_node(ls_htable tbl);
                             one.
  */
 LS_API ls_hnode ls_htable_get_next_node(ls_htable tbl,
-                                                ls_hnode cur);
+                                        ls_hnode cur);
+
 /**
  * Iterates through a hashtable, calling a callback function for each element
  * stored in it.
@@ -231,10 +240,9 @@ LS_API ls_hnode ls_htable_get_next_node(ls_htable tbl,
  * \return int Number of nodes visited up to and including the one for which
  *             the callback function returned 0, if it did
  */
-LS_API unsigned int ls_htable_walk(
-                                ls_htable tbl,
-                                ls_htable_walkfunc func,
-                                void *user_data);
+LS_API unsigned int ls_htable_walk(ls_htable tbl,
+                                   ls_htable_walkfunc func,
+                                   void *user_data);
 
 /**
  * Generates hashcodes for strings (case-sensitive).
@@ -243,6 +251,7 @@ LS_API unsigned int ls_htable_walk(
  * \retval unsigned int The hashcode for s
  */
 LS_API unsigned int ls_str_hashcode(const void *key);
+
 /**
  * Compares string keys (case-sensitive). This is a casting of strcmp to
  * overcome warnings about incompatible pointer types, and to provide a
@@ -263,6 +272,7 @@ LS_API extern ls_htable_cmpfunc ls_str_compare;
  * \retval unsigned int The hashcode for s
  */
 LS_API unsigned int ls_strcase_hashcode(const void *key);
+
 /**
  * Compares string keys (case-insensitive). This is a casting of
  * strcasecmp to overcome warnings about incompatible pointer types, and
@@ -283,6 +293,7 @@ LS_API extern ls_htable_cmpfunc ls_strcase_compare;
  * \retval unsigned int The hashcode for i
  */
 LS_API unsigned int ls_int_hashcode(const void *key);
+
 /**
  * Compares two integers for relative positioning.
  *
