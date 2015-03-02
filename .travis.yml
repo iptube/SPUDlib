@@ -20,6 +20,7 @@ before_install:
 
 # Change this to your needs
 script: 
+  - gcc --version
   - ./bootstrap.sh
   - ./configure --with-check && make && make check
 

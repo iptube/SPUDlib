@@ -5,7 +5,7 @@
  * Copyright (c) 2010 Cisco Systems, Inc.  All Rights Reserved.
  */
 
-#include "str.h"
+#include "ls_str.h"
 
 #include <stdlib.h>
 #include <string.h>

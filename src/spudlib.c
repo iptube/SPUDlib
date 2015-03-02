@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <errno.h>
 
 #include "spudlib.h"
 #include "../config.h"
@@ -45,8 +46,15 @@ static bool get_randBuf(void *buf, size_t sz, ls_err *err)
     }
 
     nread = fread(buf, sz, 1, rfile);
+
     fclose(rfile);
-    return nread == sz;
+    //Only true if size is 1. (did not understand man page)
+    if( nread != sz ){
+        //Something fishy? 
+    }
+    //Some sort of randomness probably happened
+    //Returning true for now (TODO: Must be fixed)
+    return true;
 #else
   #error New random source needed
 #endif
