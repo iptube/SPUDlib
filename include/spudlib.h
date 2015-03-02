@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include "ls_error.h"
+#include "cn-cbor.h"
 
 #define SPUD_TUBE_ID_SIZE               8
 #define SPUD_ID_STRING_SIZE             (2*SPUD_TUBE_ID_SIZE)
@@ -69,14 +70,13 @@ typedef struct _spud_message_t
 {
     spud_header_t *header;
     //CBOR MAP
-    size_t length;
-    const uint8_t *data;
+    const cn_cbor *cbor;
 } spud_message_t;
 
 
 bool spud_isSpud(const uint8_t *payload, size_t length);
 
-bool spud_cast(const uint8_t *payload, size_t length, spud_message_t *msg, ls_err *err);
+bool spud_parse(const uint8_t *payload, size_t length, spud_message_t *msg, ls_err *err);
 
 bool spud_init(spud_header_t *hdr, spud_tube_id_t *id, ls_err *err);
 

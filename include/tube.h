@@ -35,6 +35,7 @@ or implied, of Cisco.
 #include "spudlib.h"
 #include "ls_error.h"
 #include "ls_mem.h"
+#include "cn-cbor.h"
 
 typedef enum {
   TS_START,
@@ -47,8 +48,7 @@ typedef enum {
 struct _tube;
 
 typedef void (*tube_data_cb)(struct _tube* t,
-                             const uint8_t *data,
-                             ssize_t length,
+                             const cn_cbor *cbor,
                              const struct sockaddr* addr);
 
 typedef void (*tube_state_cb)(struct _tube* t,
@@ -82,7 +82,8 @@ LS_API bool tube_close(tube t, ls_err *err);
 LS_API bool tube_send(tube t,
                       spud_command_t cmd,
                       bool adec, bool pdec,
-                      uint8_t *data, size_t len,
+                      uint8_t **data, size_t *len,
+                      int num,
                       ls_err *err);
 
 LS_API bool tube_recv(tube t,

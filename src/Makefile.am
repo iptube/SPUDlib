@@ -7,5 +7,5 @@ include_HEADERS = ../include/spudlib.h
 
 
 lib_LTLIBRARIES = libspud.la
-libspud_la_SOURCES = spudlib.c tube.c ls_error.c ls_log.c ls_mem.c ls_sockaddr.c
+libspud_la_SOURCES = spudlib.c tube.c ls_error.c ls_log.c ls_mem.c ls_sockaddr.c cn-cbor.c
 libspud_la_LDFLAGS = -version-info 1:0:0

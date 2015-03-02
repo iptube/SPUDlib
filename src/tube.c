@@ -90,12 +90,14 @@ LS_API bool tube_print(const tube t, ls_err *err)
 LS_API bool tube_send(tube t,
                       spud_command_t cmd,
                       bool adec, bool pdec,
-                      uint8_t *data, size_t len,
+                      uint8_t **data, size_t *len,
+                      int num,
                       ls_err *err)
 {
     spud_header_t smh;
     struct msghdr msg;
-    struct iovec iov[2];
+    struct iovec iov[num+1];
+    int i, count;
 
     assert(t!=NULL);
     if (!spud_init(&smh, &t->id, err)) {
@@ -110,16 +112,22 @@ LS_API bool tube_send(tube t,
         smh.flags |= SPUD_PDEC;
     }
 
-    iov[0].iov_base = &smh;
-    iov[0].iov_len  = sizeof(smh);
-    iov[1].iov_base = data;
-    iov[1].iov_len  = len;
+    count = 0;
+    iov[count].iov_base = &smh;
+    iov[count].iov_len  = sizeof(smh);
+    for (i=0, count=1; i<num; i++) {
+        if (len[i] > 0) {
+            iov[count].iov_base = data[i];
+            iov[count].iov_len = len[i];
+            count++;
+        }
+    }
 
     memset(&msg, 0, sizeof(msg));
     msg.msg_name = &t->peer;
     msg.msg_namelen = ls_sockaddr_get_length((struct sockaddr *)&t->peer);
     msg.msg_iov = iov;
-    msg.msg_iovlen = (data==NULL) ? 1 : 2;
+    msg.msg_iovlen = count;
 
     if (sendmsg(t->sock, &msg, 0) <= 0) {
         LS_ERROR(err, -errno)
@@ -137,7 +145,7 @@ LS_API bool tube_open(tube t, const struct sockaddr *dest, ls_err *err)
         return false;
     }
     t->state = TS_OPENING;
-    return tube_send(t, SPUD_OPEN, false, false, NULL, 0, err);
+    return tube_send(t, SPUD_OPEN, false, false, NULL, 0, 0, err);
 }
 
 LS_API bool tube_ack(tube t,
@@ -153,18 +161,38 @@ LS_API bool tube_ack(tube t,
 
     memcpy(&t->peer, dest, ls_sockaddr_get_length(dest));
     t->state = TS_RUNNING;
-    return tube_send(t, SPUD_ACK, false, false, NULL, 0, err);
+    return tube_send(t, SPUD_ACK, false, false, NULL, 0, 0, err);
 }
 
 LS_API bool tube_data(tube t, uint8_t *data, size_t len, ls_err *err)
 {
-    return tube_send(t, SPUD_DATA, false, false, data, len, err);
+    uint8_t *d[2];
+    size_t l[2];
+    if (len == 0) {
+        return tube_send(t, SPUD_DATA, false, false, NULL, 0, 0, err);
+    }
+    if (len < 24) {
+        uint8_t cbor[] = { 0xA1, 00, 0x40 | len };
+        d[0] = cbor;
+        l[0] = sizeof(cbor);
+    } else if (len < 0x100) {
+        uint8_t cbor[] = { 0xA1, 00, 0x58, len };
+        d[0] = cbor;
+        l[0] = sizeof(cbor);
+    } else if (len < 0x10000) {
+        uint8_t cbor[] = { 0xA1, 00, 0x59, (len & 0xFF00) >> 8, len&0xFF };
+        d[0] = cbor;
+        l[0] = sizeof(cbor);
+    }
+    d[1] = data;
+    l[1] = len;
+    return tube_send(t, SPUD_DATA, false, false, d, l, 2, err);
 }
 
 LS_API bool tube_close(tube t, ls_err *err)
 {
     t->state = TS_UNKNOWN;
-    return tube_send(t, SPUD_CLOSE, false, false, NULL, 0, err);
+    return tube_send(t, SPUD_CLOSE, false, false, NULL, 0, 0, err);
 }
 
 LS_API bool tube_recv(tube t,
@@ -186,7 +214,7 @@ LS_API bool tube_recv(tube t,
     case SPUD_DATA:
         if (t->state == TS_RUNNING) {
             if (t->data_cb) {
-                t->data_cb(t, msg->data, msg->length, addr);
+                t->data_cb(t, msg->cbor, addr);
             }
         }
         break;

@@ -62,7 +62,7 @@ static int markov()
             if (old) {
                 ls_log(LS_LOG_WARN, "state fail: old id in hashtable");
             }
-            if (!tube_send(t, SPUD_OPEN, false, false, NULL, 0, &err)) {
+            if (!tube_send(t, SPUD_OPEN, false, false, NULL, 0, 0, &err)) {
                 LS_LOG_ERR(err, "tube_send");
                 return 1;
             }
@@ -119,7 +119,7 @@ static void *socketListen(void *ptr)
             LS_LOG_PERROR("recvfrom (data)");
             continue;
         }
-        if (!spud_cast(buf, numbytes, &sMsg, &err)) {
+        if (!spud_parse(buf, numbytes, &sMsg, &err)) {
             // It's an attack
             ls_log(LS_LOG_WARN, "spud_cast %d, %s",
                    err.code, ls_err_message(err.code));
@@ -146,13 +146,11 @@ static void *socketListen(void *ptr)
 }
 
 static void data_cb(tube t,
-                    const uint8_t *data,
-                    ssize_t length,
-                    const struct sockaddr* addr)
+                    const cn_cbor *c,
+                    const struct sockaddr *addr)
 {
     UNUSED_PARAM(t);
-    UNUSED_PARAM(data);
-    UNUSED_PARAM(length);
+    UNUSED_PARAM(c);
     UNUSED_PARAM(addr);
 }
 

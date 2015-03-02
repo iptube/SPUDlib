@@ -65,15 +65,31 @@ bool spud_createId(spud_tube_id_t *id, ls_err *err)
     return true;
 }
 
-bool spud_cast(const uint8_t *payload, size_t length, spud_message_t *msg, ls_err *err)
+bool spud_parse(const uint8_t *payload, size_t length, spud_message_t *msg, ls_err *err)
 {
+    cn_cbor_errback cbor_err;
     if ((payload == NULL) || (msg == NULL) || !spud_isSpud(payload, length)) {
         LS_ERROR(err, LS_ERR_INVALID_ARG);
         return false;
     }
     msg->header = (spud_header_t *)payload;
-    msg->length = length - sizeof(spud_header_t);
-    msg->data = (msg->length>0) ? (payload+sizeof(spud_header_t)) : NULL;
+    if (length > sizeof(spud_header_t)) {
+        msg->cbor = cn_cbor_decode((const char*)payload+sizeof(spud_header_t),
+                                   length - sizeof(spud_header_t),
+                                   &cbor_err);
+        if (!msg->cbor) {
+            if (err != NULL) {
+                err->code = LS_ERR_USER + cbor_err.err;
+                err->message = cn_cbor_error_str[cbor_err.err];
+                err->function = __func__;
+                err->file = __FILE__;
+                err->line = __LINE__;
+            }
+            return false;
+        }
+    } else {
+        msg->cbor = NULL;
+    }
     return true;
 }
 

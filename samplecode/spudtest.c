@@ -105,7 +105,7 @@ static void *socketListen(void *ptr){
             LOGE("recvfrom (data)");
             continue;
         }
-        if (!spud_cast(buf, numbytes, &sMsg, &err)) {
+        if (!spud_parse(buf, numbytes, &sMsg, &err)) {
             // It's an attack
             continue;
         }
@@ -124,15 +124,21 @@ static void *socketListen(void *ptr){
 }
 
 static void data_cb(tube t,
-                    const uint8_t *data,
-                    ssize_t length,
+                    const cn_cbor *cbor,
                     const struct sockaddr* addr)
 {
     struct test_config *config = (struct test_config *)t->data;
     UNUSED(addr);
-    UNUSED(length);
     config->numRcvdPkts++;
-    LOGI("\r " ESC_7C " RX: %i  %s", config->numRcvdPkts, data);
+    if (cbor) {
+        const cn_cbor *data = cn_cbor_mapget_int(cbor, 0);
+        if (data && (data->type==CN_CBOR_TEXT)) {
+            LOGI("\r " ESC_7C " RX: %i  %*s",
+                 config->numRcvdPkts,
+                 data->length,
+                 data->v.str);
+        }
+    }
 }
 
 static void running_cb(tube t,
