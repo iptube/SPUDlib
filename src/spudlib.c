@@ -48,13 +48,10 @@ static bool get_randBuf(void *buf, size_t sz, ls_err *err)
     nread = fread(buf, sz, 1, rfile);
 
     fclose(rfile);
-    //Only true if size is 1. (did not understand man page)
-    if( nread != sz ){
-        //Something fishy? 
-    }
-    //Some sort of randomness probably happened
-    //Returning true for now (TODO: Must be fixed)
-    return true;
+    // Only true if size is 1. (did not understand man page)
+    // If this is untrue, something horrible has happened, and we should just
+    // stop.
+    return (nread == sz );
 #else
   #error New random source needed
 #endif

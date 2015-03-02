@@ -194,40 +194,7 @@ int main(void)
 {
     struct sockaddr_in6 servaddr;
     ls_err err;
-    struct sigaction sigact;
-    sigset_t sigs;
 
-    // Unblock SIGUSR1 and SIGUSR2, because Apple thinks it knows better
-    sigemptyset(&sigs);
-    sigaddset(&sigs, SIGUSR1);
-    sigaddset(&sigs, SIGUSR2);
- #if defined(__APPLE__)
-    sigaddset(&sigs, SIGINFO);
-#endif
-
-    if (sigprocmask(SIG_UNBLOCK, &sigs, NULL) != 0) {
-        LS_LOG_PERROR("sigprocmask");
-    }
-
-    if (sigprocmask(0, NULL, &sigs) != 0) {
-        LS_LOG_PERROR("sigprocmask");
-    } else {
-        for (int sig = 1; sig < NSIG; sig++) {
-            if (sigismember(&sigs, sig)) {
-                fprintf(stderr, "%d (%s)\n", sig, strsignal(sig));
-            }
-        }
-        fprintf(stderr, "done\n");
-    }
-
-    sigact.sa_handler = teardown;
-    sigemptyset(&sigact.sa_mask);
-    sigact.sa_flags = 0;
-    sigaction(SIGINT, &sigact, NULL);
-    sigaction(SIGUSR2, &sigact, NULL);
-#if defined(__APPLE__)
-    sigaction(SIGINFO, &sigact, NULL);
-#endif
     signal(SIGUSR1, print_stats);
 
     // 65521 is max prime under 65535, which seems like an interesting
