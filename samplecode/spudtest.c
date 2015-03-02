@@ -132,10 +132,10 @@ static void data_cb(tube t,
     config->numRcvdPkts++;
     if (cbor) {
         const cn_cbor *data = cn_cbor_mapget_int(cbor, 0);
-        if (data && (data->type==CN_CBOR_TEXT)) {
-            LOGI("\r " ESC_7C " RX: %i  %*s",
+        ((char*)data->v.str)[data->length-1] = '\0';  // TODO: cheating
+        if (data && (data->type==CN_CBOR_TEXT || data->type==CN_CBOR_BYTES)) {
+            LOGI("\r " ESC_7C " RX: %i  %s",
                  config->numRcvdPkts,
-                 data->length,
                  data->v.str);
         }
     }
