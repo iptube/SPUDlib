@@ -15,6 +15,7 @@ matrix:
       env: COVERAGE=false
 
 before_install:
+ - sudo apt-get install g++
  - sudo apt-get install check
  - sudo pip install cpp-coveralls
 
