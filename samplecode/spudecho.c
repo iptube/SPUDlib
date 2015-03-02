@@ -4,6 +4,7 @@
 #include <strings.h>
 #include <sys/socket.h>
 #include <signal.h>
+#include <string.h>
 
 #include "spudlib.h"
 #include "tube.h"
@@ -193,7 +194,9 @@ int main(void)
     sigemptyset(&sigs);
     sigaddset(&sigs, SIGUSR1);
     sigaddset(&sigs, SIGUSR2);
+ #if defined(__APPLE__)
     sigaddset(&sigs, SIGINFO);
+#endif
 
     if (sigprocmask(SIG_UNBLOCK, &sigs, NULL) != 0) {
         LS_LOG_PERROR("sigprocmask");
@@ -215,8 +218,9 @@ int main(void)
     sigact.sa_flags = 0;
     sigaction(SIGINT, &sigact, NULL);
     sigaction(SIGUSR2, &sigact, NULL);
+#if defined(__APPLE__)
     sigaction(SIGINFO, &sigact, NULL);
-
+#endif
     signal(SIGUSR1, print_stats);
 
     // 65521 is max prime under 65535, which seems like an interesting

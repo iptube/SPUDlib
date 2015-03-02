@@ -3,6 +3,7 @@
 
 #include <netinet/ip.h>
 #include <pthread.h>
+#include <signal.h>
 
 #include "spudlib.h"
 #include "tube.h"
@@ -218,8 +219,12 @@ int spudtest(int argc, char **argv)
         fprintf(stderr, "spudload <destination>\n");
         exit(64);
     }
-
+#if defined(__APPLE__)
     srandomdev();
+#endif
+#if defined(__LINUX__)
+    srandom(time(NULL));
+#endif
     for (i=0; i<sizeof(data); i++) {
         data[i] = nums[i % 10];
     }
