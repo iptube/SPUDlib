@@ -98,8 +98,13 @@ static cn_cbor *decode_item (struct parse_buf *pb, cn_cbor* top_parent) {
   unsigned char *pos = pb->buf;
   unsigned char *ebuf = pb->ebuf;
   cn_cbor* parent = top_parent;
+  int ib;
+  unsigned int mt;
+  int ai;
+  uint64_t val;
+  cn_cbor* cb;
 again:
-  TAKE(pos, ebuf, 1, int ib = ntoh8p(pos) );
+  TAKE(pos, ebuf, 1, ib = ntoh8p(pos) );
   if (ib == IB_BREAK) {
     if (!(parent->flags & CN_CBOR_FL_INDEF))
       CN_CBOR_FAIL(CN_CBOR_ERR_BREAK_OUTSIDE_INDEF);
@@ -114,11 +119,11 @@ again:
     }
     goto complete;
   }
-  unsigned int mt = ib >> 5;
-  int ai = ib & 0x1f;
-  uint64_t val = ai;
+  mt = ib >> 5;
+  ai = ib & 0x1f;
+  val = ai;
 
-  cn_cbor* cb = CN_CBOR_CALLOC();
+  cb = CN_CBOR_CALLOC();
   if (!cb)
     CN_CBOR_FAIL(CN_CBOR_ERR_OUT_OF_MEMORY);
 
@@ -272,7 +277,7 @@ const cn_cbor* cn_cbor_mapget_int(const cn_cbor* cb, int key) {
 }
 
 const cn_cbor* cn_cbor_mapget_string(const cn_cbor* cb, const char* key) {
-    cn_cbor* cp;
+    cn_cbor *cp;
     assert(cb);
     assert(key);
     for (cp = cb->first_child; cp && cp->next; cp = cp->next->next) {
