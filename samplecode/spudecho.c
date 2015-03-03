@@ -54,15 +54,17 @@ static void read_cb(tube t,
     UNUSED_PARAM(addr);
     ls_err err;
 
-    const cn_cbor *cp = cn_cbor_mapget_int(c, 0);
-    if (cp) {
-        // echo
-        if (!tube_data(t, (uint8_t*)cp->v.str, cp->length, &err)) {
-            LS_LOG_ERR(err, "tube_data");
-        }
-    } else {
-        if (!tube_data(t, NULL, 0, &err)) {
-            LS_LOG_ERR(err, "tube_data");
+    if (c) {
+        const cn_cbor *cp = cn_cbor_mapget_int(c, 0);
+        if (cp) {
+            // echo
+            if (!tube_data(t, (uint8_t*)cp->v.str, cp->length, &err)) {
+                LS_LOG_ERR(err, "tube_data");
+            }
+        } else {
+            if (!tube_data(t, NULL, 0, &err)) {
+                LS_LOG_ERR(err, "tube_data");
+            }
         }
     }
     ((context_t*)t->data)->count++;
