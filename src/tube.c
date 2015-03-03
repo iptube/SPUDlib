@@ -183,6 +183,28 @@ LS_API bool tube_data(tube t, uint8_t *data, size_t len, ls_err *err)
         uint8_t cbor[] = { 0xA1, 00, 0x59, (len & 0xFF00) >> 8, len&0xFF };
         d[0] = cbor;
         l[0] = sizeof(cbor);
+    } else if (len < 0x100000000) {
+        uint8_t cbor[] = { 0xA1, 00, 0x5A,
+                           (len & 0xFF000000) >> 24,
+                           (len & 0x00FF0000) >> 16,
+                           (len & 0x0000FF00) >> 8,
+                            len & 0x000000FF };
+        d[0] = cbor;
+        l[0] = sizeof(cbor);
+    } else {
+        uint8_t cbor[] = { 0xA1, 00, 0x5B,
+                           (len & 0xFF00000000000000) >> 56,
+                           (len & 0x00FF000000000000) >> 48,
+                           (len & 0x0000FF0000000000) >> 40,
+                           (len & 0x000000FF00000000) >> 32,
+                           (len & 0x00000000FF000000) >> 24,
+                           (len & 0x0000000000FF0000) >> 16,
+                           (len & 0x000000000000FF00) >> 8,
+                           (len & 0x00000000000000FF)
+                           };
+        d[0] = cbor;
+        l[0] = sizeof(cbor);
+
     }
     d[1] = data;
     l[1] = len;
