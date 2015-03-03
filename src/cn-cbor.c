@@ -241,9 +241,9 @@ const cn_cbor* cn_cbor_decode(const char* buf, size_t len, cn_cbor_errback *errp
                          (unsigned char *)buf+len,
                          CN_CBOR_NO_ERROR};
   cn_cbor* ret = decode_item(&pb, &catcher);
-  if (ret) {
+  if (ret != NULL) {
     /* mark as top node */
-    ret->parent = 0;
+    ret->parent = NULL;
   } else {
     if (catcher.first_child) {
       catcher.first_child->parent = 0;
