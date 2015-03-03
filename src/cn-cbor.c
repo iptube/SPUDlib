@@ -103,6 +103,15 @@ static cn_cbor *decode_item (struct parse_buf *pb, cn_cbor* top_parent) {
   int ai;
   uint64_t val;
   cn_cbor* cb;
+  union {
+    float f;
+    uint32_t u;
+  } u32;
+  union {
+    double d;
+    uint64_t u;
+  } u64;
+
 again:
   TAKE(pos, ebuf, 1, ib = ntoh8p(pos) );
   if (ib == IB_BREAK) {
@@ -185,19 +194,11 @@ again:
     case AI_2: cb->type = CN_CBOR_DOUBLE; cb->v.dbl = decode_half(val); break;
     case AI_4:
       cb->type = CN_CBOR_DOUBLE;
-      union {
-        float f;
-        uint32_t u;
-      } u32;
       u32.u = val;
       cb->v.dbl = u32.f;
       break;
     case AI_8:
       cb->type = CN_CBOR_DOUBLE;
-      union {
-        double d;
-        uint64_t u;
-      } u64;
       u64.u = val;
       cb->v.dbl = u64.d;
       break;
