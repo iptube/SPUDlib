@@ -28,6 +28,6 @@ after_success:
 - if [[ $COVERAGE == 'true' ]]; 
   then 
   ./configure --with-check --enable-gcov && make clean && make check;
-  coveralls --exclude-pattern ".+?\.h" --exclude-pattern "\w+/test" --exclude samplecode --gcov-options '\-lp';   
+  coveralls --exclude samplecode --exclude test -b src 
   fi
  
