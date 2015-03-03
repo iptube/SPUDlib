@@ -34,12 +34,11 @@ static int markov()
     tube t;
     tube old = NULL;
     ls_err err;
-    void *g = gauss_create(50000000, 10000000); //somewhere around 50ms
 
     timer.tv_sec = 0;
 
     while (keepGoing) {
-        timer.tv_nsec = gauss(g);
+        timer.tv_nsec = gauss(50000000, 10000000);
         nanosleep(&timer, &remaining);
         t = tubes[random() % NUM_TUBES];
         switch (t->state) {
@@ -94,7 +93,6 @@ static int markov()
             break;
         }
     }
-    gauss_destroy(g);
     return 0;
 }
 
