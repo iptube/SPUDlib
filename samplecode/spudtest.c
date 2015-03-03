@@ -107,15 +107,17 @@ static void *socketListen(void *ptr){
         }
         if (!spud_parse(buf, numbytes, &sMsg, &err)) {
             // It's an attack
-            continue;
+            goto cleanup;
         }
         if (!spud_isIdEqual(&config->t->id, &sMsg.header->tube_id)) {
             // it's another kind of attack
-            continue;
+            goto cleanup;
         }
         if (!tube_recv(config->t, &sMsg, (struct sockaddr *)&their_addr, &err)) {
             LS_LOG_ERR(err, "tube_recv");
         }
+    cleanup:
+        spud_unparse(&sMsg);
     }
     if (!tube_close(config->t, &err)) {
         LS_LOG_ERR(err, "tube_close");

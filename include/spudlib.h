@@ -8,12 +8,6 @@
 
 #define SPUD_TUBE_ID_SIZE               8
 #define SPUD_ID_STRING_SIZE             (2*SPUD_TUBE_ID_SIZE)
-#define SPUD_FLAGS_SELECT_MASK          0xF0
-#define SPUD_FLAGS_EXCLUDE_MASK         0x0F
-#define SPUD_GET_FLAGS(flags_id) \
-  (flags_id).octet[0] & SPUD_FLAGS_SELECT_MASK
-#define SPUD_SET_FLAGS(flags_id, flags) \
-  (flags_id).octet[0] = ((flags_id).octet[0] & SPUD_FLAGS_EXCLUDE_MASK) | (flags)
 
 #define SPUD_MAGIC_COOKIE_ARRAY         {0xd8, 0x00, 0x00, 0xd8}
 static const uint8_t SpudMagicCookie[]   = SPUD_MAGIC_COOKIE_ARRAY;
@@ -77,6 +71,7 @@ typedef struct _spud_message_t
 bool spud_isSpud(const uint8_t *payload, size_t length);
 
 bool spud_parse(const uint8_t *payload, size_t length, spud_message_t *msg, ls_err *err);
+void spud_unparse(spud_message_t *msg);
 
 bool spud_init(spud_header_t *hdr, spud_tube_id_t *id, ls_err *err);
 

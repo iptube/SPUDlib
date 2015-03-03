@@ -103,7 +103,7 @@ static void *socketListen(void *ptr)
     unsigned char buf[MAXBUFLEN];
     socklen_t addr_len;
     int numbytes;
-    spud_message_t sMsg;
+    spud_message_t sMsg = {NULL, NULL};
     ls_err err;
     tube t;
     char idStr[SPUD_ID_STRING_SIZE+1];
@@ -122,11 +122,11 @@ static void *socketListen(void *ptr)
             // It's an attack
             ls_log(LS_LOG_WARN, "spud_cast %d, %s",
                    err.code, ls_err_message(err.code));
-            continue;
+            goto cleanup;
         }
         if (!spud_copyId(&sMsg.header->tube_id, &uid, &err)) {
             LS_LOG_ERR(err, "spud_copyId");
-            continue;
+            goto cleanup;
         }
 
         t = ls_htable_get(tube_table, &uid);
@@ -136,10 +136,12 @@ static void *socketListen(void *ptr)
                    spud_idToString(idStr,
                                    sizeof(idStr),
                                    &sMsg.header->tube_id, NULL));
-            continue;
+            goto cleanup;
         }
         // TODO: figure out which socket this came in on
         tube_recv(t, &sMsg, (struct sockaddr *)&their_addr, &err);
+    cleanup:
+        spud_unparse(&sMsg);
     }
     return NULL;
 }

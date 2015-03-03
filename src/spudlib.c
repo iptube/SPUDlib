@@ -98,6 +98,15 @@ bool spud_parse(const uint8_t *payload, size_t length, spud_message_t *msg, ls_e
     return true;
 }
 
+void spud_unparse(spud_message_t *msg)
+{
+    msg->header = NULL;
+    if (msg->cbor) {
+        cn_cbor_free(msg->cbor);
+    }
+    msg->cbor = NULL;
+}
+
 bool spud_setId(spud_header_t *hdr, const spud_tube_id_t *id, ls_err *err)
 {
     if (hdr == NULL || id == NULL) {

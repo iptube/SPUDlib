@@ -108,9 +108,10 @@ static int socketListen() {
     socklen_t addr_len;
     int numbytes;
     tube t;
-    spud_message_t sMsg;
+    spud_message_t sMsg = {NULL, NULL};
     ls_err err;
     spud_tube_id_t uid;
+    int ret = 0;
 
     addr_len = sizeof their_addr;
 
@@ -124,18 +125,19 @@ static int socketListen() {
                 break;
             }
             LS_LOG_PERROR("recvfrom (data)");
-            return 1;
+            ret = 1;
+            goto error;
         }
 
         if (!spud_parse(buf, numbytes, &sMsg, &err)) {
             // it's an attack.  Move along.
             LS_LOG_ERR(err, "spud_parse");
-            continue;
+            goto cleanup;
         }
 
         if (!spud_copyId(&sMsg.header->tube_id, &uid, &err)) {
             LS_LOG_ERR(err, "spud_copyId");
-            continue;
+            goto cleanup;
         }
 
         t = (tube)ls_htable_get(clients, &uid);
@@ -143,13 +145,16 @@ static int socketListen() {
             // get started
             if (!tube_create(sockfd, &t, &err)) {
                 LS_LOG_ERR(err, "tube_create");
-                return 1; // TODO: replace with an UNUSED_PARAM queue
+                ret = 1; // TODO: replace with an unused queue
+                goto error;
             }
             t->data = new_context();
             t->data_cb = read_cb;
             t->close_cb = close_cb;
             if (!ls_htable_put(clients, &uid, t, NULL, &err)) {
                 LS_LOG_ERR(err, "ls_htable_put");
+                ret = 1;
+                goto error;
             }
 
             ls_log(LS_LOG_VERBOSE, "Spud ID: %s created",
@@ -158,11 +163,15 @@ static int socketListen() {
         }
         if (!tube_recv(t, &sMsg, (struct sockaddr *)&their_addr, &err)) {
             LS_LOG_ERR(err, "tube_recv");
+            // ignore error?
         }
+cleanup:
+        spud_unparse(&sMsg);
     }
+error:
     ls_htable_clear(clients, clean_tube, NULL);
     ls_htable_destroy(clients);
-    return 0;
+    return ret;
 }
 
 unsigned int hash_id(const void *id) {
