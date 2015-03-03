@@ -11,7 +11,7 @@
 #include "sockethelper.h"
 #include "ls_log.h"
 #include "ls_sockaddr.h"
-#include "htable.h"
+#include "ls_htable.h"
 #include "gauss.h"
 
 #define MAXBUFLEN 2048

@@ -7,5 +7,5 @@ spudecho_LDADD = ../src/libspud.la
 spudload_LDADD = ../src/libspud.la -lm
 
 spudtest_SOURCES = spudtest.c iphelper.c sockethelper.c sockaddr_util.c
-spudecho_SOURCES = spudecho.c iphelper.c sockethelper.c sockaddr_util.c htable.c
-spudload_SOURCES = spudload.c iphelper.c sockethelper.c sockaddr_util.c htable.c gauss.c
+spudecho_SOURCES = spudecho.c iphelper.c sockethelper.c sockaddr_util.c
+spudload_SOURCES = spudload.c iphelper.c sockethelper.c sockaddr_util.c gauss.c

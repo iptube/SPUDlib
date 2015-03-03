@@ -5,7 +5,7 @@
  * Copyright (c) 2010 Cisco Systems, Inc.  All Rights Reserved.
  */
 
-#include "htable.h"
+#include "ls_htable.h"
 #include "ls_mem.h"
 
 #include <assert.h>

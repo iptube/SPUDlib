@@ -97,7 +97,7 @@ LS_API void *ls_hnode_put_value(ls_hnode node,
  * Creates a new hashtable.
  *
  * This function can generate the following errors (set when returning false):
- * \li \c JW_ERR_NO_MEMORY if the hashtable could not be allocated
+ * \li \c LS_ERR_NO_MEMORY if the hashtable could not be allocated
  *
  * \invariant hash != NULL
  * \invariant cmp != NULL
@@ -168,7 +168,7 @@ LS_API void *ls_htable_get(ls_htable tbl,
  * to the previous value for key, or NULL if there was no previous value.
  *
  * This function can generate the following errors (set when returning false):
- * \li \c JW_ERR_NO_MEMORY if the hashtable could not be allocated
+ * \li \c LS_ERR_NO_MEMORY if the hashtable could not be allocated
  *
  * \invariant tbl != NULL
  * \param[in] tbl Hashtable to add/update.
