@@ -1,4 +1,4 @@
-SUBDIRS = src test samplecode .
+SUBDIRS = src samplecode . test
 ACLOCAL_AMFLAGS = -I m4
 
 EXTRA_DIST = README LICENSE

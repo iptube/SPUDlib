@@ -83,6 +83,9 @@ AC_CHECK_FILES([/dev/urandom])
 AC_CHECK_LIB(pthread, pthread_create,,
              [AC_MSG_ERROR([required library pthread missing])])
 
+AC_CHECK_LIB(m, tan,,
+             [AC_MSG_ERROR([required library m missing])])
+
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile
