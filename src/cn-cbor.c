@@ -236,8 +236,10 @@ fail:
 }
 
 const cn_cbor* cn_cbor_decode(const char* buf, size_t len, cn_cbor_errback *errp) {
-  cn_cbor catcher = {CN_CBOR_INVALID, 0, {0}, 0, 0, 0, 0, 0};
-  struct parse_buf pb = {(unsigned char *)buf, (unsigned char *)buf+len, CN_CBOR_NO_ERROR};
+  cn_cbor catcher = {CN_CBOR_INVALID, 0, {0}, 0, NULL, NULL, NULL, NULL};
+  struct parse_buf pb = {(unsigned char *)buf,
+                         (unsigned char *)buf+len,
+                         CN_CBOR_NO_ERROR};
   cn_cbor* ret = decode_item(&pb, &catcher);
   if (ret) {
     ret->parent = 0;            /* mark as top node */
