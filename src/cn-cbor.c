@@ -242,18 +242,18 @@ const cn_cbor* cn_cbor_decode(const char* buf, size_t len, cn_cbor_errback *errp
                          CN_CBOR_NO_ERROR};
   cn_cbor* ret = decode_item(&pb, &catcher);
   if (ret) {
-    ret->parent = 0;            /* mark as top node */
+    /* mark as top node */
+    ret->parent = 0;
   } else {
     if (catcher.first_child) {
       catcher.first_child->parent = 0;
       cn_cbor_free(catcher.first_child);
     }
-  //fail:
     if (errp) {
       errp->err = pb.err;
       errp->pos = pb.buf - (unsigned char *)buf;
     }
-    return 0;
+    return NULL;
   }
   return ret;
 }
