@@ -45,7 +45,7 @@ static bool get_randBuf(void *buf, size_t sz, ls_err *err)
         return false;
     }
 
-    nread = fread(buf, sz, 1, rfile);
+    nread = fread(buf, 1, sz, rfile);
 
     fclose(rfile);
     // Only true if size is 1. (did not understand man page)
