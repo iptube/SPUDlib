@@ -14,6 +14,8 @@ extern "C" {
 #include <assert.h>
 #include <math.h>
 
+#include <arpa/inet.h>
+
 #include "cn-cbor.h"
 
 // can be redefined, e.g. for pool allocation
