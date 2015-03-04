@@ -3,6 +3,6 @@
 make clean
 make check
 
-lcov -d . --capture --directory src --output-file spudlib.info
-coveralls-lcov spudlib.info
+coveralls --exclude-pattern "\w+\.h" --gcov-options '\-lp' -b src
+
 

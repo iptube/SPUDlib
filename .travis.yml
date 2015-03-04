@@ -16,9 +16,8 @@ matrix:
 
 before_install:
  - sudo apt-get install check
- - sudo apt-get install -y lcov
- - gem install coveralls-lcov
-
+ - sudo pip install cpp-coveralls
+ 
 # Change this to your needs
 script: 
   - ./bootstrap.sh
