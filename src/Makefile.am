@@ -8,8 +8,6 @@ AM_CPPFLAGS = $(MY_AM_CPPFLAGS) $(MY_CFLAGS_GCOV) -I../include -O2 -g -Wall -Wex
 
 include_HEADERS = ../include/spudlib.h
 
-
-
 lib_LTLIBRARIES = libspud.la
-libspud_la_SOURCES = spudlib.c tube.c ls_error.c ls_log.c ls_str.c ls_mem.c ls_sockaddr.c cn-cbor.c
+libspud_la_SOURCES = spudlib.c tube.c ls_error.c ls_log.c ls_str.c ls_mem.c ls_sockaddr.c ls_htable.c cn-cbor.c
 libspud_la_LDFLAGS = $(MY_LDFLAGS_GCOV) -version-info 1:0:0
