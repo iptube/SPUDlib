@@ -16,9 +16,8 @@ matrix:
 
 before_install:
  - sudo apt-get install check
-# - sudo pip install cpp-coveralls
-  - sudo apt-get install -y lcov
-  - gem install coveralls-lcov
+ - sudo apt-get install -y lcov
+ - gem install coveralls-lcov
 
 # Change this to your needs
 script: 
@@ -30,7 +29,6 @@ after_success:
   then 
   ./configure --with-check --enable-gcov && make clean && make check;
   lcov -d . --capture --directory src --output-file spudlib.info;
-  #coveralls --exclude samplecode --exclude test;
   coveralls-lcov spudlib.info; 
   fi
  
