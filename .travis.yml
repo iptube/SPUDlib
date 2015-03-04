@@ -27,8 +27,6 @@ script:
 after_success:
 - if [[ $COVERAGE == 'true' ]]; 
   then 
-  ./configure --with-check --enable-gcov && make clean && make check;
-  lcov -d . --capture --directory src --output-file spudlib.info;
-  coveralls-lcov spudlib.info; 
+  ./coverage.sh;
   fi
  
