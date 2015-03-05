@@ -248,7 +248,7 @@ int spudtest(int argc, char **argv)
         return 1;
     }
 
-    for (int i=0; i<NUM_TUBES; i++) {
+    for (i=0; i<NUM_TUBES; i++) {
         tube_create(sockfd, &tubes[i], &err);
         memcpy(&tubes[i]->peer,
                &remoteAddr,
