@@ -34,6 +34,7 @@ or implied, of Cisco.
 
 #include "spudlib.h"
 #include "ls_error.h"
+#include "ls_eventing.h"
 #include "ls_mem.h"
 #include "cn-cbor.h"
 
@@ -47,9 +48,6 @@ typedef enum {
 
 struct _tube;
 
-typedef void (*tube_data_cb)(struct _tube* t,
-                             const cn_cbor *cbor,
-                             const struct sockaddr* addr);
 
 typedef void (*tube_state_cb)(struct _tube* t,
                               const struct sockaddr* addr);
@@ -60,13 +58,29 @@ typedef struct _tube {
   struct sockaddr_storage peer;
   spud_tube_id_t id;
   void *data;
-  tube_data_cb data_cb;
-  tube_state_cb running_cb;
-  tube_state_cb close_cb;
+  ls_event_dispatcher dispatcher;
+  ls_event e_running;
+  ls_event e_data;
+  ls_event e_close;
+  bool my_dispatcher;
 } *tube;
 
+typedef struct _tubeData {
+    tube t;
+    const cn_cbor *cbor;
+    const struct sockaddr* addr;
+} tubeData;
+
+// When you want to create a single dispatcher for a lot of tubes
+LS_API bool tube_bind_events(ls_event_dispatcher dispatcher,
+                             ls_event_notify_callback running_cb,
+                             ls_event_notify_callback data_cb,
+                             ls_event_notify_callback close_cb,
+                             void *arg,
+                             ls_err *err);
+
 // multiple tubes per socket
-LS_API bool tube_create(int sock, tube *t, ls_err *err);
+LS_API bool tube_create(int sock, ls_event_dispatcher dispatcher, tube *t, ls_err *err);
 LS_API void tube_destroy(tube t);
 
 // print [local address]:port to stdout

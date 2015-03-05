@@ -42,8 +42,6 @@ pthread_t listenThread;
 static const int numChar = 53;
 static const char* s1= "[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~";
 
-#define UNUSED(x) (void)(x)
-
 struct test_config {
 
     struct sockaddr_storage remoteAddr;
@@ -125,15 +123,13 @@ static void *socketListen(void *ptr){
     return NULL;
 }
 
-static void data_cb(tube t,
-                    const cn_cbor *cbor,
-                    const struct sockaddr* addr)
+static void data_cb(ls_event_data evt, void *arg)
 {
-    struct test_config *config = (struct test_config *)t->data;
-    UNUSED(addr);
+    struct test_config *config = arg;
+    tubeData *td = evt->data;
     config->numRcvdPkts++;
-    if (cbor) {
-        const cn_cbor *data = cn_cbor_mapget_int(cbor, 0);
+    if (td->cbor) {
+        const cn_cbor *data = cn_cbor_mapget_int(td->cbor, 0);
         ((char*)data->v.str)[data->length-1] = '\0';  // TODO: cheating
         if (data && (data->type==CN_CBOR_TEXT || data->type==CN_CBOR_BYTES)) {
             LOGI("\r " ESC_7C " RX: %i  %s",
@@ -143,21 +139,19 @@ static void data_cb(tube t,
     }
 }
 
-static void running_cb(tube t,
-                       const struct sockaddr* addr)
+static void running_cb(ls_event_data evt, void *arg)
 {
-    UNUSED(addr);
+    UNUSED_PARAM(evt);
     printf("running!\n");
 
     //Start a thread that sends packet to the destination
-    pthread_create(&sendDataThread, NULL, (void *)sendData, t->data);
+    pthread_create(&sendDataThread, NULL, (void *)sendData, arg);
 }
 
-static void close_cb(tube t,
-                     const struct sockaddr* addr)
+static void close_cb(ls_event_data evt, void *arg)
 {
-    UNUSED(t);
-    UNUSED(addr);
+    UNUSED_PARAM(evt);
+    UNUSED_PARAM(arg);
 }
 
 void done() {
@@ -198,13 +192,17 @@ int spudtest(int argc, char **argv)
         return 1;
     }
 
-    if (!tube_create(sockfd, &config.t, &err)) {
+    if (!tube_create(sockfd, NULL, &config.t, &err)) {
         return 1;
     }
     config.t->data = &config;
-    config.t->data_cb = data_cb;
-    config.t->running_cb = running_cb;
-    config.t->close_cb = close_cb;
+    if (!tube_bind_events(config.t->dispatcher,
+                          running_cb, data_cb, close_cb,
+                          &config, &err)) {
+        LS_LOG_ERR(err, "ls_event_bind");
+        return 1;
+    }
+
     if (!tube_print(config.t, &err)) {
         LS_LOG_ERR(err, "tube_print");
         return 1;

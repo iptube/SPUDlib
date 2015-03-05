@@ -27,18 +27,6 @@ extern "C" {
 
 #define CN_CBOR_FAIL(code) do { pb->err = code;  goto fail; } while(0)
 
- const char *cn_cbor_error_str[] = {
-  "CN_CBOR_NO_ERROR",
-  "CN_CBOR_ERR_OUT_OF_DATA",
-  "CN_CBOR_ERR_NOT_ALL_DATA_CONSUMED",
-  "CN_CBOR_ERR_ODD_SIZE_INDEF_MAP",
-  "CN_CBOR_ERR_BREAK_OUTSIDE_INDEF",
-  "CN_CBOR_ERR_MT_UNDEF_FOR_INDEF",
-  "CN_CBOR_ERR_RESERVED_AI",
-  "CN_CBOR_ERR_WRONG_NESTING_IN_INDEF_STRING",
-  "CN_CBOR_ERR_OUT_OF_MEMORY"
-};
-
 void cn_cbor_free(const cn_cbor* cb) {
   cn_cbor* p = (cn_cbor*) cb;
   while (p) {
@@ -157,6 +145,7 @@ again:
   case AI_INDEF:
     if ((mt - MT_BYTES) <= MT_MAP) {
       cb->flags |= CN_CBOR_FL_INDEF;
+      cb->v.uint = val;
       goto push;
     } else {
       CN_CBOR_FAIL(CN_CBOR_ERR_MT_UNDEF_FOR_INDEF);
@@ -189,9 +178,9 @@ again:
     goto push;
   case MT_PRIM:
     switch (ai) {
-    case VAL_NIL: cb->type = CN_CBOR_NULL; break;
-    case VAL_FALSE: cb->type = CN_CBOR_FALSE; break;
-    case VAL_TRUE: cb->type = CN_CBOR_TRUE; break;
+    case VAL_NIL: cb->type = CN_CBOR_NULL; cb->v.uint = val; break;
+    case VAL_FALSE: cb->type = CN_CBOR_FALSE; cb->v.uint = val; break;
+    case VAL_TRUE: cb->type = CN_CBOR_TRUE; cb->v.uint = val; break;
     case AI_2: cb->type = CN_CBOR_DOUBLE; cb->v.dbl = decode_half(val); break;
     case AI_4:
       cb->type = CN_CBOR_DOUBLE;

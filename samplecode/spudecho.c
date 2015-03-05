@@ -10,6 +10,7 @@
 #include "tube.h"
 #include "iphelper.h"
 #include "sockethelper.h"
+#include "ls_eventing.h"
 #include "ls_htable.h"
 #include "ls_log.h"
 #include "ls_sockaddr.h"
@@ -47,48 +48,51 @@ void print_stats()
     ls_log(LS_LOG_INFO, "Tube count: %d", ls_htable_get_count(clients));
 }
 
-static void read_cb(tube t,
-                    const cn_cbor *c,
-                    const struct sockaddr* addr)
+static void read_cb(ls_event_data evt,
+                    void *arg)
 {
-    UNUSED_PARAM(addr);
+    UNUSED_PARAM(arg);
+    tubeData *td = evt->data;
     ls_err err;
 
-    if (c) {
-        const cn_cbor *cp = cn_cbor_mapget_int(c, 0);
+    if (td->cbor) {
+        const cn_cbor *cp = cn_cbor_mapget_int(td->cbor, 0);
         if (cp) {
             // echo
-            if (!tube_data(t, (uint8_t*)cp->v.str, cp->length, &err)) {
+            if (!tube_data(td->t, (uint8_t*)cp->v.str, cp->length, &err)) {
                 LS_LOG_ERR(err, "tube_data");
             }
         } else {
-            if (!tube_data(t, NULL, 0, &err)) {
+            if (!tube_data(td->t, NULL, 0, &err)) {
                 LS_LOG_ERR(err, "tube_data");
             }
         }
     }
-    ((context_t*)t->data)->count++;
+    ((context_t*)td->t->data)->count++;
 }
 
-static void close_cb(tube t,
-                     const struct sockaddr* addr)
+static void close_cb(ls_event_data evt,
+                     void *arg)
 {
-    UNUSED_PARAM(addr);
-    context_t *c = (context_t*)t->data;
+    UNUSED_PARAM(arg);
+    tubeData *td = evt->data;
+    context_t *c = td->t->data;
     char idStr[SPUD_ID_STRING_SIZE+1];
+    tube old;
 
     ls_log(LS_LOG_VERBOSE,
            "Spud ID: %s CLOSED: %zd data packets",
            spud_idToString(idStr,
                            sizeof(idStr),
-                           &t->id, NULL),
+                           &td->t->id, NULL),
            c->count);
-    tube old = ls_htable_remove(clients, &t->id);
-    if (old != t) {
+    old = ls_htable_remove(clients, &td->t->id);
+    if (old != td->t) {
         ls_log(LS_LOG_ERROR, "Invalid state closing tube\n");
     }
     ls_data_free(c);
-    tube_destroy(t);
+    tube_destroy(td->t);
+    td->t = NULL;
 }
 
 static int clean_tube(void *user_data, const void *key, void *data) {
@@ -105,15 +109,23 @@ static int socketListen() {
     struct sockaddr_storage their_addr;
     uint8_t buf[MAXBUFLEN];
     char idStr[SPUD_ID_STRING_SIZE+1];
-    socklen_t addr_len;
+    socklen_t addr_len = sizeof(their_addr);
     int numbytes;
     tube t;
     spud_message_t sMsg = {NULL, NULL};
     ls_err err;
     spud_tube_id_t uid;
     int ret = 0;
+    ls_event_dispatcher dispatcher;
 
-    addr_len = sizeof their_addr;
+    if (!ls_event_dispatcher_create(&sMsg, &dispatcher, &err)) {
+        goto error;
+    }
+    if (!tube_bind_events(dispatcher,
+                          NULL, read_cb, close_cb,
+                          &sMsg, &err)) {
+        goto error;
+    }
 
     while (keepGoing) {
         addr_len = sizeof(their_addr);
@@ -143,14 +155,12 @@ static int socketListen() {
         t = (tube)ls_htable_get(clients, &uid);
         if (!t) {
             // get started
-            if (!tube_create(sockfd, &t, &err)) {
+            if (!tube_create(sockfd, dispatcher, &t, &err)) {
                 LS_LOG_ERR(err, "tube_create");
                 ret = 1; // TODO: replace with an unused queue
                 goto error;
             }
             t->data = new_context();
-            t->data_cb = read_cb;
-            t->close_cb = close_cb;
             if (!ls_htable_put(clients, &uid, t, NULL, &err)) {
                 LS_LOG_ERR(err, "ls_htable_put");
                 ret = 1;

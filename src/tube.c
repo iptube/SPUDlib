@@ -36,8 +36,58 @@ or implied, of Cisco.
 #include "../config.h"
 #include "tube.h"
 #include "ls_sockaddr.h"
+#include "cn-encoder.h"
 
-LS_API bool tube_create(int sock, tube *t, ls_err *err)
+static ls_event _get_or_create_event(ls_event_dispatcher dispatcher,
+                                     const char *name,
+                                     ls_err *err)
+{
+    ls_event ev = ls_event_dispatcher_get_event(dispatcher, "open");
+    if (ev) {
+        return ev;
+    }
+    if (!ls_event_dispatcher_create_event(dispatcher, name, &ev, err)) {
+        return NULL;
+    }
+    return ev;
+}
+
+LS_API bool tube_bind_events(ls_event_dispatcher dispatcher,
+                             ls_event_notify_callback running_cb,
+                             ls_event_notify_callback data_cb,
+                             ls_event_notify_callback close_cb,
+                             void *arg,
+                             ls_err *err)
+{
+    ls_event ev;
+    if ((ev = _get_or_create_event(dispatcher, "running", err)) == NULL) {
+        return false;
+    }
+    if (running_cb) {
+      if (!ls_event_bind(ev, running_cb, arg, err)) {
+        return false;
+      }
+    }
+    if ((ev = _get_or_create_event(dispatcher, "data", err)) == NULL) {
+        return false;
+    }
+    if (data_cb) {
+      if (!ls_event_bind(ev, data_cb, arg, err)) {
+        return false;
+      }
+    }
+    if ((ev = _get_or_create_event(dispatcher, "close", err)) == NULL) {
+        return false;
+    }
+    if (close_cb) {
+      if (!ls_event_bind(ev, close_cb, arg, err)) {
+        return false;
+      }
+    }
+    return true;
+}
+
+LS_API bool tube_create(int sock, ls_event_dispatcher dispatcher, tube *t, ls_err *err)
 {
     assert(t != NULL);
     *t = (tube)ls_data_malloc(sizeof(**t));
@@ -48,13 +98,32 @@ LS_API bool tube_create(int sock, tube *t, ls_err *err)
     memset(*t, 0, sizeof(**t));
     (*t)->sock = sock;
     (*t)->state = TS_UNKNOWN;
+    if (dispatcher) {
+        (*t)->my_dispatcher = false;
+        (*t)->dispatcher = dispatcher;
+    } else {
+        (*t)->my_dispatcher = true;
+        if (!ls_event_dispatcher_create(*t, &(*t)->dispatcher, err)) {
+            goto error;
+        }
+        if (!tube_bind_events((*t)->dispatcher, NULL, NULL, NULL, NULL, err)) {
+          goto error;
+        }
+    }
     return true;
+error:
+    tube_destroy(*t);
+    *t = NULL;
+    return false;
 }
 
 LS_API void tube_destroy(tube t)
 {
     if (t->state == TS_RUNNING) {
         tube_close(t, NULL); // ignore error for now
+    }
+    if (t->my_dispatcher && t->dispatcher) {
+        ls_event_dispatcher_destroy(t->dispatcher);
     }
     ls_data_free(t);
 }
@@ -166,47 +235,26 @@ LS_API bool tube_ack(tube t,
 
 LS_API bool tube_data(tube t, uint8_t *data, size_t len, ls_err *err)
 {
-    uint8_t *d[2];
+    uint8_t preamble[11];
+    uint8_t *d[] = {preamble, data};
     size_t l[2];
+    ssize_t sz;
+
     if (len == 0) {
         return tube_send(t, SPUD_DATA, false, false, NULL, 0, 0, err);
     }
-    if (len < 24) {
-        uint8_t cbor[] = { 0xA1, 00, 0x40 | len };
-        d[0] = cbor;
-        l[0] = sizeof(cbor);
-    } else if (len < 0x100) {
-        uint8_t cbor[] = { 0xA1, 00, 0x58, len };
-        d[0] = cbor;
-        l[0] = sizeof(cbor);
-    } else if (len < 0x10000) {
-        uint8_t cbor[] = { 0xA1, 00, 0x59, (len & 0xFF00) >> 8, len&0xFF };
-        d[0] = cbor;
-        l[0] = sizeof(cbor);
-    } else if (len < 0x100000000) {
-        uint8_t cbor[] = { 0xA1, 00, 0x5A,
-                           (len & 0xFF000000) >> 24,
-                           (len & 0x00FF0000) >> 16,
-                           (len & 0x0000FF00) >> 8,
-                            len & 0x000000FF };
-        d[0] = cbor;
-        l[0] = sizeof(cbor);
-    } else {
-        uint8_t cbor[] = { 0xA1, 00, 0x5B,
-                           (len & 0xFF00000000000000) >> 56,
-                           (len & 0x00FF000000000000) >> 48,
-                           (len & 0x0000FF0000000000) >> 40,
-                           (len & 0x000000FF00000000) >> 32,
-                           (len & 0x00000000FF000000) >> 24,
-                           (len & 0x0000000000FF0000) >> 16,
-                           (len & 0x000000000000FF00) >> 8,
-                           (len & 0x00000000000000FF)
-                           };
-        d[0] = cbor;
-        l[0] = sizeof(cbor);
 
+    d[0] = preamble;
+    sz = cbor_encoder_write_head(preamble,
+                                 0,
+                                 sizeof(preamble),
+                                 CN_CBOR_BYTES,
+                                 len);
+    if (sz < 0) {
+      LS_ERROR(err, LS_ERR_OVERFLOW);
+      return false;
     }
-    d[1] = data;
+    l[0] = sz;
     l[1] = len;
     return tube_send(t, SPUD_DATA, false, false, d, l, 2, err);
 }
@@ -235,8 +283,9 @@ LS_API bool tube_recv(tube t,
     switch(cmd) {
     case SPUD_DATA:
         if (t->state == TS_RUNNING) {
-            if (t->data_cb) {
-                t->data_cb(t, msg->cbor, addr);
+            tubeData d = {t, msg->cbor, addr};
+            if (!ls_event_trigger(t->e_data, &d, NULL, NULL, err)) {
+                return false;
             }
         }
         break;
@@ -244,8 +293,9 @@ LS_API bool tube_recv(tube t,
         if (t->state != TS_UNKNOWN) {
             // double-close is a no-op
             t->state = TS_UNKNOWN;
-            if (t->close_cb) {
-                t->close_cb(t, addr);
+            tubeData d = {t, msg->cbor, addr};
+            if (!ls_event_trigger(t->e_close, &d, NULL, NULL, err)) {
+                return false;
             }
             memset(&t->peer, 0, sizeof(t->peer));
             // leave id in place to allow for reconnects later
@@ -260,8 +310,9 @@ LS_API bool tube_recv(tube t,
     case SPUD_ACK:
         if (t->state == TS_OPENING) {
             t->state = TS_RUNNING;
-            if (t->running_cb) {
-                t->running_cb(t, addr);
+            tubeData d = {t, msg->cbor, addr};
+            if (!ls_event_trigger(t->e_running, &d, NULL, NULL, err)) {
+                return false;
             }
         }
         break;

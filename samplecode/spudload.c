@@ -146,26 +146,21 @@ static void *socketListen(void *ptr)
     return NULL;
 }
 
-static void data_cb(tube t,
-                    const cn_cbor *c,
-                    const struct sockaddr *addr)
+static void data_cb(ls_event_data evt, void *arg)
 {
-    UNUSED_PARAM(t);
-    UNUSED_PARAM(c);
-    UNUSED_PARAM(addr);
+    UNUSED_PARAM(evt);
+    UNUSED_PARAM(arg);
 }
 
-static void running_cb(tube t,
-                       const struct sockaddr* addr)
+static void running_cb(ls_event_data evt, void *arg)
 {
-    UNUSED_PARAM(t);
-    UNUSED_PARAM(addr);
+    UNUSED_PARAM(evt);
+    UNUSED_PARAM(arg);
 }
 
-static void close_cb(tube t,
-                     const struct sockaddr* addr)
+static void close_cb(ls_event_data evt, void *arg)
 {
-    UNUSED_PARAM(addr);
+    UNUSED_PARAM(arg);
     if (!ls_htable_remove(tube_table, &t->id)) {
         ls_log(LS_LOG_WARN, "state fail: old id did not exist");
     }
@@ -212,6 +207,7 @@ int spudtest(int argc, char **argv)
     ls_err err;
     size_t i;
     const char nums[] = "0123456789";
+    ls_event_dispatcher dispatcher;
 
     if (argc < 2) {
         fprintf(stderr, "spudload <destination>\n");
@@ -248,15 +244,23 @@ int spudtest(int argc, char **argv)
         return 1;
     }
 
+    if (!ls_event_dispatcher_create(tube_table, &dispatcher, &err)) {
+        LS_LOG_ERR(err, "ls_event_dispatcher_create");
+        return 1;
+    }
+
+    if (!tube_bind_events(dispatcher,
+                          running_cb, data_cb, close_cb,
+                          tube_table, &err)) {
+        LS_LOG_ERR(err, "tube_bind_events");
+        return 1;
+    }
+
     for (int i=0; i<NUM_TUBES; i++) {
-        tube_create(sockfd, &tubes[i], &err);
+        tube_create(sockfd, dispatcher, &tubes[i], &err);
         memcpy(&tubes[i]->peer,
                &remoteAddr,
                ls_sockaddr_get_length((struct sockaddr*)&remoteAddr));
-
-        tubes[i]->data_cb    = data_cb;
-        tubes[i]->running_cb = running_cb;
-        tubes[i]->close_cb   = close_cb;
     }
 
     //Start and listen to the sockets.

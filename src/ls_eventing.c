@@ -215,8 +215,8 @@ static inline int _clean_event(void *user_data, const void *key, void *data)
 
 /* External Functions */
 LS_API bool ls_event_dispatcher_create(const void *source,
-                                               ls_event_dispatcher *dispatch,
-                                               ls_err *err)
+                                       ls_event_dispatcher *dispatch,
+                                       ls_err *err)
 {
     ls_htable           events = NULL;
     ls_event_dispatch_t *dispatcher = NULL;
@@ -372,9 +372,9 @@ LS_API const void *ls_event_get_source(ls_event event)
 }
 
 LS_API bool ls_event_bind(ls_event event,
-                                  ls_event_notify_callback cb,
-                                  void *arg,
-                                  ls_err *err)
+                          ls_event_notify_callback cb,
+                          void *arg,
+                          ls_err *err)
 {
     ls_event_notifier_t     *notifier;
     ls_event_binding_t      *binding = NULL;
@@ -438,7 +438,7 @@ LS_API bool ls_event_bind(ls_event event,
     return true;
 }
 LS_API void ls_event_unbind(ls_event event,
-                                    ls_event_notify_callback cb)
+                            ls_event_notify_callback cb)
 {
     ls_event_notifier_t *notifier;
     ls_event_binding_t  *binding, *prev;
@@ -478,10 +478,10 @@ LS_API void ls_event_unbind(ls_event event,
 }
 
 LS_API bool ls_event_trigger(ls_event event,
-                                     void *data,
-                                     ls_event_result_callback result_cb,
-                                     void *result_arg,
-                                     ls_err *err)
+                             void *data,
+                             ls_event_result_callback result_cb,
+                             void *result_arg,
+                             ls_err *err)
 {
     ls_event_notifier_t     *notifier;
     ls_event_dispatch_t     *dispatcher;
