@@ -84,7 +84,6 @@ START_TEST (isIdEqual)
     spud_header_t msgB;//Equal to A
     spud_header_t msgC;//New random
 
-    //should this be in init() instead?
     fail_unless(spud_init(&msgA, NULL, &err));
     fail_unless(spud_init(&msgB, &msgA.tube_id, &err));
     fail_unless(spud_init(&msgC, NULL, &err));
@@ -95,11 +94,49 @@ START_TEST (isIdEqual)
 }
 END_TEST
 
+START_TEST (spud_parse_test)
+{
+
+
+}
+END_TEST
+
+START_TEST (ls_sockaddr_test)
+{
+    struct sockaddr_in ip4addr;
+    struct sockaddr_in6 ip6addr;
+
+    ip4addr.sin_family = AF_INET;
+    ip4addr.sin_port = htons(3490);
+    inet_pton(AF_INET, "10.0.0.1", &ip4addr.sin_addr);
+
+    ip6addr.sin6_family = AF_INET6;
+    ip6addr.sin6_port = htons(4950);
+    inet_pton(AF_INET6, "2001:db8:8714:3a90::12", &ip6addr.sin6_addr);
+
+    fail_unless( ls_sockaddr_get_length( &ip4addr ) == sizeof(struct sockaddr_in));
+    fail_unless( ls_sockaddr_get_length( &ip6addr ) == sizeof(struct sockaddr_in6));
+}
+END_TEST
+
+START_TEST (ls_sockaddr_test_assert)
+{
+    struct sockaddr_in ip4addr;
+
+    ip4addr.sin_family = 12;
+    ip4addr.sin_port = htons(3490);
+    inet_pton(AF_INET, "10.0.0.1", &ip4addr.sin_addr);
+    //This should trigger the assert()
+    printf("Length %i:\n",ls_sockaddr_get_length( &ip4addr ));
+
+}
+END_TEST
+
 
 
 Suite * spudlib_suite (void)
 {
-  Suite *s = suite_create ("sockaddr");
+  Suite *s = suite_create ("spudlib");
 
   {/* Core test case */
       TCase *tc_core = tcase_create ("Core");
@@ -110,6 +147,14 @@ Suite * spudlib_suite (void)
       tcase_add_test (tc_core, isIdEqual);
 
       suite_add_tcase (s, tc_core);
+  }
+
+  {/* Sockaddr test case */
+      TCase *tc_ls_sockaddr = tcase_create ("Sockaddr");
+      tcase_add_checked_fixture (tc_ls_sockaddr, spudlib_setup, spudlib_teardown);
+      tcase_add_test (tc_ls_sockaddr, ls_sockaddr_test);
+      tcase_add_test_raise_signal(tc_ls_sockaddr, ls_sockaddr_test_assert, 6);
+      suite_add_tcase (s, tc_ls_sockaddr);
   }
 
   return s;
