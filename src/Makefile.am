@@ -6,7 +6,7 @@ endif
 
 AM_CPPFLAGS = $(MY_AM_CPPFLAGS) $(MY_CFLAGS_GCOV) -I../include -O2 -g -Wall -Wextra -Wno-unknown-pragmas -Werror-implicit-function-declaration -Werror -Wno-unused-parameter -Wdeclaration-after-statement -Wwrite-strings -Wstrict-prototypes -Wmissing-prototypes
 
-include_HEADERS = ../include/spudlib.h
+include_HEADERS = ../include/spud.h ../include/tube.h
 
 lib_LTLIBRARIES = libspud.la
 libspud_la_SOURCES = spud.c tube.c ls_error.c ls_log.c ls_str.c ls_mem.c ls_sockaddr.c ls_htable.c ls_eventing.c cn-cbor.c cn-encoder.c cn-error.c
