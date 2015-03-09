@@ -329,9 +329,9 @@ LS_API bool tube_recv(tube t,
         break;
     case SPUD_CLOSE:
         if (t->state != TS_UNKNOWN) {
+            tubeData d = {t, msg->cbor, addr};
             // double-close is a no-op
             t->state = TS_UNKNOWN;
-            tubeData d = {t, msg->cbor, addr};
             if (!ls_event_trigger(t->e_close, &d, NULL, NULL, err)) {
                 return false;
             }
@@ -347,8 +347,8 @@ LS_API bool tube_recv(tube t,
                         err);
     case SPUD_ACK:
         if (t->state == TS_OPENING) {
-            t->state = TS_RUNNING;
             tubeData d = {t, msg->cbor, addr};
+            t->state = TS_RUNNING;
             if (!ls_event_trigger(t->e_running, &d, NULL, NULL, err)) {
                 return false;
             }
