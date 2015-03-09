@@ -90,7 +90,7 @@ LS_API void ls_log(ls_loglevel level, const char *fmt, ...)
         return;
 
     _ls_log_fixed_function(stderr,
-            "\e[1m%d-%2.2d-%2.2dT%2.2d:%2.2d:%2.2d\e[0m [\e[%dm%7s\e[39m]: ",
+            "\x1b[1m%d-%2.2d-%2.2dT%2.2d:%2.2d:%2.2d\x1b[0m [\x1b[%dm%7s\x1b[39m]: ",
             local.tm_year+1900,
             local.tm_mon+1,
             local.tm_mday,
