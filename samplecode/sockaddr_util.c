@@ -288,7 +288,10 @@ bool sockaddr_isAddrAny(const struct sockaddr * sa)
         return ( ((struct sockaddr_in*)sa)->sin_addr.s_addr == htonl(INADDR_ANY) );
 
     }else if (sa && (sa->sa_family == AF_INET6)) {
-        return IN6_IS_ADDR_UNSPECIFIED(&((struct sockaddr_in6*)sa)->sin6_addr);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
+        return IN6_IS_ADDR_UNSPECIFIED(&((const struct sockaddr_in6*)sa)->sin6_addr);
+#pragma GCC diagnostic pop
     }
 
     return false;
@@ -300,7 +303,10 @@ bool sockaddr_isAddrLoopBack(const struct sockaddr * sa)
     if (sa->sa_family == AF_INET) {
         return ( ((struct sockaddr_in*)sa)->sin_addr.s_addr == htonl(INADDR_LOOPBACK) );
     }else if (sa->sa_family == AF_INET6) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
         return IN6_IS_ADDR_LOOPBACK(&((struct sockaddr_in6*)sa)->sin6_addr);
+#pragma GCC diagnostic pop
     }
     return false;
 }

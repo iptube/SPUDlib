@@ -17,17 +17,15 @@ matrix:
 before_install:
  - sudo apt-get install check
  - sudo pip install cpp-coveralls
-
+ 
 # Change this to your needs
 script: 
-  - gcc --version
   - ./bootstrap.sh
   - ./configure --with-check && make && make check
 
 after_success:
 - if [[ $COVERAGE == 'true' ]]; 
   then 
-  ./configure --with-check --enable-gcov && make clean && make check;
-  coveralls --exclude samplecode --exclude test -b src; 
+  ./coverage.sh;
   fi
  
