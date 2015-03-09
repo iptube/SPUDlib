@@ -5,7 +5,7 @@
 #include <pthread.h>
 #include <signal.h>
 
-#include "spudlib.h"
+#include "spud.h"
 #include "tube.h"
 #include "iphelper.h"
 #include "sockethelper.h"

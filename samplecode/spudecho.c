@@ -6,7 +6,7 @@
 #include <signal.h>
 #include <string.h>
 
-#include "spudlib.h"
+#include "spud.h"
 #include "tube.h"
 #include "iphelper.h"
 #include "sockethelper.h"

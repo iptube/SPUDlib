@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#include "spudlib.h"
+#include "spud.h"
 #include "../config.h"
 
 bool spud_isSpud(const uint8_t *payload, size_t length)
