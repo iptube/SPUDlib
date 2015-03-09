@@ -160,8 +160,10 @@ static void running_cb(ls_event_data evt, void *arg)
 
 static void close_cb(ls_event_data evt, void *arg)
 {
+    tubeData *td = evt->data;
     UNUSED_PARAM(arg);
-    if (!ls_htable_remove(tube_table, &t->id)) {
+
+    if (!ls_htable_remove(tube_table, &td->t->id)) {
         ls_log(LS_LOG_WARN, "state fail: old id did not exist");
     }
 }

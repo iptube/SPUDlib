@@ -38,11 +38,15 @@ or implied, of Cisco.
 #include "ls_sockaddr.h"
 #include "cn-encoder.h"
 
+#define EV_RUNNING_NAME "running"
+#define EV_DATA_NAME    "data"
+#define EV_CLOSE_NAME   "close"
+
 static ls_event _get_or_create_event(ls_event_dispatcher dispatcher,
                                      const char *name,
                                      ls_err *err)
 {
-    ls_event ev = ls_event_dispatcher_get_event(dispatcher, "open");
+    ls_event ev = ls_event_dispatcher_get_event(dispatcher, name);
     if (ev) {
         return ev;
     }
@@ -60,7 +64,7 @@ LS_API bool tube_bind_events(ls_event_dispatcher dispatcher,
                              ls_err *err)
 {
     ls_event ev;
-    if ((ev = _get_or_create_event(dispatcher, "running", err)) == NULL) {
+    if ((ev = _get_or_create_event(dispatcher, EV_RUNNING_NAME, err)) == NULL) {
         return false;
     }
     if (running_cb) {
@@ -68,7 +72,7 @@ LS_API bool tube_bind_events(ls_event_dispatcher dispatcher,
         return false;
       }
     }
-    if ((ev = _get_or_create_event(dispatcher, "data", err)) == NULL) {
+    if ((ev = _get_or_create_event(dispatcher, EV_DATA_NAME, err)) == NULL) {
         return false;
     }
     if (data_cb) {
@@ -76,7 +80,7 @@ LS_API bool tube_bind_events(ls_event_dispatcher dispatcher,
         return false;
       }
     }
-    if ((ev = _get_or_create_event(dispatcher, "close", err)) == NULL) {
+    if ((ev = _get_or_create_event(dispatcher, EV_CLOSE_NAME, err)) == NULL) {
         return false;
     }
     if (close_cb) {
@@ -106,9 +110,15 @@ LS_API bool tube_create(int sock, ls_event_dispatcher dispatcher, tube *t, ls_er
         if (!ls_event_dispatcher_create(*t, &(*t)->dispatcher, err)) {
             goto error;
         }
-        if (!tube_bind_events((*t)->dispatcher, NULL, NULL, NULL, NULL, err)) {
-          goto error;
-        }
+    }
+    if (((*t)->e_running = _get_or_create_event((*t)->dispatcher, EV_RUNNING_NAME, err)) == NULL) {
+      goto error;
+    }
+    if (((*t)->e_data = _get_or_create_event((*t)->dispatcher, EV_DATA_NAME, err)) == NULL) {
+      goto error;
+    }
+    if (((*t)->e_close = _get_or_create_event((*t)->dispatcher, EV_CLOSE_NAME, err)) == NULL) {
+      goto error;
     }
     return true;
 error:
@@ -235,18 +245,43 @@ LS_API bool tube_ack(tube t,
 
 LS_API bool tube_data(tube t, uint8_t *data, size_t len, ls_err *err)
 {
-    uint8_t preamble[11];
+    uint8_t preamble[13];
     uint8_t *d[] = {preamble, data};
     size_t l[2];
-    ssize_t sz;
+    ssize_t sz = 0;
+    ssize_t count = 0;
 
     if (len == 0) {
         return tube_send(t, SPUD_DATA, false, false, NULL, 0, 0, err);
     }
 
-    d[0] = preamble;
+    // Map with one pair
     sz = cbor_encoder_write_head(preamble,
-                                 0,
+                                 count,
+                                 sizeof(preamble),
+                                 CN_CBOR_MAP,
+                                 1);
+    if (sz < 0) {
+      LS_ERROR(err, LS_ERR_OVERFLOW);
+      return false;
+    }
+    count += sz;
+
+    // Key 0
+    sz = cbor_encoder_write_head(preamble,
+                                 count,
+                                 sizeof(preamble),
+                                 CN_CBOR_UINT,
+                                 0);
+    if (sz < 0) {
+      LS_ERROR(err, LS_ERR_OVERFLOW);
+      return false;
+    }
+    count += sz;
+
+    // the data
+    sz = cbor_encoder_write_head(preamble,
+                                 count,
                                  sizeof(preamble),
                                  CN_CBOR_BYTES,
                                  len);
@@ -254,7 +289,10 @@ LS_API bool tube_data(tube t, uint8_t *data, size_t len, ls_err *err)
       LS_ERROR(err, LS_ERR_OVERFLOW);
       return false;
     }
-    l[0] = sz;
+    count += sz;
+
+    d[0] = preamble;
+    l[0] = count;
     l[1] = len;
     return tube_send(t, SPUD_DATA, false, false, d, l, 2, err);
 }
