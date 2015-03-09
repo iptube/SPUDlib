@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netdb.h>
 
@@ -116,8 +117,8 @@ START_TEST (ls_sockaddr_test)
     ip6addr.sin6_port = htons(4950);
     inet_pton(AF_INET6, "2001:db8:8714:3a90::12", &ip6addr.sin6_addr);
 
-    fail_unless( ls_sockaddr_get_length( &ip4addr ) == sizeof(struct sockaddr_in));
-    fail_unless( ls_sockaddr_get_length( &ip6addr ) == sizeof(struct sockaddr_in6));
+    fail_unless( ls_sockaddr_get_length( (struct sockaddr *)&ip4addr ) == sizeof(struct sockaddr_in));
+    fail_unless( ls_sockaddr_get_length( (struct sockaddr *)&ip6addr ) == sizeof(struct sockaddr_in6));
 }
 END_TEST
 
@@ -129,8 +130,7 @@ START_TEST (ls_sockaddr_test_assert)
     ip4addr.sin_port = htons(3490);
     inet_pton(AF_INET, "10.0.0.1", &ip4addr.sin_addr);
     //This should trigger the assert()
-    printf("Length %i:\n",ls_sockaddr_get_length( &ip4addr ));
-
+    printf("Length %i:\n",ls_sockaddr_get_length( (struct sockaddr *)&ip4addr ));
 }
 END_TEST
 
@@ -141,7 +141,7 @@ START_TEST (ls_string_atoi)
 
     fail_unless( ls_atoi(num, 3) == 12 );
     fail_unless( ls_atoi(NULL, 3) == 3 );
-    
+
 }
 END_TEST
 
