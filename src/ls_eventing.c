@@ -285,6 +285,7 @@ LS_API bool ls_event_dispatcher_create_event(
     ls_event_notifier_t *notifier = NULL;
     char                *evt_name = NULL;
     bool                retval = true;
+    size_t              nameLen;
 
     assert(dispatch != NULL);
     assert(name != NULL);
@@ -304,7 +305,7 @@ LS_API bool ls_event_dispatcher_create_event(
         goto finish;
     }
 
-    size_t nameLen = ls_strlen(name);
+    nameLen = ls_strlen(name);
     evt_name = (char *)ls_data_malloc(nameLen + 1);
     if (evt_name == NULL)
     {
@@ -487,7 +488,8 @@ LS_API bool ls_event_trigger(ls_event event,
     ls_event_dispatch_t     *dispatcher;
     ls_event_data           evt;
     ls_pool                 pool;
-
+    ls_event_moment_t       *moment;
+    
     union
     {
         ls_event_moment_t *moment;
@@ -510,7 +512,7 @@ LS_API bool ls_event_trigger(ls_event event,
         ls_pool_destroy(pool);
         return false;
     }
-    ls_event_moment_t *moment = momentUnion.moment;
+    moment = momentUnion.moment;
 
     /* setup the event moment */
     moment->result_cb = result_cb;
