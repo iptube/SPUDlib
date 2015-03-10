@@ -85,14 +85,14 @@ ssize_t cbor_encoder_write_head(uint8_t *buf,
     buf[buf_offset+count] = (uint8_t)val;
     count++;
   } else if (val < 65536) {
-    uint16_t be16;
+    uint16_t be16 = (uint16_t)val;
     ensure_writable(3);
-    be16 = hton16p(&val);
+    be16 = hton16p(&be16);
     write_byte_and_data(ib | 25, (const void*)&be16, 2);
   } else if (val < 0x100000000L) {
-    uint32_t be32;
+    uint32_t be32 = (uint32_t)val;
     ensure_writable(5);
-    be32 = hton32p(&val);
+    be32 = hton32p(&be32);
     write_byte_and_data(ib | 26, (const void*)&be32, 4);
   } else {
     uint64_t be64;
