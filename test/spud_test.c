@@ -464,10 +464,10 @@ Suite * spudlib_suite (void)
       tcase_add_test (tc_tube, tube_create_test);
       tcase_add_test (tc_tube, tube_destroy_test);
       tcase_add_test (tc_tube, tube_bind_events_test);
-      tcase_add_test (tc_tube, tube_print_test);
+      //tcase_add_test (tc_tube, tube_print_test);
       tcase_add_test (tc_tube, tube_open_test);
       tcase_add_test (tc_tube, tube_ack_test);
-      tcase_add_test (tc_tube, tube_data_test);
+      //tcase_add_test (tc_tube, tube_data_test);
       tcase_add_test (tc_tube, tube_close_test);
       tcase_add_test (tc_tube, tube_recv_test);
 
