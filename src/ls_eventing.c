@@ -192,11 +192,11 @@ static inline void _dispatch_trigger(ls_event_dispatch_t *dispatcher,
 
 static inline int _clean_event(void *user_data, const void *key, void *data)
 {
-    UNUSED_PARAM(user_data);
-    UNUSED_PARAM(key);
-
     ls_event event = (ls_event)data;
     ls_event_binding_t *curr = (EXPAND_NOTIFIER(event))->bindings;
+
+    UNUSED_PARAM(user_data);
+    UNUSED_PARAM(key);
 
     /* Clean up callbacks */
     while (curr != NULL)
@@ -489,7 +489,7 @@ LS_API bool ls_event_trigger(ls_event event,
     ls_event_data           evt;
     ls_pool                 pool;
     ls_event_moment_t       *moment;
-    
+
     union
     {
         ls_event_moment_t *moment;
