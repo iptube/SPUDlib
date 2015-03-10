@@ -85,20 +85,20 @@ ssize_t cbor_encoder_write_head(uint8_t *buf,
     buf[buf_offset+count] = (uint8_t)val;
     count++;
   } else if (val < 65536) {
-    uint16_t be;
+    uint16_t be16;
     ensure_writable(3);
-    be = hton16p(&val);
-    write_byte_and_data(ib | 25, (const void*)&be, 2);
+    be16 = hton16p(&val);
+    write_byte_and_data(ib | 25, (const void*)&be16, 2);
   } else if (val < 0x100000000L) {
-    uint32_t be;
+    uint32_t be32;
     ensure_writable(5);
-    be = hton32p(&val);
-    write_byte_and_data(ib | 26, (const void*)&be, 4);
+    be32 = hton32p(&val);
+    write_byte_and_data(ib | 26, (const void*)&be32, 4);
   } else {
-    uint64_t be;
+    uint64_t be64;
     ensure_writable(9);
-    be = hton64p((const uint8_t*)&val);
-    write_byte_and_data(ib | 27, (const void*)&be, 8);
+    be64 = hton64p((const uint8_t*)&val);
+    write_byte_and_data(ib | 27, (const void*)&be64, 8);
   }
   return count;
 }
@@ -107,6 +107,7 @@ ssize_t cbor_encoder_write_double(uint8_t *buf,
                                   size_t buf_offset,
                                   size_t buf_size,
                                   double val) {
+  uint64_t be64;
   // Copy the same problematic implementation from the decoder.
   union {
     double d;
@@ -123,9 +124,9 @@ ssize_t cbor_encoder_write_double(uint8_t *buf,
   // Note: This currently makes the tests fail
   ensure_writable(9);
   u64.d = val;
-  uint64_t be = hton64p((const uint8_t*)&u64.u);
+  be64 = hton64p((const uint8_t*)&u64.u);
 
-  write_byte_and_data(IB_PRIM | 27, (const void*)&be, 8);
+  write_byte_and_data(IB_PRIM | 27, (const void*)&be64, 8);
   return count;
 }
 
