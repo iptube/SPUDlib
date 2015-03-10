@@ -32,12 +32,12 @@ static bool get_randBuf(void *buf, size_t sz, ls_err *err)
     arc4random_buf(buf, sz);
     return true;
 #elif defined(HAVE__DEV_URANDOM)
-    // TODO: think about pre-reading entropy to avoid blocking I/O here.
-    // *certainly* don't open/close the file every time.
-    // Also, read these:
-    // http://insanecoding.blogspot.com/2014/05/a-good-idea-with-bad-usage-devurandom.html
-    // http://www.2uo.de/myths-about-urandom/
-    // --- Yes. Move to openSSL or someting?
+    /* TODO: think about pre-reading entropy to avoid blocking I/O here. */
+    /* *certainly* don't open/close the file every time. */
+    /* Also, read these: */
+    /* http://insanecoding.blogspot.com/2014/05/a-good-idea-with-bad-usage-devurandom.html */
+    /* http://www.2uo.de/myths-about-urandom/ */
+    /* --- Yes. Move to openSSL or someting? */
     FILE *rfile = fopen("/dev/urandom", "r");
     size_t nread;
     if (!rfile) {
@@ -46,9 +46,9 @@ static bool get_randBuf(void *buf, size_t sz, ls_err *err)
     }
     nread = fread(buf, 1, sz, rfile);
     fclose(rfile);
-    // Only true if size is 1. (did not understand man page)
-    // If this is untrue, something horrible has happened, and we should just
-    // stop.
+    /* Only true if size is 1. (did not understand man page) */
+    /* If this is untrue, something horrible has happened, and we should just */
+    /* stop. */
     return (nread == sz );
 #else
   #error New random source needed
