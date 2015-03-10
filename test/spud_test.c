@@ -7,7 +7,7 @@
 
 #include <check.h>
 
-#include "spudlib.h"
+#include "spud.h"
 #include "ls_error.h"
 #include "ls_sockaddr.h"
 #include "ls_str.h"
@@ -130,7 +130,7 @@ START_TEST (ls_sockaddr_test_assert)
     ip4addr.sin_port = htons(3490);
     inet_pton(AF_INET, "10.0.0.1", &ip4addr.sin_addr);
     //This should trigger the assert()
-    printf("Length %i:\n",ls_sockaddr_get_length( (struct sockaddr *)&ip4addr ));
+    printf("Length %zd:\n",ls_sockaddr_get_length( (struct sockaddr *)&ip4addr ));
 }
 END_TEST
 
