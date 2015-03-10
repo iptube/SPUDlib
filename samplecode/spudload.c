@@ -62,7 +62,7 @@ static int markov()
             if (old) {
                 ls_log(LS_LOG_WARN, "state fail: old id in hashtable");
             }
-            if (!tube_send(t, SPUD_OPEN, false, false, NULL, 0, 0, &err)) {
+            if (!tube_send(t, SPUD_OPEN, false, false, NULL, NULL, 0, &err)) {
                 LS_LOG_ERR(err, "tube_send");
                 return 1;
             }

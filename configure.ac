@@ -16,7 +16,7 @@ LT_INIT
 # Checks for programs.
 AC_PROG_CC
 AM_PROG_CC_C_O
-AC_PROG_CC_STDC
+AC_PROG_CC_C99
 
 AC_ARG_ENABLE(gcov,
 AS_HELP_STRING([--enable-gcov],
