@@ -7,6 +7,7 @@
 
 #include <check.h>
 
+#include "tube.h"
 #include "spud.h"
 #include "ls_error.h"
 #include "ls_sockaddr.h"
@@ -215,6 +216,232 @@ START_TEST (ls_string_strncmp)
 }
 END_TEST
 
+START_TEST (tube_create_test)
+{
+    tube t;
+    int sockfd;
+    ls_err err;
+    ls_event_dispatcher dispatcher;
+    fail_unless( ls_event_dispatcher_create(&t, &dispatcher, &err) );
+    fail_unless( tube_create(sockfd, NULL, &t, &err) );
+    fail_unless( tube_create(sockfd, dispatcher, &t, &err) );
+
+}
+END_TEST
+
+START_TEST (tube_destroy_test)
+{
+    tube t;
+    int sockfd;
+    ls_err err;
+    fail_unless( tube_create(sockfd, NULL, &t, &err) );
+    tube_destroy(t);
+}
+END_TEST
+
+static void running_cb(ls_event_data evt, void *arg){}
+static void close_cb(ls_event_data evt, void *arg){}
+static void data_cb(ls_event_data evt, void *arg){}
+
+START_TEST (tube_bind_events_test)
+{
+    tube t;
+    int sockfd;
+    ls_err err;
+    char arg[12];
+    ls_event_dispatcher dispatcher;
+
+    fail_unless( ls_event_dispatcher_create(&t, &dispatcher, &err) );
+
+    fail_unless( tube_bind_events(dispatcher,
+                                  running_cb,
+                                  data_cb,
+                                  close_cb,
+                                  arg,
+                                  &err), ls_err_message( err.code ) );
+}
+END_TEST
+
+START_TEST (tube_print_test)
+{
+    tube t;
+    int sockfd;
+    ls_err err;
+
+    sockfd = socket(PF_INET6, SOCK_DGRAM, 0);
+
+    fail_unless( tube_create(sockfd, NULL, &t, &err) );
+    fail_unless( tube_print(t, &err),
+                 ls_err_message( err.code ) );
+}
+END_TEST
+
+START_TEST (tube_open_test)
+{
+    tube t;
+    int sockfd;
+    ls_err err;
+    struct sockaddr_in6 remoteAddr;
+    fail_unless( ls_get_remote_ip_addr(&remoteAddr,
+                                       "1.2.3.4",
+                                       "1402",
+                                       &err),
+                 ls_err_message( err.code ) );
+
+    sockfd = socket(PF_INET6, SOCK_DGRAM, 0);
+
+    fail_unless( tube_create(sockfd, NULL, &t, &err) );
+    fail_unless( tube_open(t, (const struct sockaddr*)&remoteAddr, &err),
+                 ls_err_message( err.code ) );
+}
+END_TEST
+
+START_TEST (tube_ack_test)
+{
+    tube t;
+    int sockfd;
+    ls_err err;
+    struct sockaddr_in6 remoteAddr;
+    fail_unless( ls_get_remote_ip_addr(&remoteAddr,
+                                       "1.2.3.4",
+                                       "1402",
+                                       &err),
+                 ls_err_message( err.code ) );
+
+    sockfd = socket(PF_INET6, SOCK_DGRAM, 0);
+
+    fail_unless( tube_create(sockfd, NULL, &t, &err) );
+    fail_unless( tube_ack(t,
+                          &t->id,
+                          (const struct sockaddr*)&remoteAddr,
+                          &err),
+                 ls_err_message( err.code ) );
+}
+END_TEST
+
+START_TEST (tube_data_test)
+{
+    tube t;
+    int sockfd;
+    ls_err err;
+    char data[] = "SPUD_make_TUBES_FUN";
+    struct sockaddr_in6 remoteAddr;
+    fail_unless( ls_get_remote_ip_addr(&remoteAddr,
+                                       "1.2.3.4",
+                                       "1402",
+                                       &err),
+                 ls_err_message( err.code ) );
+
+    sockfd = socket(PF_INET6, SOCK_DGRAM, 0);
+
+    fail_unless( tube_create(sockfd, NULL, &t, &err) );
+
+    fail_unless( tube_open(t, (const struct sockaddr*)&remoteAddr, &err),
+                 ls_err_message( err.code ) );
+
+    fail_unless( tube_data(t,
+                           data,
+                           17,
+                           &err),
+                 ls_err_message( err.code ) );
+
+    fail_unless( tube_data(t,
+                           NULL,
+                           0,
+                           &err),
+                 ls_err_message( err.code ) );
+
+}
+END_TEST
+
+START_TEST (tube_close_test)
+{
+    tube t;
+    int sockfd;
+    ls_err err;
+    char data[] = "SPUD_make_TUBES_FUN";
+    struct sockaddr_in6 remoteAddr;
+    fail_unless( ls_get_remote_ip_addr(&remoteAddr,
+                                       "1.2.3.4",
+                                       "1402",
+                                       &err),
+                 ls_err_message( err.code ) );
+
+    sockfd = socket(PF_INET6, SOCK_DGRAM, 0);
+
+    fail_unless( tube_create(sockfd, NULL, &t, &err) );
+
+    fail_unless( tube_open(t, (const struct sockaddr*)&remoteAddr, &err),
+                 ls_err_message( err.code ) );
+
+    fail_unless( tube_close(t,
+                            &err),
+                 ls_err_message( err.code ) );
+
+}
+END_TEST
+
+START_TEST (tube_recv_test)
+{
+    tube t;
+    int sockfd;
+    ls_err err;
+    char data[] = "SPUD_make_TUBES_FUN";
+    spud_message_t sMsg = {NULL, NULL};
+    spud_header_t smh;
+    struct sockaddr_in6 remoteAddr;
+    fail_unless( ls_get_remote_ip_addr(&remoteAddr,
+                                       "1.2.3.4",
+                                       "1402",
+                                       &err),
+                 ls_err_message( err.code ) );
+
+    sockfd = socket(PF_INET6, SOCK_DGRAM, 0);
+
+    fail_unless( tube_create(sockfd, NULL, &t, &err) );
+
+    fail_unless( tube_open(t, (const struct sockaddr*)&remoteAddr, &err),
+                 ls_err_message( err.code ) );
+
+    fail_unless( spud_init( &smh, &t->id, &err) );
+
+    smh.flags = 0;
+    sMsg.header = &smh;
+    t->state = TS_RUNNING;
+    fail_unless( tube_recv(t,
+                           &sMsg,
+                           (const struct sockaddr*)&remoteAddr,
+                           &err),
+                 ls_err_message( err.code ) );
+
+    smh.flags |= SPUD_OPEN;
+    fail_unless( tube_recv(t,
+                           &sMsg,
+                           (const struct sockaddr*)&remoteAddr,
+                           &err),
+                 ls_err_message( err.code ) );
+
+    smh.flags |= SPUD_ACK;
+    t->state = TS_OPENING;
+    fail_unless( tube_recv(t,
+                           &sMsg,
+                           (const struct sockaddr*)&remoteAddr,
+                           &err),
+                 ls_err_message( err.code ) );
+
+
+    smh.flags |= SPUD_CLOSE;
+    t->state = TS_RUNNING;
+    fail_unless( tube_recv(t,
+                           &sMsg,
+                           (const struct sockaddr*)&remoteAddr,
+                           &err),
+                 ls_err_message( err.code ) );
+
+}
+END_TEST
+
+
 
 Suite * spudlib_suite (void)
 {
@@ -229,6 +456,22 @@ Suite * spudlib_suite (void)
       tcase_add_test (tc_core, isIdEqual);
 
       suite_add_tcase (s, tc_core);
+  }
+
+  {/* TUBE test case */
+      TCase *tc_tube = tcase_create ("TUBE");
+      tcase_add_checked_fixture (tc_tube, spudlib_setup, spudlib_teardown);
+      tcase_add_test (tc_tube, tube_create_test);
+      tcase_add_test (tc_tube, tube_destroy_test);
+      //tcase_add_test (tc_tube, tube_bind_events_test);
+      //tcase_add_test (tc_tube, tube_print_test);
+      //tcase_add_test (tc_tube, tube_open_test);
+      //tcase_add_test (tc_tube, tube_ack_test);
+      //tcase_add_test (tc_tube, tube_data_test);
+      //tcase_add_test (tc_tube, tube_close_test);
+      tcase_add_test (tc_tube, tube_recv_test);
+
+      suite_add_tcase (s, tc_tube);
   }
 
   {/* Sockaddr test case */
