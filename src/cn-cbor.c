@@ -19,7 +19,7 @@ extern "C" {
 #include "cn-cbor.h"
 #include "cbor.h"
 
-// can be redefined, e.g. for pool allocation
+/* can be redefined, e.g. for pool allocation */
 #ifndef CN_CBOR_CALLOC
 #define CN_CBOR_CALLOC() calloc(1, sizeof(cn_cbor))
 #define CN_CBOR_FREE(cb) free((void*)(cb))
@@ -151,7 +151,7 @@ again:
       CN_CBOR_FAIL(CN_CBOR_ERR_MT_UNDEF_FOR_INDEF);
     }
   }
-  // process content
+  /* process content */
   switch (mt) {
   case MT_UNSIGNED:
     cb->v.uint = val;           /* to do: Overflow check */
@@ -162,7 +162,7 @@ again:
   case MT_BYTES: case MT_TEXT:
     cb->v.str = (char *) pos;
     cb->length = val;
-    TAKE(pos, ebuf, val, );
+    TAKE(pos, ebuf, val, ;);
     break;
   case MT_MAP:
     val <<= 1;
@@ -227,8 +227,13 @@ fail:
 
 const cn_cbor* cn_cbor_decode(const char* buf, size_t len, cn_cbor_errback *errp) {
   cn_cbor catcher = {CN_CBOR_INVALID, 0, {0}, 0, NULL, NULL, NULL, NULL};
-  struct parse_buf pb = {(unsigned char *)buf, (unsigned char *)buf+len, CN_CBOR_NO_ERROR};
-  cn_cbor* ret = decode_item(&pb, &catcher);
+  struct parse_buf pb;
+  cn_cbor* ret;
+
+  pb.buf  = (unsigned char *)buf;
+  pb.ebuf = (unsigned char *)buf+len;
+  pb.err  = CN_CBOR_NO_ERROR;
+  ret = decode_item(&pb, &catcher);
   if (ret != NULL) {
     /* mark as top node */
     ret->parent = NULL;
@@ -261,7 +266,7 @@ const cn_cbor* cn_cbor_mapget_int(const cn_cbor* cb, int key) {
       }
       break;
     default:
-      ; // skip non-integer keys
+      ; /* skip non-integer keys */
     }
   }
   return NULL;
@@ -291,7 +296,7 @@ const cn_cbor* cn_cbor_mapget_string(const cn_cbor* cb, const char* key) {
         return cp->next;
       }
     default:
-      ; // skip non-string keys
+      ; /* skip non-string keys */
     }
   }
   return NULL;

@@ -13,7 +13,7 @@
 static const uint8_t SpudMagicCookie[]   = SPUD_MAGIC_COOKIE_ARRAY;
 #define SPUD_MAGIC_COOKIE_SIZE sizeof(SpudMagicCookie)/sizeof(SpudMagicCookie[0])
 
-// OR these with the top byte of flags_id
+/* OR these with the top byte of flags_id */
 typedef enum {
     SPUD_DATA  = 0x00 << 6,
     SPUD_OPEN  = 0x01 << 6,
@@ -44,7 +44,7 @@ typedef enum {
 
 
 typedef struct _spud_tube_id_t {
-    // 64 bits
+    /* 64 bits */
     uint8_t octet[SPUD_TUBE_ID_SIZE];
 } spud_tube_id_t;
 
@@ -63,7 +63,7 @@ typedef struct _spud_header_t
 typedef struct _spud_message_t
 {
     spud_header_t *header;
-    //CBOR MAP
+    /* CBOR MAP */
     const cn_cbor *cbor;
 } spud_message_t;
 

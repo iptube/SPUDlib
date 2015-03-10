@@ -25,10 +25,10 @@ static const size_t MOMENT_POOLSIZE = 0;
  * This function updates {pmatch} and {pprev} as appropriate, including
  * setting values to NULL if there is no match.
  */
-static inline bool _find_binding(ls_event_notifier_t *notifier,
-                                 ls_event_notify_callback cb,
-                                 ls_event_binding_t **pmatch,
-                                 ls_event_binding_t **pins)
+static bool _find_binding(ls_event_notifier_t *notifier,
+                          ls_event_notify_callback cb,
+                          ls_event_binding_t **pmatch,
+                          ls_event_binding_t **pins)
 {
     ls_event_binding_t *curr = notifier->bindings;
     ls_event_binding_t *prev = NULL;
@@ -77,7 +77,7 @@ static inline bool _find_binding(ls_event_notifier_t *notifier,
     return (*pmatch != NULL);
 }
 
-static inline void _process_pending_unbinds(ls_event event)
+static void _process_pending_unbinds(ls_event event)
 {
     ls_event_binding_t *prev = NULL;
 
@@ -108,7 +108,7 @@ static inline void _process_pending_unbinds(ls_event event)
     }
 }
 
-static inline void _set_bind_status(ls_event event)
+static void _set_bind_status(ls_event event)
 {
     ls_event_binding_t *cur = event->bindings;
     while (cur != NULL)
@@ -123,8 +123,8 @@ static inline void _set_bind_status(ls_event event)
  * the given moment is processed immediately. Otherwise, it is enqueued and
  * processed in the order it was added.
  */
-static inline void _dispatch_trigger(ls_event_dispatch_t *dispatcher,
-                                     ls_event_moment_t *moment)
+static void _dispatch_trigger(ls_event_dispatch_t *dispatcher,
+                              ls_event_moment_t *moment)
 {
     /* always enqueue! */
     /* \TODO optimize for moments with no callbacks? */
@@ -190,7 +190,7 @@ static inline void _dispatch_trigger(ls_event_dispatch_t *dispatcher,
     dispatcher->running = NULL;
 }
 
-static inline int _clean_event(void *user_data, const void *key, void *data)
+static int _clean_event(void *user_data, const void *key, void *data)
 {
     ls_event event = (ls_event)data;
     ls_event_binding_t *curr = (EXPAND_NOTIFIER(event))->bindings;

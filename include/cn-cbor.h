@@ -23,7 +23,7 @@ typedef enum cn_cbor_type {
 typedef enum cn_cbor_flags {
   CN_CBOR_FL_COUNT = 1,
   CN_CBOR_FL_INDEF = 2,
-  CN_CBOR_FL_OWNER = 0x80,            /* of str */
+  CN_CBOR_FL_OWNER = 0x80            /* of str */
 } cn_cbor_flags;
 
 typedef struct cn_cbor {
@@ -52,7 +52,7 @@ typedef enum cn_cbor_error {
   CN_CBOR_ERR_MT_UNDEF_FOR_INDEF,
   CN_CBOR_ERR_RESERVED_AI,
   CN_CBOR_ERR_WRONG_NESTING_IN_INDEF_STRING,
-  CN_CBOR_ERR_OUT_OF_MEMORY,
+  CN_CBOR_ERR_OUT_OF_MEMORY
 } cn_cbor_error;
 
 extern const char *cn_cbor_error_str[];

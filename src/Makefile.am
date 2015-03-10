@@ -4,7 +4,7 @@ if GCOV
   MY_LDFLAGS_GCOV = -lgcov
 endif
 
-AM_CPPFLAGS = $(MY_AM_CPPFLAGS) $(MY_CFLAGS_GCOV) -I../include -O2 -g -pedantic -Wall -Wextra -Wno-unknown-pragmas -Werror-implicit-function-declaration -Werror -Wno-unused-parameter -Wdeclaration-after-statement -Wwrite-strings -Wstrict-prototypes -Wmissing-prototypes
+AM_CPPFLAGS = $(MY_AM_CPPFLAGS) $(MY_CFLAGS_GCOV) -I../include -O2 -std=c89 -g -pedantic -Wall -Wextra -Wno-unknown-pragmas -Werror-implicit-function-declaration -Werror -Wno-unused-parameter -Wdeclaration-after-statement -Wwrite-strings -Wstrict-prototypes -Wmissing-prototypes
 
 include_HEADERS = ../include/spud.h ../include/tube.h
 

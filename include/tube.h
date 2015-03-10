@@ -71,7 +71,7 @@ typedef struct _tubeData {
     const struct sockaddr* addr;
 } tubeData;
 
-// When you want to create a single dispatcher for a lot of tubes
+/* When you want to create a single dispatcher for a lot of tubes */
 LS_API bool tube_bind_events(ls_event_dispatcher dispatcher,
                              ls_event_notify_callback running_cb,
                              ls_event_notify_callback data_cb,
@@ -79,11 +79,11 @@ LS_API bool tube_bind_events(ls_event_dispatcher dispatcher,
                              void *arg,
                              ls_err *err);
 
-// multiple tubes per socket
+/* multiple tubes per socket */
 LS_API bool tube_create(int sock, ls_event_dispatcher dispatcher, tube *t, ls_err *err);
 LS_API void tube_destroy(tube t);
 
-// print [local address]:port to stdout
+/* print [local address]:port to stdout */
 LS_API bool tube_print(const tube t, ls_err *err);
 LS_API bool tube_open(tube t, const struct sockaddr *dest, ls_err *err);
 LS_API bool tube_ack(tube t,

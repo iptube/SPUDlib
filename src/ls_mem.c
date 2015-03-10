@@ -114,8 +114,8 @@ LS_API void ls_data_set_memory_funcs(ls_data_malloc_func malloc_func,
     _realloc_func = (realloc_func) ? realloc_func : realloc;
     _free_func = (free_func) ? free_func : free;
 
-    // set identical functions in libevent2
-    //event_set_mem_functions(_malloc_func, _realloc_func, _free_func);
+    /* set identical functions in libevent2 */
+    /* event_set_mem_functions(_malloc_func, _realloc_func, _free_func); */
 }
 
 LS_API void ls_data_free(void *ptr)

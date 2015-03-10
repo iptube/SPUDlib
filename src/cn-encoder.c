@@ -19,7 +19,7 @@ extern "C" {
 #define hton16p(p) (htons(*(uint16_t*)(p)))
 #define hton32p(p) (htonl(*(uint32_t*)(p)))
 static uint64_t hton64p(const uint8_t *p) {
-  // TODO: does this work on both BE and LE systems?
+  /* TODO: does this work on both BE and LE systems? */
   uint64_t ret = hton32p(p);
   ret <<= 32;
   ret |= hton32p(p+4);
@@ -42,21 +42,21 @@ buf[buf_offset+count] = (b); \
 count++;
 
 static uint8_t _xlate[] = {
-  IB_PRIM,     // CN_CBOR_NULL
-  IB_PRIM,     // CN_CBOR_FALSE
-  IB_PRIM,     // CN_CBOR_TRUE
-  IB_UNSIGNED, // CN_CBOR_UINT
-  IB_NEGATIVE, // CN_CBOR_INT
-  IB_BYTES,    // CN_CBOR_BYTES
-  IB_TEXT,     // CN_CBOR_TEXT
-  IB_BYTES,    // CN_CBOR_BYTES_CHUNKED
-  IB_TEXT,     // CN_CBOR_TEXT_CHUNKED
-  IB_ARRAY,    // CN_CBOR_ARRAY
-  IB_MAP,      // CN_CBOR_MAP
-  IB_TAG,      // CN_CBOR_TAG
-  IB_PRIM,     // CN_CBOR_SIMPLE
-  0xFF,        // CN_CBOR_DOUBLE
-  0xFF         // CN_CBOR_INVALID
+  IB_PRIM,     /* CN_CBOR_NULL */
+  IB_PRIM,     /* CN_CBOR_FALSE */
+  IB_PRIM,     /* CN_CBOR_TRUE */
+  IB_UNSIGNED, /* CN_CBOR_UINT */
+  IB_NEGATIVE, /* CN_CBOR_INT */
+  IB_BYTES,    /* CN_CBOR_BYTES */
+  IB_TEXT,     /* CN_CBOR_TEXT */
+  IB_BYTES,    /* CN_CBOR_BYTES_CHUNKED */
+  IB_TEXT,     /* CN_CBOR_TEXT_CHUNKED */
+  IB_ARRAY,    /* CN_CBOR_ARRAY */
+  IB_MAP,      /* CN_CBOR_MAP */
+  IB_TAG,      /* CN_CBOR_TAG */
+  IB_PRIM,     /* CN_CBOR_SIMPLE */
+  0xFF,        /* CN_CBOR_DOUBLE */
+  0xFF         /* CN_CBOR_INVALID */
 };
 
 ssize_t cbor_encoder_write_head(uint8_t *buf,
@@ -108,20 +108,20 @@ ssize_t cbor_encoder_write_double(uint8_t *buf,
                                   size_t buf_size,
                                   double val) {
   uint64_t be64;
-  // Copy the same problematic implementation from the decoder.
+  /* Copy the same problematic implementation from the decoder. */
   union {
     double d;
     uint64_t u;
   } u64;
   ssize_t count = 0;
-  // TODO: decide if we can write smaller float sizes
-  // approach: mask off 0x0000000000000f7fUL (the exponent), shift it over,
-  // re-byte-order it if needed, subtract 1023 (the double exponent bias),
-  // then see if it's abs is less than 256 (single) or 32(half)
-  // Do something similar with mantissa.
-  // Also, check -0, +-inf, +-NaN, and sub-normals
-  //
-  // Note: This currently makes the tests fail
+  /* TODO: decide if we can write smaller float sizes */
+  /* approach: mask off 0x0000000000000f7fUL (the exponent), shift it over, */
+  /* re-byte-order it if needed, subtract 1023 (the double exponent bias), */
+  /* then see if it's abs is less than 256 (single) or 32(half) */
+  /* Do something similar with mantissa. */
+  /* Also, check -0, +-inf, +-NaN, and sub-normals */
+
+  /* Note: This currently makes the tests fail */
   ensure_writable(9);
   u64.d = val;
   be64 = hton64p((const uint8_t*)&u64.u);
@@ -142,10 +142,10 @@ ssize_t cbor_encoder_write_negative(uint8_t *buf,
 if (ret < 0) { return -1; } \
 count += ret;
 
-static inline ssize_t _write_children(uint8_t *buf,
-                                      size_t buf_offset,
-                                      size_t buf_size,
-                                      const cn_cbor *cb){
+static ssize_t _write_children(uint8_t *buf,
+                               size_t buf_offset,
+                               size_t buf_size,
+                               const cn_cbor *cb){
    ssize_t count = 0;
    ssize_t ret = 0;
    cn_cbor *child;

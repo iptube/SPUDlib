@@ -130,7 +130,7 @@ error:
 LS_API void tube_destroy(tube t)
 {
     if (t->state == TS_RUNNING) {
-        tube_close(t, NULL); // ignore error for now
+        tube_close(t, NULL); /* ignore error for now */
     }
     if (t->my_dispatcher && t->dispatcher) {
         ls_event_dispatcher_destroy(t->dispatcher);
@@ -175,10 +175,15 @@ LS_API bool tube_send(tube t,
 {
     spud_header_t smh;
     struct msghdr msg;
-    struct iovec iov[num+1];
     int i, count;
+    struct iovec *iov;
 
     assert(t!=NULL);
+    iov = calloc(num+1, sizeof(struct iovec));
+    if (!iov) {
+      LS_ERROR(err, LS_ERR_NO_MEMORY);
+      return false;
+    }
     if (!spud_init(&smh, &t->id, err)) {
         return false;
     }
@@ -210,8 +215,10 @@ LS_API bool tube_send(tube t,
 
     if (sendmsg(t->sock, &msg, 0) <= 0) {
         LS_ERROR(err, -errno)
+        free(iov);
         return false;
     }
+    free(iov);
     return true;
 }
 
@@ -246,7 +253,7 @@ LS_API bool tube_ack(tube t,
 LS_API bool tube_data(tube t, uint8_t *data, size_t len, ls_err *err)
 {
     uint8_t preamble[13];
-    uint8_t *d[] = {preamble, data};
+    uint8_t *d[2];
     size_t l[2];
     ssize_t sz = 0;
     ssize_t count = 0;
@@ -255,7 +262,7 @@ LS_API bool tube_data(tube t, uint8_t *data, size_t len, ls_err *err)
         return tube_send(t, SPUD_DATA, false, false, NULL, 0, 0, err);
     }
 
-    // Map with one pair
+    /* Map with one pair */
     sz = cbor_encoder_write_head(preamble,
                                  count,
                                  sizeof(preamble),
@@ -267,7 +274,7 @@ LS_API bool tube_data(tube t, uint8_t *data, size_t len, ls_err *err)
     }
     count += sz;
 
-    // Key 0
+    /* Key 0 */
     sz = cbor_encoder_write_head(preamble,
                                  count,
                                  sizeof(preamble),
@@ -279,7 +286,7 @@ LS_API bool tube_data(tube t, uint8_t *data, size_t len, ls_err *err)
     }
     count += sz;
 
-    // the data
+    /* the data */
     sz = cbor_encoder_write_head(preamble,
                                  count,
                                  sizeof(preamble),
@@ -293,6 +300,7 @@ LS_API bool tube_data(tube t, uint8_t *data, size_t len, ls_err *err)
 
     d[0] = preamble;
     l[0] = count;
+    d[1] = data;
     l[1] = len;
     return tube_send(t, SPUD_DATA, false, false, d, l, 2, err);
 }
@@ -321,7 +329,10 @@ LS_API bool tube_recv(tube t,
     switch(cmd) {
     case SPUD_DATA:
         if (t->state == TS_RUNNING) {
-            tubeData d = {t, msg->cbor, addr};
+            tubeData d;
+            d.t = t;
+            d.cbor = msg->cbor;
+            d.addr = addr;
             if (!ls_event_trigger(t->e_data, &d, NULL, NULL, err)) {
                 return false;
             }
@@ -329,25 +340,31 @@ LS_API bool tube_recv(tube t,
         break;
     case SPUD_CLOSE:
         if (t->state != TS_UNKNOWN) {
-            tubeData d = {t, msg->cbor, addr};
-            // double-close is a no-op
+            tubeData d;
+            d.t = t;
+            d.cbor = msg->cbor;
+            d.addr = addr;
+            /* double-close is a no-op */
             t->state = TS_UNKNOWN;
             if (!ls_event_trigger(t->e_close, &d, NULL, NULL, err)) {
                 return false;
             }
             memset(&t->peer, 0, sizeof(t->peer));
-            // leave id in place to allow for reconnects later
+            /* leave id in place to allow for reconnects later */
         }
         break;
     case SPUD_OPEN:
-        // TODO: check if we're in server policy
+        /* TODO: check if we're in server policy */
         return tube_ack(t,
                         &msg->header->tube_id,
                         addr,
                         err);
     case SPUD_ACK:
         if (t->state == TS_OPENING) {
-            tubeData d = {t, msg->cbor, addr};
+            tubeData d;
+            d.t = t;
+            d.cbor = msg->cbor;
+            d.addr = addr;
             t->state = TS_RUNNING;
             if (!ls_event_trigger(t->e_running, &d, NULL, NULL, err)) {
                 return false;
