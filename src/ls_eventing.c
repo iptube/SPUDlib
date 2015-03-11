@@ -29,7 +29,7 @@ typedef struct _ls_event_trigger_t
 } ls_event_trigger_t;
 
 
-#define PUSH_EVENTING_NDC int _ndcDepth = _push_eventing_ndc(dispatch, __func__)
+#define PUSH_EVENTING_NDC _ndcDepth = _push_eventing_ndc(dispatch, __func__)
 #define POP_EVENTING_NDC if (_ndcDepth>0) {ls_log_pop_ndc(_ndcDepth);}
 static int _push_eventing_ndc(ls_event_dispatcher *dispatch,
                               const char *entrypoint)
@@ -373,6 +373,7 @@ LS_API bool ls_event_dispatcher_create(void *source,
 {
     ls_htable            *events   = NULL;
     ls_event_dispatch_t *dispatch = NULL;
+    int _ndcDepth;
 
     LS_LOG_TRACE_FUNCTION_NO_ARGS;
 
@@ -417,10 +418,11 @@ LS_API bool ls_event_dispatcher_create(void *source,
 
 LS_API void ls_event_dispatcher_destroy(ls_event_dispatcher *dispatch)
 {
-    PUSH_EVENTING_NDC;
+    int _ndcDepth;
     LS_LOG_TRACE_FUNCTION_NO_ARGS;
 
     assert(dispatch != NULL);
+    PUSH_EVENTING_NDC;
 
     if (NULL != dispatch->running)
     {
@@ -452,11 +454,12 @@ LS_API ls_event *ls_event_dispatcher_get_event(
                         const char *name)
 {
     ls_event *evt;
-    PUSH_EVENTING_NDC;
+    int _ndcDepth;
+
     LS_LOG_TRACE_FUNCTION_NO_ARGS;
 
     assert(dispatch);
-
+    PUSH_EVENTING_NDC;
     evt = ls_htable_get(dispatch->events, name);
 
     POP_EVENTING_NDC;
@@ -470,15 +473,16 @@ LS_API bool ls_event_dispatcher_create_event(
                     ls_event **event,
                     ls_err *err)
 {
-    PUSH_EVENTING_NDC;
     LS_LOG_TRACE_FUNCTION_NO_ARGS;
 
     ls_event_notifier_t *notifier = NULL;
     char                *evt_name = NULL;
     bool                 retval   = true;
+    int _ndcDepth;
 
     assert(dispatch);
     assert(name);
+    PUSH_EVENTING_NDC;
 
     if (name[0] == '\0')
     {
@@ -576,6 +580,7 @@ LS_API bool ls_event_bind(ls_event                 *event,
     ls_event_dispatcher *dispatch;
     ls_event_binding_t *binding = NULL;
     ls_event_binding_t *prev    = NULL;
+    int _ndcDepth;
 
     assert(event);
     assert(cb);
@@ -644,6 +649,8 @@ LS_API void ls_event_unbind(ls_event *event,
                                     ls_event_notify_callback cb)
 {
     ls_event_dispatcher *dispatch;
+    int _ndcDepth;
+
     assert(event);
     assert(event->dispatcher);
     assert(cb);
@@ -690,6 +697,8 @@ LS_API bool ls_event_prepare_trigger(ls_event_dispatcher *dispatch,
         ls_event_trigger_data **trigger_data, ls_err *err)
 {
     bool ret;
+    int _ndcDepth;
+
     PUSH_EVENTING_NDC;
     LS_LOG_TRACE_FUNCTION_NO_ARGS;
 
@@ -704,6 +713,8 @@ LS_API void ls_event_unprepare_trigger(
 {
     ls_event *evt;
     ls_event_dispatcher *dispatch;
+    int _ndcDepth;
+
     assert(trigger_data);
     assert(trigger_data->moment);
 
@@ -726,6 +737,8 @@ LS_API void ls_event_trigger_prepared(
         ls_event_trigger_data    *trigger_data)
 {
     ls_event_dispatcher *dispatch;
+    int _ndcDepth;
+
     assert(event);
 
     dispatch = event->dispatcher;
@@ -746,8 +759,9 @@ LS_API bool ls_event_trigger(ls_event *event,
                                      ls_err *err)
 {
     ls_event_dispatcher *dispatch;
-    assert(event);
+    int _ndcDepth;
 
+    assert(event);
     dispatch = event->dispatcher;
 
     PUSH_EVENTING_NDC;
