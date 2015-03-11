@@ -253,8 +253,9 @@ LS_API void ls_log_pop_ndc(int ndc_depth)
 
     while (_ndc_head && _ndc_depth >= ndc_depth)
     {
+        _ndc_node_t prevHead;
         --_ndc_depth;
-        _ndc_node_t prevHead = _ndc_head;
+        prevHead = _ndc_head;
         _ndc_head = prevHead->next;
 
         _deallocator(prevHead->message);
