@@ -8,7 +8,7 @@
 
 LS_API size_t ls_sockaddr_get_length(const struct sockaddr *addr);
 
-LS_API bool ls_get_remote_ip_addr(struct sockaddr_in6 *remoteAddr,
-                                  const char *fqdn,
-                                  const char *port,
-                                  ls_err *err);
+LS_API bool ls_sockaddr_get_remote_ip_addr(struct sockaddr_in6 *remoteAddr,
+                                           const char *fqdn,
+                                           const char *port,
+                                           ls_err *err);
