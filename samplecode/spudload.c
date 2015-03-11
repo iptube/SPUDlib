@@ -225,9 +225,10 @@ int spudtest(int argc, char **argv)
         data[i] = nums[i % 10];
     }
 
-    if(!getRemoteIpAddr(&remoteAddr,
-                        argv[1],
-                        "1402")) {
+    if(!ls_sockaddr_get_remote_ip_addr(&remoteAddr,
+                                       argv[1],
+                                       "1402",
+                                       &err)) {
         return 1;
     }
 

@@ -13,5 +13,4 @@ bool getLocalInterFaceAddrs(struct sockaddr *addr,
                             IPv6_ADDR_TYPE ipv6_addr_type,
                             bool force_privacy);
 
-bool getRemoteIpAddr(struct sockaddr_in6 *remoteAddr, const char *fqdn, const char *port);
 #endif

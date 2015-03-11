@@ -114,33 +114,3 @@ bool getLocalInterFaceAddrs(struct sockaddr *addr,
 
     return false;
 }
-
-
-bool getRemoteIpAddr(struct sockaddr_in6 *remoteAddr, const char *fqdn, const char *port)
-{
-    struct addrinfo hints, *res, *p;
-    int status;
-    bool found = false;
-
-    memset(&hints, 0, sizeof hints);
-    hints.ai_flags = AI_V4MAPPED;
-    hints.ai_family = AF_INET6; // use AI_V4MAPPED for v4 addresses
-    hints.ai_protocol = IPPROTO_UDP;
-    hints.ai_socktype = SOCK_DGRAM;
-
-    if ((status = getaddrinfo(fqdn, port, &hints, &res)) != 0) {
-        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(status));
-        return false;
-    }
-
-    for(p = res;p != NULL; p = p->ai_next) {
-        // copy the first match
-        if (p->ai_family == AF_INET6) { // Should always be v6 (mapped for v4)
-            memcpy(remoteAddr, p->ai_addr, sizeof(struct sockaddr_in6));
-            found = true;
-            break;
-        }
-    }
-    freeaddrinfo(res); // free the linked list
-    return found;
-}

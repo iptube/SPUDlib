@@ -176,9 +176,10 @@ int spudtest(int argc, char **argv)
     LOGI("entering spudtest\n");
     memset(&config, 0, sizeof(config));
 
-    if(!getRemoteIpAddr((struct sockaddr_in6*)&config.remoteAddr,
-                        argv[1],
-                        "1402")) {
+    if(!ls_sockaddr_get_remote_ip_addr((struct sockaddr_in6*)&config.remoteAddr,
+                                       argv[1],
+                                       "1402",
+                                       &err)) {
         return 1;
     }
 
