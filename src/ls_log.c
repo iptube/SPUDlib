@@ -195,10 +195,10 @@ static bool _log_prefix(ls_loglevel level)
 
 LS_API int ls_log_push_ndc(const char *fmt, ...)
 {
-    assert(fmt);
-
     va_list ap;
     int messageLen;
+    _ndc_node_t newNode;
+    assert(fmt);
 
     va_start(ap, fmt);
     if (0 > (messageLen = vsnprintf(NULL, 0, fmt, ap)))
@@ -208,7 +208,7 @@ LS_API int ls_log_push_ndc(const char *fmt, ...)
     }
     va_end(ap);
 
-    _ndc_node_t newNode = _allocator(sizeof(struct _ndc_node_int_t));
+    newNode = _allocator(sizeof(struct _ndc_node_int_t));
     if (!newNode)
     {
         ls_log(LS_LOG_WARN, "could not push NDC: '%s' (out of memory)", fmt);
