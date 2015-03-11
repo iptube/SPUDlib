@@ -7,6 +7,11 @@
 Suite * spudlib_suite (void);
 Suite * ls_str_suite (void);
 Suite * ls_sockaddr_suite (void);
+Suite * ls_error_suite (void);
+Suite * ls_mem_suite (void);
+Suite * ls_log_suite (void);
+Suite * ls_htable_suite (void);
+Suite * ls_eventing_suite (void);
 
 int main(void){
     
@@ -15,6 +20,11 @@ int main(void){
     SRunner *sr = srunner_create (s);
     srunner_add_suite (sr, ls_str_suite () );
     srunner_add_suite (sr,  ls_sockaddr_suite () );
+    srunner_add_suite (sr,  ls_error_suite () );
+    srunner_add_suite (sr,  ls_mem_suite () );
+    srunner_add_suite (sr,  ls_log_suite () );
+    srunner_add_suite (sr,  ls_htable_suite () );
+    srunner_add_suite (sr,  ls_eventing_suite () );
     srunner_run_all (sr, CK_NORMAL);
     number_failed = srunner_ntests_failed (sr);
     srunner_free (sr);
