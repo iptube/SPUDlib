@@ -284,11 +284,11 @@ LS_API bool ls_htable_put(ls_htable *tbl,
                                   ls_htable_cleanfunc cleaner,
                                   ls_err *err)
 {
-    assert(tbl);
-
     unsigned int khash;
     unsigned int bucket;
     ls_hnode *node;
+
+    assert(tbl);
 
     // compute the hash bucket and try to find an existing node
     khash = _hash_key(tbl, key);
@@ -347,8 +347,8 @@ LS_API bool ls_htable_put(ls_htable *tbl,
 
 LS_API void ls_htable_remove(ls_htable *tbl, const void *key)
 {
-    assert(tbl);
     ls_hnode *node = _find_node(tbl, key, -1, 0);
+    assert(tbl);
     if (node)
     {
        ls_htable_remove_node(tbl, node);
