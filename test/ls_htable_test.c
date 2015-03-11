@@ -459,6 +459,18 @@ Suite * ls_htable_suite (void)
   Suite *s = suite_create ("ls_htable");
   {/* Htable test case */
       TCase *tc_ls_htable = tcase_create ("htable");
+      tcase_add_test (tc_ls_htable, ls_htable_hash_str_test);
+      tcase_add_test (tc_ls_htable, ls_htable_hash_strcase_test);
+      tcase_add_test (tc_ls_htable, ls_htable_hash_int_test);
+      tcase_add_test (tc_ls_htable, ls_htable_create_destroy_test);
+      tcase_add_test (tc_ls_htable, ls_htable_basics_test);
+      tcase_add_test (tc_ls_htable, ls_htable_node_test);
+      tcase_add_test (tc_ls_htable, ls_htable_iteration_test);
+      tcase_add_test (tc_ls_htable, ls_htable_walk_test);
+      tcase_add_test (tc_ls_htable, ls_htable_collisions_test);
+      tcase_add_test (tc_ls_htable, ls_htable_cleaner_edges_test);
+      tcase_add_test (tc_ls_htable, ls_htable_destroy_key_test);
+      tcase_add_test (tc_ls_htable, ls_htable_oom_test);
 
       suite_add_tcase (s, tc_ls_htable);
   }
