@@ -53,11 +53,11 @@ static inline bool _remove_binding(ls_event_notifier_t *notifier,
                                    ls_event_binding_t **pmatch,
                                    ls_event_binding_t **pins)
 {
-    LS_LOG_TRACE_FUNCTION_NO_ARGS;
-
     ls_event_binding_t *curr = notifier->bindings;
     ls_event_binding_t *prev = NULL;
     bool head = true;
+
+    LS_LOG_TRACE_FUNCTION_NO_ARGS;
 
     /* initialize to not found */
     *pmatch = NULL;
@@ -100,10 +100,10 @@ static inline bool _remove_binding(ls_event_notifier_t *notifier,
 
 static inline void _process_pending_unbinds(ls_event *event)
 {
-    LS_LOG_TRACE_FUNCTION_NO_ARGS;
-
     ls_event_binding_t *prev = NULL;
     ls_event_binding_t *cur  = event->bindings;
+
+    LS_LOG_TRACE_FUNCTION_NO_ARGS;
 
     while (cur != NULL)
     {
@@ -133,9 +133,9 @@ static inline void _process_pending_unbinds(ls_event *event)
 
 static inline void _set_bind_status(ls_event *event)
 {
+    ls_event_binding_t *cur = event->bindings;
     LS_LOG_TRACE_FUNCTION_NO_ARGS;
 
-    ls_event_binding_t *cur = event->bindings;
     while (cur != NULL)
     {
         cur->normal_bound = true;
@@ -154,11 +154,12 @@ static void _moment_destroy(ls_event_moment_t *moment)
 
 static void _handle_trigger_int(ls_event_dispatcher *dispatch)
 {
+    ls_event_moment_t *moment = dispatch->next_moment;
+    ls_event_data      evt;
     LS_LOG_TRACE_FUNCTION_NO_ARGS;
 
-    ls_event_moment_t *moment = dispatch->next_moment;
     assert(moment);
-    ls_event_data      evt    = &moment->evt;
+    evt = &moment->evt;
 
     ls_log(LS_LOG_DEBUG, "processing event '%s'", evt->name);
 
@@ -241,6 +242,9 @@ static inline void _dispatch_trigger(ls_event_dispatcher *dispatcher,
 
 static void _clean_event(bool replace, bool delete_key, void *key, void *data)
 {
+    ls_event *event = data;
+    ls_event_binding_t *curr = event->bindings;
+
     UNUSED_PARAM(key);
     UNUSED_PARAM(delete_key);
 #ifdef NDEBUG
@@ -250,9 +254,6 @@ static void _clean_event(bool replace, bool delete_key, void *key, void *data)
 #endif
 
     LS_LOG_TRACE_FUNCTION_NO_ARGS;
-
-    ls_event *event = data;
-    ls_event_binding_t *curr = event->bindings;
 
     /* Clean up callbacks */
     while (curr != NULL)
@@ -270,9 +271,6 @@ static void _clean_event(bool replace, bool delete_key, void *key, void *data)
 static bool _prepare_trigger(ls_event_dispatcher *dispatch,
         ls_event_trigger_data **trigger_data, ls_err *err)
 {
-    LS_LOG_TRACE_FUNCTION_NO_ARGS;
-
-    assert(trigger_data);
 
     union
     {
@@ -287,6 +285,9 @@ static bool _prepare_trigger(ls_event_dispatcher *dispatch,
         ls_event_moment_t *moment;
         void              *momentPtr;
     } momentUnion;
+
+    LS_LOG_TRACE_FUNCTION_NO_ARGS;
+    assert(trigger_data);
 
     if (!ls_pool_create(MOMENT_POOLSIZE, &pool, err))
     {
@@ -330,15 +331,15 @@ static void _trigger_prepared(
         void *result_arg,
         ls_event_trigger_data *trigger_data)
 {
+    ls_event_data       evt;
+    ls_event_moment_t  *moment;
+
     LS_LOG_TRACE_FUNCTION_NO_ARGS;
 
     assert(event);
     assert(trigger_data);
     assert(trigger_data->pool);
     assert(trigger_data->moment);
-
-    ls_event_data       evt;
-    ls_event_moment_t  *moment;
 
     ls_log(LS_LOG_DEBUG, "triggering event '%s'", event->name);
 
@@ -370,13 +371,13 @@ LS_API bool ls_event_dispatcher_create(void *source,
                                        ls_event_dispatcher **outdispatch,
                                        ls_err *err)
 {
+    ls_htable            *events   = NULL;
+    ls_event_dispatch_t *dispatch = NULL;
+
     LS_LOG_TRACE_FUNCTION_NO_ARGS;
 
     assert(source != NULL);
     assert(outdispatch != NULL);
-
-    ls_htable            *events   = NULL;
-    ls_event_dispatch_t *dispatch = NULL;
 
     if (!ls_htable_create(DISPATCH_BUCKETS,
                           ls_strcase_hashcode,
@@ -450,12 +451,13 @@ LS_API ls_event *ls_event_dispatcher_get_event(
                         ls_event_dispatcher *dispatch,
                         const char *name)
 {
+    ls_event *evt;
     PUSH_EVENTING_NDC;
     LS_LOG_TRACE_FUNCTION_NO_ARGS;
 
     assert(dispatch);
 
-    ls_event *evt = ls_htable_get(dispatch->events, name);
+    evt = ls_htable_get(dispatch->events, name);
 
     POP_EVENTING_NDC;
 
@@ -571,15 +573,16 @@ LS_API bool ls_event_bind(ls_event                 *event,
                                   void                    *arg,
                                   ls_err                  *err)
 {
+    ls_event_dispatcher *dispatch;
+    ls_event_binding_t *binding = NULL;
+    ls_event_binding_t *prev    = NULL;
+
     assert(event);
     assert(cb);
 
-    ls_event_dispatcher *dispatch = event->dispatcher;
+    dispatch = event->dispatcher;
     PUSH_EVENTING_NDC;
     LS_LOG_TRACE_FUNCTION_NO_ARGS;
-
-    ls_event_binding_t *binding = NULL;
-    ls_event_binding_t *prev    = NULL;
 
     /* look for existing binding first */
     if (!_remove_binding(event, cb, &binding, &prev))
@@ -640,11 +643,12 @@ LS_API bool ls_event_bind(ls_event                 *event,
 LS_API void ls_event_unbind(ls_event *event,
                                     ls_event_notify_callback cb)
 {
+    ls_event_dispatcher *dispatch;
     assert(event);
     assert(event->dispatcher);
     assert(cb);
 
-    ls_event_dispatcher *dispatch = event->dispatcher;
+    dispatch = event->dispatcher;
     PUSH_EVENTING_NDC;
     LS_LOG_TRACE_FUNCTION_NO_ARGS;
 
@@ -685,10 +689,11 @@ LS_API void ls_event_unbind(ls_event *event,
 LS_API bool ls_event_prepare_trigger(ls_event_dispatcher *dispatch,
         ls_event_trigger_data **trigger_data, ls_err *err)
 {
+    bool ret;
     PUSH_EVENTING_NDC;
     LS_LOG_TRACE_FUNCTION_NO_ARGS;
 
-    bool ret = _prepare_trigger(dispatch, trigger_data, err);
+    ret = _prepare_trigger(dispatch, trigger_data, err);
 
     POP_EVENTING_NDC;
     return ret;
@@ -697,12 +702,13 @@ LS_API bool ls_event_prepare_trigger(ls_event_dispatcher *dispatch,
 LS_API void ls_event_unprepare_trigger(
         ls_event_trigger_data *trigger_data)
 {
+    ls_event *evt;
+    ls_event_dispatcher *dispatch;
     assert(trigger_data);
     assert(trigger_data->moment);
 
-    ls_event *evt = trigger_data->moment->evt.notifier;
-
-    ls_event_dispatcher *dispatch = evt ? evt->dispatcher : NULL;
+    evt = trigger_data->moment->evt.notifier;
+    dispatch = evt ? evt->dispatcher : NULL;
 
     PUSH_EVENTING_NDC;
     LS_LOG_TRACE_FUNCTION_NO_ARGS;
@@ -719,9 +725,10 @@ LS_API void ls_event_trigger_prepared(
         void                    *result_arg,
         ls_event_trigger_data    *trigger_data)
 {
+    ls_event_dispatcher *dispatch;
     assert(event);
 
-    ls_event_dispatcher *dispatch = event->dispatcher;
+    dispatch = event->dispatcher;
 
     PUSH_EVENTING_NDC;
     LS_LOG_TRACE_FUNCTION_NO_ARGS;
@@ -738,9 +745,10 @@ LS_API bool ls_event_trigger(ls_event *event,
                                      void *result_arg,
                                      ls_err *err)
 {
+    ls_event_dispatcher *dispatch;
     assert(event);
 
-    ls_event_dispatcher *dispatch = event->dispatcher;
+    dispatch = event->dispatcher;
 
     PUSH_EVENTING_NDC;
     LS_LOG_TRACE_FUNCTION_NO_ARGS;
