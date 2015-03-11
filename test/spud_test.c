@@ -104,14 +104,12 @@ START_TEST (spud_parse_test)
 }
 END_TEST
 
-
-
 START_TEST (tube_create_test)
 {
-    tube t;
+    tube *t;
     int sockfd;
     ls_err err;
-    ls_event_dispatcher dispatcher;
+    ls_event_dispatcher *dispatcher;
     fail_unless( ls_event_dispatcher_create(&t, &dispatcher, &err) );
     fail_unless( tube_create(sockfd, NULL, &t, &err) );
     fail_unless( tube_create(sockfd, dispatcher, &t, &err) );
@@ -121,7 +119,7 @@ END_TEST
 
 START_TEST (tube_destroy_test)
 {
-    tube t;
+    tube *t;
     int sockfd;
     ls_err err;
     fail_unless( tube_create(sockfd, NULL, &t, &err) );
@@ -135,11 +133,11 @@ static void data_cb(ls_event_data evt, void *arg){}
 
 START_TEST (tube_bind_events_test)
 {
-    tube t;
+    tube *t;
     int sockfd;
     ls_err err;
     char arg[12];
-    ls_event_dispatcher dispatcher;
+    ls_event_dispatcher *dispatcher;
 
     fail_unless( ls_event_dispatcher_create(&t, &dispatcher, &err) );
 
@@ -154,7 +152,7 @@ END_TEST
 
 START_TEST (tube_print_test)
 {
-    tube t;
+    tube *t;
     int sockfd;
     ls_err err;
 
@@ -168,7 +166,7 @@ END_TEST
 
 START_TEST (tube_open_test)
 {
-    tube t;
+    tube *t;
     int sockfd;
     ls_err err;
     struct sockaddr_in6 remoteAddr;
@@ -188,7 +186,7 @@ END_TEST
 
 START_TEST (tube_ack_test)
 {
-    tube t;
+    tube *t;
     int sockfd;
     ls_err err;
     struct sockaddr_in6 remoteAddr;
@@ -211,10 +209,10 @@ END_TEST
 
 START_TEST (tube_data_test)
 {
-    tube t;
+    tube *t;
     int sockfd;
     ls_err err;
-    char data[] = "SPUD_make_TUBES_FUN";
+    uint8_t data[] = "SPUD_make_TUBES_FUN";
     struct sockaddr_in6 remoteAddr;
     fail_unless( ls_sockaddr_get_remote_ip_addr(&remoteAddr,
                                                 "1.2.3.4",
@@ -246,7 +244,7 @@ END_TEST
 
 START_TEST (tube_close_test)
 {
-    tube t;
+    tube *t;
     int sockfd;
     ls_err err;
     char data[] = "SPUD_make_TUBES_FUN";
@@ -273,7 +271,7 @@ END_TEST
 
 START_TEST (tube_recv_test)
 {
-    tube t;
+    tube *t;
     int sockfd;
     ls_err err;
     char data[] = "SPUD_make_TUBES_FUN";
@@ -348,7 +346,7 @@ Suite * spudlib_suite (void)
       suite_add_tcase (s, tc_core);
   }
 
-  {/* TUBE test case */
+  {/* tube *test case */
       TCase *tc_tube = tcase_create ("TUBE");
       tcase_add_checked_fixture (tc_tube, spudlib_setup, spudlib_teardown);
       tcase_add_test (tc_tube, tube_create_test);
@@ -364,6 +362,6 @@ Suite * spudlib_suite (void)
       suite_add_tcase (s, tc_tube);
   }
 
-  
+
   return s;
 }

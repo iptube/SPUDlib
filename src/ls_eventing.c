@@ -30,7 +30,7 @@ typedef struct _ls_event_trigger_t
 
 
 #define PUSH_EVENTING_NDC int _ndcDepth = _push_eventing_ndc(dispatch, __func__)
-#define POP_EVENTING_NDC ls_log_pop_ndc(_ndcDepth)
+#define POP_EVENTING_NDC if (_ndcDepth>0) {ls_log_pop_ndc(_ndcDepth);}
 static int _push_eventing_ndc(ls_event_dispatcher *dispatch,
                               const char *entrypoint)
 {
@@ -396,6 +396,12 @@ LS_API bool ls_event_dispatcher_create(void *source,
     }
 
     PUSH_EVENTING_NDC;
+    if (_ndcDepth == 0) {
+      LS_ERROR(err, LS_ERR_NO_MEMORY);
+      ls_htable_destroy(events);
+      ls_data_free(dispatch);
+      return false;
+    }
     ls_log(LS_LOG_TRACE, "creating new event dispatcher");
 
     memset(dispatch, 0, sizeof(ls_event_dispatch_t));

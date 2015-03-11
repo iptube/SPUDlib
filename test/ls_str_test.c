@@ -1,7 +1,7 @@
 
 #include <check.h>
 
-#include "ls_str.h"
+#include "../src/ls_str.h"
 
 Suite * ls_str_suite (void);
 
@@ -91,7 +91,7 @@ Suite * ls_str_suite (void)
 {
   Suite *s = suite_create ("ls_str");
 
-  
+
   {/* string test case */
       TCase *tc_ls_string = tcase_create ("String");
       tcase_add_test (tc_ls_string, ls_string_atoi);

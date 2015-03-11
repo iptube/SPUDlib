@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <check.h>
-
+#include "ls_log.h"
 
 Suite * spudlib_suite (void);
 Suite * ls_str_suite (void);
@@ -14,10 +14,12 @@ Suite * ls_htable_suite (void);
 Suite * ls_eventing_suite (void);
 
 int main(void){
-    
+
     int number_failed;
     Suite *s = spudlib_suite ();
     SRunner *sr = srunner_create (s);
+
+    ls_log_set_level(LS_LOG_ERROR);
     srunner_add_suite (sr, ls_str_suite () );
     srunner_add_suite (sr,  ls_sockaddr_suite () );
     srunner_add_suite (sr,  ls_error_suite () );
@@ -29,6 +31,6 @@ int main(void){
     number_failed = srunner_ntests_failed (sr);
     srunner_free (sr);
     return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
-    
+
 
 }

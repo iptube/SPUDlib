@@ -3,18 +3,18 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-#include "ls_eventing.h"
-#include "ls_mem.h"
-#include "ls_htable.h"
+#include "test_utils.h"
 #include "../src/ls_eventing_int.h"
+#include "ls_mem.h"
+#include "ls_eventing.h"
 
 Suite * ls_eventing_suite (void);
-
 /* fake global source object */
 static void *g_source = "the global source";
-static ls_event_dispatcher  g_dispatcher;
+static ls_event_dispatcher  *g_dispatcher;
 
 /* for auditing */
 typedef struct _logitem_t
@@ -27,7 +27,7 @@ typedef struct _log_set_t
     unsigned int    count;
     logitem_t       *items;
     logitem_t       *itemsend;
-    ls_pool         pool;
+    ls_pool         *pool;
 } log_t;
 typedef void (*fn_ptr_t)();
 typedef struct _fn_ptr_wrapper
@@ -38,7 +38,7 @@ typedef struct _fn_ptr_wrapper
 static log_t    g_audit;
 
 static const char *log_event_message(const char *cb,
-                                     ls_event notifier,
+                                     ls_event *notifier,
                                      void *evtdata,
                                      void *evtarg)
 {
@@ -60,9 +60,8 @@ static const char *log_event_message(const char *cb,
 
     return out;
 }
-
 static const char *log_result_message(const char *cb,
-                                      ls_event notifier,
+                                      ls_event *notifier,
                                       void *evtdata,
                                       bool result,
                                       void *rstarg)
@@ -86,7 +85,6 @@ static const char *log_result_message(const char *cb,
 
     return out;
 }
-
 static void loggit(const char *msg)
 {
     union
@@ -121,6 +119,8 @@ static void loggit(const char *msg)
  */
 static void mock_evt1_callback1(ls_event_data evt, void *arg)
 {
+    evt->handled = true;
+
     const char  *msg = log_event_message("mock_evt1_callback1",
                                          evt->notifier,
                                          evt->data,
@@ -143,7 +143,6 @@ static void mock_evt_unbind1_callback1(ls_event_data evt, void *arg)
 
     ls_event_unbind(evt->notifier, mock_evt1_callback1);
 }
-
 static void mock_evt_rebind1_callback1(ls_event_data evt, void *arg)
 {
     const char *msg = log_event_message("mock_evt_rebind1_callback1",
@@ -171,7 +170,6 @@ static void mock_evt_unbind_callback1(ls_event_data evt, void *arg)
 
     ls_event_unbind(evt->notifier, mock_evt_unbind_callback1);
 }
-
 static void mock_evt_unbind_callback2(ls_event_data evt, void *arg)
 {
     const char *msg = log_event_message("mock_evt_unbind_callback2",
@@ -180,9 +178,10 @@ static void mock_evt_unbind_callback2(ls_event_data evt, void *arg)
                                         arg);
     loggit(msg);
 
+    // try unbinding twice (second is a noop)
+    ls_event_unbind(evt->notifier, mock_evt_unbind_callback2);
     ls_event_unbind(evt->notifier, mock_evt_unbind_callback2);
 }
-
 static void mock_evt_unbind_callback3(ls_event_data evt, void *arg)
 {
     const char *msg = log_event_message("mock_evt_unbind_callback3",
@@ -193,7 +192,6 @@ static void mock_evt_unbind_callback3(ls_event_data evt, void *arg)
 
     ls_event_unbind(evt->notifier, mock_evt_unbind_callback3);
 }
-
 static void mock_evt_unbind_callback4(ls_event_data evt, void *arg)
 {
     const char *msg = log_event_message("mock_evt_unbind_callback4",
@@ -243,6 +241,7 @@ static void mock_evt1_result1(ls_event_data evt, bool result, void *arg)
     loggit(msg);
 }
 
+
 /**
  * nesting_callbackA triggers event "arg" using result callback "evt->data"
  */
@@ -255,13 +254,29 @@ static void nesting_callbackA(ls_event_data evt, void *arg)
         callback = (ls_event_result_callback)wrapper->fn;
     }
     /* trigger first to check recursion */
-    ls_event_trigger((ls_event)arg, NULL, callback, NULL, NULL);
+    ls_event_trigger((ls_event*)arg, NULL, callback, NULL, NULL);
     loggit(log_event_message("nesting_callbackA",
                              evt->notifier,
                              evt->data,
                              arg));
 }
-
+// same as above, but fires two arg events instead of one
+static void double_nesting_callback(ls_event_data evt, void *arg)
+{
+    fn_ptr_wrapper_t * wrapper = (fn_ptr_wrapper_t *)evt->data;
+    ls_event_result_callback callback = NULL;
+    if (NULL != wrapper)
+    {
+        callback = (ls_event_result_callback)wrapper->fn;
+    }
+    /* trigger first to check recursion */
+    ls_event_trigger((ls_event*)arg, NULL, callback, NULL, NULL);
+    ls_event_trigger((ls_event*)arg, NULL, callback, NULL, NULL);
+    loggit(log_event_message("double_nesting_callback",
+                             evt->notifier,
+                             evt->data,
+                             arg));
+}
 static void nesting_callbackB(ls_event_data evt, void *arg)
 {
     loggit(log_event_message("nesting_callbackB",
@@ -269,7 +284,6 @@ static void nesting_callbackB(ls_event_data evt, void *arg)
                              evt->data,
                              arg));
 }
-
 /* sets handled to true */
 static void nesting_callbackC(ls_event_data evt, void *arg)
 {
@@ -279,7 +293,6 @@ static void nesting_callbackC(ls_event_data evt, void *arg)
                              arg));
     evt->handled = true;
 }
-
 static void nesting_resultA(ls_event_data evt, bool result, void *arg)
 {
     loggit(log_result_message("nesting_resultA",
@@ -288,7 +301,6 @@ static void nesting_resultA(ls_event_data evt, bool result, void *arg)
                               result,
                               arg));
 }
-
 static void nesting_resultB(ls_event_data evt, bool result, void *arg)
 {
     loggit(log_result_message("nesting_resultB",
@@ -297,6 +309,7 @@ static void nesting_resultB(ls_event_data evt, bool result, void *arg)
                               result,
                               arg));
 }
+
 
 /*
  callbackA and callbackC are passed the event to be fired
@@ -310,9 +323,8 @@ static void evt1_callbackA(ls_event_data evt, void *arg)
                                          arg);
     /* arg is evt2*/
     loggit(msg);
-    ls_event_trigger((ls_event)arg, NULL, NULL, NULL, NULL);
+    ls_event_trigger((ls_event*)arg, NULL, NULL, NULL, NULL);
 }
-
 static void evt3_callbackB(ls_event_data evt, void *arg)
 {
     const char  *msg = log_event_message("evt3_callbackB",
@@ -321,7 +333,6 @@ static void evt3_callbackB(ls_event_data evt, void *arg)
                                          arg);
     loggit(msg);
 }
-
 static void evt2_callbackC(ls_event_data evt, void *arg)
 {
     const char  *msg = log_event_message("evt2_callbackC",
@@ -330,9 +341,8 @@ static void evt2_callbackC(ls_event_data evt, void *arg)
                                          arg);
     /* arg is evt3 */
     loggit(msg);
-    ls_event_trigger((ls_event)arg, NULL, NULL, NULL, NULL);
+    ls_event_trigger((ls_event*)arg, NULL, NULL, NULL, NULL);
 }
-
 static void evt2_callbackD(ls_event_data evt, void *arg)
 {
     const char  *msg = log_event_message("evt2_callbackD",
@@ -357,7 +367,6 @@ static void mock_evt_bind1_callback1(ls_event_data evt, void *arg)
 
     ls_event_bind(evt->notifier, mock_evt1_callback1, NULL, NULL);
 }
-
 static void mock_evt_bind1_callback2(ls_event_data evt, void *arg)
 {
     const char *msg = log_event_message("mock_evt_bind1_callback2",
@@ -369,16 +378,111 @@ static void mock_evt_bind1_callback2(ls_event_data evt, void *arg)
     ls_event_bind(evt->notifier, mock_evt1_callback2, NULL, NULL);
 }
 
+static int _mallocCnt = 0;
+static void *_counting_malloc(size_t size)
+{
+    ++_mallocCnt;
+    return malloc(size);
+}
+
+static void *_counting_realloc(void *ptr, size_t size)
+{
+    if (NULL == ptr)
+    {
+        return _counting_malloc(size);
+    }
+    return realloc(ptr, size);
+}
+
+static int _freeCnt = 0;
+static void _counting_free(void *ptr)
+{
+    ++_freeCnt;
+    free(ptr);
+}
+
+static bool g_oom_malloc_called = false;
+static void * mock_oom_malloc(size_t size)
+{
+    UNUSED_PARAM(size);
+    g_oom_malloc_called = true;
+    return NULL;
+}
+static void * mock_oom_realloc(void * ptr, size_t size)
+{
+    UNUSED_PARAM(ptr);
+    UNUSED_PARAM(size);
+    g_oom_malloc_called = true;
+    return NULL;
+}
+static bool g_nofail_callback_called = false;
+static void mock_nofail_callback(ls_event_data evt, void *arg)
+{
+    UNUSED_PARAM(evt);
+    UNUSED_PARAM(arg);
+    g_nofail_callback_called = true;
+}
+
+void * g_destroy_first_alloc = NULL;
+static void * destroy_test_malloc(size_t size)
+{
+    void * ret = malloc(size);
+    if (!g_destroy_first_alloc)
+    {
+        g_destroy_first_alloc = ret;
+    }
+    return ret;
+}
+static bool g_destroy_correctly_deferred = false;
+static bool g_destroy_first_free = false;
+static void destroy_test_free(void * ptr)
+{
+    if (ptr && ptr == g_destroy_first_alloc)
+    {
+        // record if the remembered pointer was freed
+        g_destroy_first_free = true;
+    }
+    free(ptr);
+}
+static void destroying_callback(ls_event_data evt, void *arg)
+{
+    ls_event            *next_evt   = evt->data;
+    ls_event_dispatcher *dispatcher = arg;
+
+    if (next_evt)
+    {
+        if (!ls_event_trigger(next_evt, NULL, NULL, NULL, NULL))
+        {
+            ls_log(LS_LOG_DEBUG, "event trigger failed in destroying_callback");
+        }
+    }
+
+    g_destroy_correctly_deferred = true;
+    ls_event_dispatcher_destroy(dispatcher);
+    if (g_destroy_first_free)
+    {
+        ls_log(LS_LOG_ERROR, "dispatcher destruction not correctly deferred"
+                             " in destroying_callback");
+        g_destroy_correctly_deferred = false;
+    }
+}
+
+static void async_callback(ls_event_data evt, void *arg)
+{
+    UNUSED_PARAM(arg);
+
+    uint32_t *call_count = evt->data;
+    ++*call_count;
+}
+
 static void _setup(void)
 {
-    ls_event mock1, mock2;
+    ls_event    *mock1, *mock2;
 
     memset(&g_audit, 0, sizeof(log_t));
     ls_pool_create(0, &g_audit.pool, NULL);
 
-    ls_event_dispatcher_create(g_source,
-                               &g_dispatcher,
-                               NULL);
+    ls_event_dispatcher_create(g_source, &g_dispatcher, NULL);
     ls_event_dispatcher_create_event(g_dispatcher,
                                      "mockEvent1",
                                      &mock1,
@@ -401,17 +505,15 @@ static void _teardown(void)
 
 START_TEST (ls_event_dispatcher_create_destroy_test)
 {
-    ls_event_dispatcher dispatch;
+    ls_event_dispatcher *dispatch;
     ls_err              err;
     void                *source = "the source";
 
-    ck_assert(ls_event_dispatcher_create(source,
-                                       &dispatch,
-                                       &err) == true);
-    ck_assert(EXPAND_DISPATCHER(dispatch)->source == source);
-    ck_assert(EXPAND_DISPATCHER(dispatch)->events != NULL);
-    ck_assert(EXPAND_DISPATCHER(dispatch)->running == false);
-    ck_assert(EXPAND_DISPATCHER(dispatch)->queue == NULL);
+    ck_assert(ls_event_dispatcher_create(source, &dispatch, &err));
+    ck_assert(dispatch->source == source);
+    ck_assert(dispatch->events != NULL);
+    ck_assert(dispatch->running == false);
+    ck_assert(dispatch->moment_queue_tail == NULL);
 
     ls_event_dispatcher_destroy(dispatch);
 }
@@ -419,7 +521,7 @@ END_TEST
 
 START_TEST (ls_event_create_test)
 {
-    ls_event        evt1, evt2;
+    ls_event        *evt1, *evt2, *evt3;
     ls_err          err;
 
     ck_assert(ls_event_dispatcher_get_event(g_dispatcher, "EventOne") == NULL);
@@ -435,8 +537,8 @@ START_TEST (ls_event_create_test)
                                              "eventOne",
                                              &evt1,
                                              &err) == true);
-    ck_assert(EXPAND_NOTIFIER(evt1)->dispatcher == EXPAND_DISPATCHER(g_dispatcher));
-    ck_assert(EXPAND_NOTIFIER(evt1)->bindings == NULL);
+    ck_assert(evt1->dispatcher == g_dispatcher);
+    ck_assert(evt1->bindings == NULL);
     ck_assert_str_eq(ls_event_get_name(evt1), "eventOne");
     ck_assert(ls_event_get_source(evt1) == g_source);
     ck_assert(ls_event_dispatcher_get_event(g_dispatcher, "EventOne") == evt1);
@@ -452,8 +554,8 @@ START_TEST (ls_event_create_test)
                                              "secondEvent",
                                              &evt2,
                                              &err) == true);
-    ck_assert(EXPAND_NOTIFIER(evt2)->dispatcher == EXPAND_DISPATCHER(g_dispatcher));
-    ck_assert(EXPAND_NOTIFIER(evt2)->bindings == NULL);
+    ck_assert(evt2->dispatcher == g_dispatcher);
+    ck_assert(evt2->bindings == NULL);
     ck_assert_str_eq(ls_event_get_name(evt2), "secondEvent");
     ck_assert(ls_event_get_source(evt2) == g_source);
     ck_assert(ls_event_dispatcher_get_event(g_dispatcher, "EventOne") == evt1);
@@ -465,39 +567,50 @@ START_TEST (ls_event_create_test)
     ck_assert(ls_event_dispatcher_get_event(g_dispatcher, "secondevent") == evt2);
     ck_assert(ls_event_dispatcher_get_event(g_dispatcher, "SECONDEVENT") == evt2);
     ck_assert(evt1 != evt2);
+
+    // create an event but only retrieve the pointer indirectly
+    ck_assert(ls_event_dispatcher_create_event(g_dispatcher, "eventTheThird",
+                                             NULL, NULL));
+    evt3 = ls_event_dispatcher_get_event(g_dispatcher, "eventTheThird");
+    ck_assert(NULL != evt3);
+    ck_assert(evt1 != evt3);
+    ck_assert(evt2 != evt3);
 }
 END_TEST
 
 START_TEST (ls_event_bindings_test)
 {
-    ls_event            evt1;
+    ls_event            *evt1;
     ls_err              err;
     ls_event_binding_t  *b;
     void                *arg1, *arg2;
 
     evt1 = ls_event_dispatcher_get_event(g_dispatcher, "mockEvent1");
-    ck_assert(EXPAND_NOTIFIER(evt1)->bindings == NULL);
+    ck_assert(evt1->bindings == NULL);
+
+    // ensure unbinding when nothing is bound doesn't segfault
+    ls_event_unbind(evt1, mock_evt1_callback1);
 
     ck_assert(ls_event_bind(evt1, mock_evt1_callback1, NULL, &err) == true);
-    b = EXPAND_NOTIFIER(evt1)->bindings;
+    b = evt1->bindings;
     ck_assert(b != NULL);
     ck_assert(b->cb == mock_evt1_callback1);
     ck_assert(b->arg == NULL);
     ck_assert(b->next == NULL);
 
     ls_event_unbind(evt1, mock_evt1_callback1);
-    ck_assert(EXPAND_NOTIFIER(evt1)->bindings == NULL);
+    ck_assert(evt1->bindings == NULL);
 
     arg1 = "first bound argument";
     ck_assert(ls_event_bind(evt1, mock_evt1_callback1, arg1, &err) == true);
-    b = EXPAND_NOTIFIER(evt1)->bindings;
+    b = evt1->bindings;
     ck_assert(b != NULL);
     ck_assert(b->cb == mock_evt1_callback1);
     ck_assert(b->arg == arg1);
     ck_assert(b->next == NULL);
 
     ck_assert(ls_event_bind(evt1, mock_evt1_callback2, NULL, &err) == true);
-    b = EXPAND_NOTIFIER(evt1)->bindings;
+    b = evt1->bindings;
     ck_assert(b != NULL);
     ck_assert(b->cb == mock_evt1_callback1);
     ck_assert(b->arg == arg1);
@@ -509,7 +622,7 @@ START_TEST (ls_event_bindings_test)
     ck_assert(b->next == NULL);
 
     ls_event_unbind(evt1, mock_evt1_callback2);
-    b = EXPAND_NOTIFIER(evt1)->bindings;
+    b = evt1->bindings;
     ck_assert(b != NULL);
     ck_assert(b->cb == mock_evt1_callback1);
     ck_assert(b->arg == arg1);
@@ -517,7 +630,7 @@ START_TEST (ls_event_bindings_test)
 
     arg2 = "second bound argument";
     ck_assert(ls_event_bind(evt1, mock_evt1_callback2, arg2, &err) == true);
-    b = EXPAND_NOTIFIER(evt1)->bindings;
+    b = evt1->bindings;
     ck_assert(b != NULL);
     ck_assert(b->cb == mock_evt1_callback1);
     ck_assert(b->arg == arg1);
@@ -530,7 +643,7 @@ START_TEST (ls_event_bindings_test)
 
     /* reregister; should not change position */
     ck_assert(ls_event_bind(evt1, mock_evt1_callback1, NULL, &err) == true);
-    b = EXPAND_NOTIFIER(evt1)->bindings;
+    b = evt1->bindings;
     ck_assert(b != NULL);
     ck_assert(b->cb == mock_evt1_callback1);
     ck_assert(b->arg == NULL);
@@ -549,7 +662,7 @@ END_TEST
 
 START_TEST (ls_event_trigger_simple_test)
 {
-    ls_event    evt1;
+    ls_event    *evt1;
     ls_err      err;
     logitem_t   *item;
 
@@ -571,7 +684,7 @@ END_TEST
 
 START_TEST (ls_event_trigger_simple_results_test)
 {
-    ls_event    evt1;
+    ls_event    *evt1;
     ls_err      err;
     logitem_t   *item;
 
@@ -596,16 +709,16 @@ START_TEST (ls_event_trigger_simple_results_test)
     ls_event_unbind(evt1, mock_evt1_callback_handled1);
 }
 END_TEST
+
 START_TEST (ls_event_create_errors_test)
 {
-    ls_event    evt1, evt2;
+    ls_event    *evt1, *evt2;
     ls_err      err;
-    ls_event_dispatcher dispatch;
+    ls_event_dispatcher *dispatch;
     void                *source = "The source";
 
-    ck_assert(ls_event_dispatcher_create(source,
-                                       &dispatch,
-                                       &err) == true);
+    ck_assert(ls_event_dispatcher_create(source, &dispatch, &err));
+    ck_assert(!ls_event_dispatcher_create_event(dispatch, "", &evt1, NULL));
     ck_assert(ls_event_dispatcher_create_event(dispatch,
                                              "",
                                              &evt1,
@@ -618,6 +731,10 @@ START_TEST (ls_event_create_errors_test)
                                              &err) == true);
     evt1 = ls_event_dispatcher_get_event(g_dispatcher, "eventOne");
 
+    ck_assert(!ls_event_dispatcher_create_event(dispatch,
+                                              "eventOne",
+                                              &evt2,
+                                              NULL));
     ck_assert(ls_event_dispatcher_create_event(dispatch,
                                              "eventOne",
                                              &evt2,
@@ -627,9 +744,10 @@ START_TEST (ls_event_create_errors_test)
     ls_event_dispatcher_destroy(dispatch);
 }
 END_TEST
+
 START_TEST (ls_event_trigger_nested_test)
 {
-    ls_event    evt1, evt2;
+    ls_event    *evt1, *evt2;
     ls_err      err;
     logitem_t   *item;
 
@@ -696,20 +814,53 @@ START_TEST (ls_event_trigger_nested_test)
     ls_event_unbind(evt2, nesting_callbackC);
 }
 END_TEST
-START_TEST (ls_event_trigger_multi_source_test)
+
+START_TEST (ls_event_trigger_double_nested_test)
 {
-    ls_event    evt1, evt2, evt3;
+    ls_event    *evt1, *evt2;
     ls_err      err;
     logitem_t   *item;
-    ls_event_dispatcher dispatcher1, dispatcher2;
+
+    ck_assert(evt1 = ls_event_dispatcher_get_event(g_dispatcher, "mockEvent1"));
+    ck_assert(evt2 = ls_event_dispatcher_get_event(g_dispatcher, "mockEvent2"));
+    // trigger two evt2 events from evt1
+    ck_assert(ls_event_bind(evt1, double_nesting_callback, evt2, &err));
+    ck_assert(ls_event_bind(evt2, nesting_callbackB, NULL, &err));
+
+    ck_assert(ls_event_trigger(evt1, NULL, NULL, NULL, &err));
+
+    ck_assert(g_audit.count == 3);
+    item = g_audit.items;
+    ck_assert_str_eq(item->message, log_event_message("double_nesting_callback",
+                                                    evt1,
+                                                    NULL,
+                                                    evt2));
+    item = item->next;
+    ck_assert_str_eq(item->message, log_event_message("nesting_callbackB",
+                                                    evt2,
+                                                    NULL,
+                                                    NULL));
+    item = item->next;
+    ck_assert_str_eq(item->message, log_event_message("nesting_callbackB",
+                                                    evt2,
+                                                    NULL,
+                                                    NULL));
+
+    ls_event_unbind(evt1, double_nesting_callback);
+    ls_event_unbind(evt2, nesting_callbackB);
+}
+END_TEST
+
+START_TEST (ls_event_trigger_multi_source_test)
+{
+    ls_event    *evt1, *evt2, *evt3;
+    ls_err      err;
+    logitem_t   *item;
+    ls_event_dispatcher *dispatcher1, *dispatcher2;
     void                *source1 = "the first source";
     void                *source2 = "the second source";
-    ck_assert(ls_event_dispatcher_create(source1,
-                                       &dispatcher1,
-                                       &err) == true);
-    ck_assert(ls_event_dispatcher_create(source2,
-                                       &dispatcher2,
-                                       &err) == true);
+    ck_assert(ls_event_dispatcher_create(source1, &dispatcher1, &err));
+    ck_assert(ls_event_dispatcher_create(source2, &dispatcher2, &err));
     ls_event_dispatcher_create_event(dispatcher1,
                                      "Event1",
                                      &evt1,
@@ -771,7 +922,7 @@ END_TEST
  */
 START_TEST (ls_event_trigger_event_unbind_test)
 {
-    ls_event evt1;
+    ls_event *evt1;
     ls_err err;
     ls_event_binding_t  *b;
     logitem_t *item;
@@ -793,20 +944,21 @@ START_TEST (ls_event_trigger_event_unbind_test)
                    log_event_message("mock_evt1_callback1", evt1,
                                      NULL, NULL));
 
-    b = EXPAND_NOTIFIER(evt1)->bindings;
+    b = evt1->bindings;
     ck_assert(b != NULL);
     ck_assert(b->cb == mock_evt1_callback1);
     ck_assert(b->next == NULL);
 
     ls_event_unbind(evt1, mock_evt1_callback1);
-    b = EXPAND_NOTIFIER(evt1)->bindings;
+    b = evt1->bindings;
     ck_assert(b == NULL);
 
 }
 END_TEST
+
 START_TEST (ls_event_trigger_event_multiple_unbind_test)
 {
-    ls_event evt1;
+    ls_event *evt1;
     ls_err err;
     ls_event_binding_t  *b;
     logitem_t *item;
@@ -843,14 +995,15 @@ START_TEST (ls_event_trigger_event_multiple_unbind_test)
 
     ck_assert(item->next == NULL);
 
-    b = EXPAND_NOTIFIER(evt1)->bindings;
+    b = evt1->bindings;
     ck_assert(b == NULL);
 
 }
 END_TEST
+
 START_TEST (ls_event_trigger_nested_unbind_test)
 {
-    ls_event    evt1, evt2;
+    ls_event    *evt1, *evt2;
     ls_err      err;
     logitem_t   *item;
     ls_event_binding_t  *b;
@@ -915,20 +1068,21 @@ START_TEST (ls_event_trigger_nested_unbind_test)
     ls_event_unbind(evt1, nesting_callbackA);
     ls_event_unbind(evt1, nesting_callbackB);
 
-    b = EXPAND_NOTIFIER(evt2)->bindings;
+    b = evt2->bindings;
     ck_assert(b != NULL);
     ck_assert(b->cb == nesting_callbackC);
     ck_assert(b->next == NULL);
 
     ls_event_unbind(evt2, nesting_callbackC);
-    b = EXPAND_NOTIFIER(evt2)->bindings;
+    b = evt2->bindings;
     ck_assert(b == NULL);
 
 }
 END_TEST
+
 START_TEST (ls_event_trigger_event_unbind_middle_test)
 {
-    ls_event evt1;
+    ls_event *evt1;
     ls_err err;
     ls_event_binding_t  *b;
     logitem_t *item;
@@ -959,7 +1113,7 @@ START_TEST (ls_event_trigger_event_unbind_middle_test)
 
     ck_assert(item->next == NULL);
 
-    b = EXPAND_NOTIFIER(evt1)->bindings;
+    b = evt1->bindings;
     ck_assert(b != NULL);
     ck_assert(b->cb == mock_evt1_callback1);
     ck_assert(b->next != NULL);
@@ -972,14 +1126,15 @@ START_TEST (ls_event_trigger_event_unbind_middle_test)
     ls_event_unbind(evt1, mock_evt1_callback1);
     ls_event_unbind(evt1, mock_evt1_callback2);
 
-    b = EXPAND_NOTIFIER(evt1)->bindings;
+    b = evt1->bindings;
     ck_assert(b == NULL);
 
 }
 END_TEST
+
 START_TEST (ls_event_trigger_event_unbind_rebind_test)
 {
-    ls_event evt1;
+    ls_event *evt1;
     ls_err err;
     ls_event_binding_t  *b;
     logitem_t *item;
@@ -989,6 +1144,9 @@ START_TEST (ls_event_trigger_event_unbind_rebind_test)
     ck_assert(ls_event_bind(evt1, mock_evt1_callback1, NULL, &err) == true);
     ck_assert(ls_event_bind(evt1, mock_evt_unbind1_callback1, NULL, &err) == true);
     ck_assert(ls_event_bind(evt1, mock_evt_rebind1_callback1, NULL, &err) == true);
+
+    // rebind middle binding -- should not change its order
+    ck_assert(ls_event_bind(evt1, mock_evt_unbind1_callback1, NULL, &err));
 
     ck_assert(ls_event_trigger(evt1, NULL, NULL, NULL, &err) == true);
 
@@ -1010,7 +1168,7 @@ START_TEST (ls_event_trigger_event_unbind_rebind_test)
 
     ck_assert(item->next == NULL);
 
-    b = EXPAND_NOTIFIER(evt1)->bindings;
+    b = evt1->bindings;
     ck_assert(b != NULL);
     ck_assert(b->cb == mock_evt1_callback1);
     ck_assert(b->next != NULL);
@@ -1030,14 +1188,15 @@ START_TEST (ls_event_trigger_event_unbind_rebind_test)
     ls_event_unbind(evt1, mock_evt_rebind1_callback1);
     ls_event_unbind(evt1, mock_evt1_callback1);
 
-    b = EXPAND_NOTIFIER(evt1)->bindings;
+    b = evt1->bindings;
     ck_assert(b == NULL);
 
 }
 END_TEST
+
 START_TEST (ls_event_trigger_event_simple_defer_bind_test)
 {
-    ls_event evt1;
+    ls_event *evt1;
     ls_err err;
     ls_event_binding_t  *b;
     logitem_t *item;
@@ -1048,7 +1207,7 @@ START_TEST (ls_event_trigger_event_simple_defer_bind_test)
 
     ck_assert(ls_event_trigger(evt1, NULL, NULL, NULL, &err) == true);
 
-    b = EXPAND_NOTIFIER(evt1)->bindings;
+    b = evt1->bindings;
     ck_assert(b != NULL);
     ck_assert(b->cb == mock_evt_bind1_callback1);
     ck_assert(b->next != NULL);
@@ -1060,7 +1219,7 @@ START_TEST (ls_event_trigger_event_simple_defer_bind_test)
 
     ck_assert(ls_event_trigger(evt1, NULL, NULL, NULL, &err) == true);
 
-    b = EXPAND_NOTIFIER(evt1)->bindings;
+    b = evt1->bindings;
     ck_assert(b != NULL);
     ck_assert(b->cb == mock_evt_bind1_callback1);
     ck_assert(b->next != NULL);
@@ -1086,9 +1245,10 @@ START_TEST (ls_event_trigger_event_simple_defer_bind_test)
     ck_assert(item->next == NULL);
 }
 END_TEST
+
 START_TEST (ls_event_trigger_event_multiple_defer_bind_test)
 {
-    ls_event evt1;
+    ls_event *evt1;
     ls_err err;
     ls_event_binding_t  *b;
     logitem_t *item;
@@ -1101,7 +1261,7 @@ START_TEST (ls_event_trigger_event_multiple_defer_bind_test)
     ck_assert(ls_event_trigger(evt1, NULL, NULL, NULL, &err) == true);
     ck_assert(ls_event_trigger(evt1, NULL, NULL, NULL, &err) == true);
 
-    b = EXPAND_NOTIFIER(evt1)->bindings;
+    b = evt1->bindings;
     ck_assert(b != NULL);
     ck_assert(b->cb == mock_evt_bind1_callback1);
     ck_assert(b->next != NULL);
@@ -1149,9 +1309,10 @@ START_TEST (ls_event_trigger_event_multiple_defer_bind_test)
     ck_assert(item->next == NULL);
 }
 END_TEST
+
 START_TEST (ls_event_trigger_event_defer_bind_rebind_test)
 {
-    ls_event evt1;
+    ls_event *evt1;
     ls_err err;
     ls_event_binding_t  *b;
     logitem_t *item;
@@ -1164,7 +1325,7 @@ START_TEST (ls_event_trigger_event_defer_bind_rebind_test)
     ck_assert(ls_event_trigger(evt1, NULL, NULL, NULL, &err) == true);
     ck_assert(ls_event_trigger(evt1, NULL, NULL, NULL, &err) == true);
 
-    b = EXPAND_NOTIFIER(evt1)->bindings;
+    b = evt1->bindings;
     ck_assert(b != NULL);
     ck_assert(b->cb == mock_evt_bind1_callback1);
     ck_assert(b->next != NULL);
@@ -1203,9 +1364,10 @@ START_TEST (ls_event_trigger_event_defer_bind_rebind_test)
     ck_assert(item->next == NULL);
 }
 END_TEST
+
 START_TEST (ls_event_trigger_event_defer_bind_unbind_test)
 {
-    ls_event evt1;
+    ls_event *evt1;
     ls_err err;
     ls_event_binding_t  *b;
     logitem_t *item;
@@ -1217,7 +1379,7 @@ START_TEST (ls_event_trigger_event_defer_bind_unbind_test)
 
     ck_assert(ls_event_trigger(evt1, NULL, NULL, NULL, &err) == true);
 
-    b = EXPAND_NOTIFIER(evt1)->bindings;
+    b = evt1->bindings;
     ck_assert(b != NULL);
     ck_assert(b->cb == mock_evt_bind1_callback1);
     ck_assert(b->next != NULL);
@@ -1239,9 +1401,10 @@ START_TEST (ls_event_trigger_event_defer_bind_unbind_test)
     ck_assert(item->next == NULL);
 }
 END_TEST
+
 START_TEST (ls_event_trigger_event_defer_bind_unbind_rebind_test)
 {
-    ls_event evt1;
+    ls_event *evt1;
     ls_err err;
     ls_event_binding_t  *b;
     logitem_t *item;
@@ -1255,7 +1418,7 @@ START_TEST (ls_event_trigger_event_defer_bind_unbind_rebind_test)
     ck_assert(ls_event_trigger(evt1, NULL, NULL, NULL, &err) == true);
     ck_assert(ls_event_trigger(evt1, NULL, NULL, NULL, &err) == true);
 
-    b = EXPAND_NOTIFIER(evt1)->bindings;
+    b = evt1->bindings;
     ck_assert(b != NULL);
     ck_assert(b->cb == mock_evt_bind1_callback1);
     ck_assert(b->next != NULL);
@@ -1308,6 +1471,117 @@ START_TEST (ls_event_trigger_event_defer_bind_unbind_rebind_test)
 }
 END_TEST
 
+START_TEST (ls_event_trigger_prepared_test)
+{
+    ls_event_trigger_data *trigger_data;
+    ls_event *evt;
+
+    // can't use audit trail since that would require memory allocation
+    evt = ls_event_dispatcher_get_event(g_dispatcher, "mockEvent1");
+    ck_assert(ls_event_bind(evt, mock_nofail_callback, NULL, NULL));
+
+    ck_assert(ls_event_prepare_trigger(g_dispatcher, &trigger_data, NULL));
+
+    g_oom_malloc_called = false;
+    g_nofail_callback_called = false;
+    ls_data_set_memory_funcs(mock_oom_malloc, mock_oom_realloc, NULL);
+
+    ls_event_trigger_prepared(evt, NULL, NULL, NULL, trigger_data);
+
+    ls_data_set_memory_funcs(NULL, NULL, NULL);
+    ck_assert(g_nofail_callback_called);
+
+    ls_event_unbind(evt, mock_evt1_callback_handled1);
+}
+END_TEST
+
+START_TEST (ls_event_trigger_prepare_unprepare_test)
+{
+    ls_event_trigger_data *trigger_data;
+
+    ls_data_set_memory_funcs(_counting_malloc, _counting_realloc, _counting_free);
+
+    ck_assert(ls_event_prepare_trigger(g_dispatcher, &trigger_data, NULL));
+    ls_event_unprepare_trigger(trigger_data);
+
+    ck_assert_int_eq(_mallocCnt, _freeCnt);
+
+    ls_data_set_memory_funcs(NULL, NULL, NULL);
+}
+END_TEST
+
+START_TEST (ls_event_trigger_deferred_destroy_test)
+{
+    ls_event            *evt        = NULL;
+    ls_event_dispatcher *dispatcher = NULL;
+
+    g_destroy_first_free = false;
+    g_destroy_first_alloc = NULL;
+    ls_data_set_memory_funcs(destroy_test_malloc, NULL, destroy_test_free);
+    ck_assert(ls_event_dispatcher_create(g_source, &dispatcher, NULL));
+    ck_assert(ls_event_dispatcher_create_event(dispatcher,
+                                             "destroyEvt", &evt, NULL));
+    ck_assert(ls_event_bind(evt, destroying_callback, dispatcher, NULL));
+    ck_assert(ls_event_trigger(evt, evt, NULL, NULL, NULL));
+
+    // can't use audit trail since the evt is destroyed during the callback
+    ck_assert(g_destroy_first_alloc);
+    ck_assert(g_destroy_correctly_deferred);
+
+    ls_data_set_memory_funcs(NULL, NULL, NULL);
+}
+END_TEST
+
+START_TEST (ls_event_oom_test)
+{
+    ls_event_dispatcher *dispatcher;
+    ls_event            *evt;
+
+    // create dispatcher
+    OOM_SIMPLE_TEST(ls_event_dispatcher_create(
+                            g_source, &dispatcher, &err));
+
+    OOM_TEST_INIT();
+    OOM_TEST(NULL, ls_event_dispatcher_create(
+                            g_source, &dispatcher, NULL));
+
+    // create event (use two events: an event cannot be created twice)
+    ls_err err;
+    OOM_RECORD_ALLOCS(ls_event_dispatcher_create_event(
+                            dispatcher, "ev", &evt, &err));
+    OOM_TEST_INIT();
+    OOM_TEST_CONDITIONAL_CHECK(&err,
+                               ls_event_dispatcher_create_event(
+                                    dispatcher, "ev2", &evt, &err),
+                               true);
+    OOM_TEST_INIT();
+    OOM_TEST(NULL, ls_event_dispatcher_create_event(
+                            dispatcher, "ev2", &evt, NULL));
+
+    // bind event (use two callbacks: rebinding changes the code path)
+    OOM_RECORD_ALLOCS(ls_event_bind(
+                                evt, async_callback, dispatcher, &err));
+    OOM_TEST_INIT();
+    OOM_TEST_CONDITIONAL_CHECK(&err,
+                               ls_event_bind(evt, destroying_callback,
+                                             dispatcher, &err),
+                               true);
+    OOM_TEST_INIT();
+    OOM_TEST(NULL, ls_event_bind(evt, destroying_callback,
+                                 dispatcher, NULL));
+
+    // trigger event
+    uint32_t call_count = 0;
+    OOM_SIMPLE_TEST(ls_event_trigger(
+                                evt, &call_count, NULL, NULL, &err));
+    OOM_TEST_INIT();
+    OOM_TEST(NULL, ls_event_trigger(
+                                evt, &call_count, NULL, NULL, NULL));
+
+    ls_event_dispatcher_destroy(dispatcher);
+}
+END_TEST
+
 Suite * ls_eventing_suite (void)
 {
   Suite *s = suite_create ("ls_eventing");
@@ -1322,6 +1596,7 @@ Suite * ls_eventing_suite (void)
       tcase_add_test (tc_ls_eventing, ls_event_trigger_simple_results_test);
       tcase_add_test (tc_ls_eventing, ls_event_create_errors_test);
       tcase_add_test (tc_ls_eventing, ls_event_trigger_nested_test);
+      tcase_add_test (tc_ls_eventing, ls_event_trigger_double_nested_test);
       tcase_add_test (tc_ls_eventing, ls_event_trigger_multi_source_test);
       tcase_add_test (tc_ls_eventing, ls_event_trigger_event_unbind_test);
       tcase_add_test (tc_ls_eventing, ls_event_trigger_event_multiple_unbind_test);
@@ -1333,6 +1608,10 @@ Suite * ls_eventing_suite (void)
       tcase_add_test (tc_ls_eventing, ls_event_trigger_event_defer_bind_rebind_test);
       tcase_add_test (tc_ls_eventing, ls_event_trigger_event_defer_bind_unbind_test);
       tcase_add_test (tc_ls_eventing, ls_event_trigger_event_defer_bind_unbind_rebind_test);
+      tcase_add_test (tc_ls_eventing, ls_event_trigger_prepared_test);
+      tcase_add_test (tc_ls_eventing, ls_event_trigger_prepare_unprepare_test);
+      tcase_add_test (tc_ls_eventing, ls_event_trigger_deferred_destroy_test);
+      tcase_add_test (tc_ls_eventing, ls_event_oom_test);
 
       suite_add_tcase (s, tc_ls_eventing);
   }
