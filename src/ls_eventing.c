@@ -418,6 +418,7 @@ LS_API bool ls_event_dispatcher_create(void *source,
 
 LS_API void ls_event_dispatcher_destroy(ls_event_dispatcher *dispatch)
 {
+    ls_event_moment_t *moment;
     int _ndcDepth;
     LS_LOG_TRACE_FUNCTION_NO_ARGS;
 
@@ -435,7 +436,7 @@ LS_API void ls_event_dispatcher_destroy(ls_event_dispatcher *dispatch)
 
     ls_log(LS_LOG_DEBUG, "destroying dispatcher");
 
-    ls_event_moment_t *moment = dispatch->next_moment;
+    moment = dispatch->next_moment;
     while (moment)
     {
         ls_event_moment_t *next_moment = moment->next;
@@ -473,12 +474,13 @@ LS_API bool ls_event_dispatcher_create_event(
                     ls_event **event,
                     ls_err *err)
 {
-    LS_LOG_TRACE_FUNCTION_NO_ARGS;
-
     ls_event_notifier_t *notifier = NULL;
     char                *evt_name = NULL;
     bool                 retval   = true;
     int _ndcDepth;
+    size_t nameLen;
+
+    LS_LOG_TRACE_FUNCTION_NO_ARGS;
 
     assert(dispatch);
     assert(name);
@@ -497,7 +499,7 @@ LS_API bool ls_event_dispatcher_create_event(
         goto ls_event_dispatcher_create_event_done_label;
     }
 
-    size_t nameLen = ls_strlen(name);
+    nameLen = ls_strlen(name);
     evt_name = (char *)ls_data_malloc(nameLen + 1);
     if (evt_name == NULL)
     {
@@ -759,6 +761,7 @@ LS_API bool ls_event_trigger(ls_event *event,
                                      ls_err *err)
 {
     ls_event_dispatcher *dispatch;
+    ls_event_trigger_data *trigger_data;
     int _ndcDepth;
 
     assert(event);
@@ -766,8 +769,6 @@ LS_API bool ls_event_trigger(ls_event *event,
 
     PUSH_EVENTING_NDC;
     LS_LOG_TRACE_FUNCTION_NO_ARGS;
-
-    ls_event_trigger_data *trigger_data;
 
     if (!_prepare_trigger(dispatch, &trigger_data, err))
     {
