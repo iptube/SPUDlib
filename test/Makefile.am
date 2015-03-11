@@ -5,7 +5,7 @@ if CHECK
   MY_LDFLAGS_1 = -lcheck -g
   TESTS = check_spudlib
   check_PROGRAMS = check_spudlib
-  check_spudlib_SOURCES = spud_test.c testmain.c ../src/spud.c
+  check_spudlib_SOURCES = ls_str_test.c spud_test.c testmain.c
   check_spudlib_LDADD = ../src/libspud.la
 
 AM_CPPFLAGS = $(MY_CFLAGS_1)
