@@ -154,10 +154,10 @@ LS_API void ls_hnode_put_value(ls_hnode *node,
 
 LS_API void ls_htable_remove_node(ls_htable *tbl, ls_hnode *node)
 {
+    register ls_hnode *p;
+
     assert(tbl);
     assert(node);
-
-    register ls_hnode *p;
 
     // look to unchain it from the bucket it's in
     if (node == tbl->buckets[node->bucket])
