@@ -370,9 +370,9 @@ LS_API bool ls_pool_strdup(ls_pool *pool,
                                    char  **cpy,
                                    ls_err *err)
 {
+    char   *ret = NULL;
     assert(cpy);
 
-    char   *ret = NULL;
     if (src)
     {
         size_t len = ls_strlen(src);
