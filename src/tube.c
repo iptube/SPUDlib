@@ -42,11 +42,11 @@ or implied, of Cisco.
 #define EV_DATA_NAME    "data"
 #define EV_CLOSE_NAME   "close"
 
-static ls_event _get_or_create_event(ls_event_dispatcher dispatcher,
-                                     const char *name,
-                                     ls_err *err)
+static ls_event *_get_or_create_event(ls_event_dispatcher *dispatcher,
+                                      const char *name,
+                                      ls_err *err)
 {
-    ls_event ev = ls_event_dispatcher_get_event(dispatcher, name);
+    ls_event *ev = ls_event_dispatcher_get_event(dispatcher, name);
     if (ev) {
         return ev;
     }
@@ -56,14 +56,14 @@ static ls_event _get_or_create_event(ls_event_dispatcher dispatcher,
     return ev;
 }
 
-LS_API bool tube_bind_events(ls_event_dispatcher dispatcher,
+LS_API bool tube_bind_events(ls_event_dispatcher *dispatcher,
                              ls_event_notify_callback running_cb,
                              ls_event_notify_callback data_cb,
                              ls_event_notify_callback close_cb,
                              void *arg,
                              ls_err *err)
 {
-    ls_event ev;
+    ls_event *ev;
     if ((ev = _get_or_create_event(dispatcher, EV_RUNNING_NAME, err)) == NULL) {
         return false;
     }
@@ -91,10 +91,10 @@ LS_API bool tube_bind_events(ls_event_dispatcher dispatcher,
     return true;
 }
 
-LS_API bool tube_create(int sock, ls_event_dispatcher dispatcher, tube *t, ls_err *err)
+LS_API bool tube_create(int sock, ls_event_dispatcher *dispatcher, tube **t, ls_err *err)
 {
     assert(t != NULL);
-    *t = (tube)ls_data_malloc(sizeof(**t));
+    *t = (tube*)ls_data_malloc(sizeof(**t));
     if (*t == NULL) {
         LS_ERROR(err, LS_ERR_NO_MEMORY);
         return false;
@@ -127,7 +127,7 @@ error:
     return false;
 }
 
-LS_API void tube_destroy(tube t)
+LS_API void tube_destroy(tube *t)
 {
     if (t->state == TS_RUNNING) {
         tube_close(t, NULL); /* ignore error for now */
@@ -138,7 +138,7 @@ LS_API void tube_destroy(tube t)
     ls_data_free(t);
 }
 
-LS_API bool tube_print(const tube t, ls_err *err)
+LS_API bool tube_print(const tube *t, ls_err *err)
 {
     struct sockaddr_storage addr;
     socklen_t addr_len = sizeof(addr);
@@ -166,7 +166,7 @@ LS_API bool tube_print(const tube t, ls_err *err)
     return true;
 }
 
-LS_API bool tube_send(tube t,
+LS_API bool tube_send(tube *t,
                       spud_command_t cmd,
                       bool adec, bool pdec,
                       uint8_t **data, size_t *len,
@@ -222,7 +222,7 @@ LS_API bool tube_send(tube t,
     return true;
 }
 
-LS_API bool tube_open(tube t, const struct sockaddr *dest, ls_err *err)
+LS_API bool tube_open(tube *t, const struct sockaddr *dest, ls_err *err)
 {
     assert(t!=NULL);
     assert(dest!=NULL);
@@ -234,7 +234,7 @@ LS_API bool tube_open(tube t, const struct sockaddr *dest, ls_err *err)
     return tube_send(t, SPUD_OPEN, false, false, NULL, 0, 0, err);
 }
 
-LS_API bool tube_ack(tube t,
+LS_API bool tube_ack(tube *t,
                      const spud_tube_id_t *id,
                      const struct sockaddr *dest,
                      ls_err *err)
@@ -250,7 +250,7 @@ LS_API bool tube_ack(tube t,
     return tube_send(t, SPUD_ACK, false, false, NULL, 0, 0, err);
 }
 
-LS_API bool tube_data(tube t, uint8_t *data, size_t len, ls_err *err)
+LS_API bool tube_data(tube *t, uint8_t *data, size_t len, ls_err *err)
 {
     uint8_t preamble[13];
     uint8_t *d[2];
@@ -305,13 +305,13 @@ LS_API bool tube_data(tube t, uint8_t *data, size_t len, ls_err *err)
     return tube_send(t, SPUD_DATA, false, false, d, l, 2, err);
 }
 
-LS_API bool tube_close(tube t, ls_err *err)
+LS_API bool tube_close(tube *t, ls_err *err)
 {
     t->state = TS_UNKNOWN;
     return tube_send(t, SPUD_CLOSE, false, false, NULL, 0, 0, err);
 }
 
-LS_API bool tube_recv(tube t,
+LS_API bool tube_recv(tube *t,
                       spud_message_t *msg,
                       const struct sockaddr* addr,
                       ls_err *err)

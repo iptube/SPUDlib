@@ -21,18 +21,26 @@ bool keepGoing = true;
 
 pthread_t listenThread;
 int sockfd = -1;
-tube tubes[NUM_TUBES];
-ls_htable tube_table;
+tube *tubes[NUM_TUBES];
+ls_htable *tube_table = NULL;
 struct sockaddr_in6 remoteAddr;
 struct sockaddr_in6 localAddr;
 uint8_t data[1024];
+
+static void clean_tube(bool replace, bool destroy_key, void *key, void *data)
+{
+    UNUSED_PARAM(replace);
+    UNUSED_PARAM(destroy_key);
+    UNUSED_PARAM(key);
+    tube *t = data;
+    tube_destroy(t);
+}
 
 static int markov()
 {
     struct timespec timer;
     struct timespec remaining;
-    tube t;
-    tube old = NULL;
+    tube *t;
     ls_err err;
 
     timer.tv_sec = 0;
@@ -53,15 +61,12 @@ static int markov()
                 return 1;
             }
             t->state = TS_OPENING;
-            if (!ls_htable_put(tube_table, &t->id, t, (void**)&old, &err)) {
+            if (!ls_htable_put(tube_table, &t->id, t, clean_tube, &err)) {
                 LS_LOG_ERR(err, "ls_htable_put");
                 return 1;
             }
             ls_log(LS_LOG_VERBOSE, "Created.  Hashtable size: %d",
                    ls_htable_get_count(tube_table));
-            if (old) {
-                ls_log(LS_LOG_WARN, "state fail: old id in hashtable");
-            }
             if (!tube_send(t, SPUD_OPEN, false, false, NULL, NULL, 0, &err)) {
                 LS_LOG_ERR(err, "tube_send");
                 return 1;
@@ -78,9 +83,7 @@ static int markov()
                     LS_LOG_ERR(err, "tube_close");
                     return 1;
                 }
-                if (!ls_htable_remove(tube_table, &t->id)) {
-                    ls_log(LS_LOG_WARN, "state fail: old id did not exist");
-                }
+                ls_htable_remove(tube_table, &t->id);
             } else {
                 // TODO: put something intersting in the buffer
                 if (!tube_data(t, data, random() % sizeof(data), &err)) {
@@ -105,7 +108,7 @@ static void *socketListen(void *ptr)
     int numbytes;
     spud_message_t sMsg = {NULL, NULL};
     ls_err err;
-    tube t;
+    tube *t;
     char idStr[SPUD_ID_STRING_SIZE+1];
     spud_tube_id_t uid;
 
@@ -163,9 +166,7 @@ static void close_cb(ls_event_data evt, void *arg)
     tubeData *td = evt->data;
     UNUSED_PARAM(arg);
 
-    if (!ls_htable_remove(tube_table, &td->t->id)) {
-        ls_log(LS_LOG_WARN, "state fail: old id did not exist");
-    }
+    ls_htable_remove(tube_table, &td->t->id);
 }
 
 void done() {
@@ -209,7 +210,7 @@ int spudtest(int argc, char **argv)
     ls_err err;
     size_t i;
     const char nums[] = "0123456789";
-    ls_event_dispatcher dispatcher;
+    ls_event_dispatcher *dispatcher;
 
     if (argc < 2) {
         fprintf(stderr, "spudload <destination>\n");
@@ -243,7 +244,7 @@ int spudtest(int argc, char **argv)
     }
 
     if (!ls_htable_create(65521, hash_id, compare_id, &tube_table, &err)) {
-        LS_LOG_ERR(err, ls_htable_create);
+        LS_LOG_ERR(err, "ls_htable_create");
         return 1;
     }
 

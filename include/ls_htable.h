@@ -21,15 +21,12 @@
 #include "ls_basics.h"
 #include "ls_error.h"
 
-/**
- * An instance of a hashtable
- */
-typedef struct _ls_htable_int *ls_htable;
+/** An instance of a hashtable */
+typedef struct _ls_htable ls_htable;
 
-/**
- * A node in the hashtable.
- */
-typedef struct _ls_hnode_int *ls_hnode;
+/** A node in the hashtable */
+typedef struct _ls_hnode ls_hnode;
+
 
 /**
  * Pointer to a function for generating hashcodes.
@@ -47,8 +44,8 @@ typedef unsigned int (*ls_htable_hashfunc)(const void *key);
  *
  * \param key1 The first key to compare
  * \param key2 The second key to compare
- * \retval int less than 1 if key1 is before key2,
- *             greater than 1 if key1 is after key2,
+ * \retval int less than 0 if key1 is before key2,
+ *             greater than 0 if key1 is after key2,
  *             0 if key1 and key2 are equal
  * \see ls_int_compare
  */
@@ -65,13 +62,27 @@ typedef int (*ls_htable_cmpfunc)(const void *key1, const void *key2);
 typedef int (*ls_htable_walkfunc)(void *user_data, const void *key, void *data);
 
 /**
+ * Function pointer for cleaning up a hashtable entry.
+ * \param replace If true, the data for the given key is being replaced,
+ *                not added.
+ * \param destroy_key If true, any non-static data in the key should be destroyed.
+ *                destroy_key will always be true if replace is false.
+ *                destroy_key will be false if the new key has pointer equality
+ *                with the old key.
+ * \param key The old key being cleaned.
+ * \param data The old data being cleaned.  This is usually freed in the called function.
+ */
+typedef void (*ls_htable_cleanfunc)(
+        bool replace, bool destroy_key, void *key, void *data);
+
+/**
  * Retrieves the key for the given hashtable node
  *
  * \invariant node != NULL
  * \param node The node to retrieve the key of
  * \retval void *The key of node
  */
-LS_API const void *ls_hnode_get_key(ls_hnode node);
+LS_API const void *ls_hnode_get_key(ls_hnode *node);
 
 /**
  * Retrieves the value for the given hashtable node
@@ -80,18 +91,20 @@ LS_API const void *ls_hnode_get_key(ls_hnode node);
  * \param node The node to retrieve the value of
  * \retval void *The value of node
  */
-LS_API void *ls_hnode_get_value(ls_hnode node);
+LS_API void *ls_hnode_get_value(ls_hnode *node);
 
 /**
  * Changes the value of the given hashtable node
  *
  * \invariant node != NULL
- * \param node The node to change the value of
- * \param data The new value
- * \retval void *The previous value, or NULL if not set
+ * \param[in] node The node to change the value of
+ * \param[in] data The new value
+ * \param[in] cleaner Function to call when data is replaced or deleted
+ *        (provide NULL to ignore)
  */
-LS_API void *ls_hnode_put_value(ls_hnode node,
-                                void *data);
+LS_API void ls_hnode_put_value(ls_hnode           *node,
+                               void               *data,
+                               ls_htable_cleanfunc cleaner);
 
 /**
  * Creates a new hashtable.
@@ -111,24 +124,24 @@ LS_API void *ls_hnode_put_value(ls_hnode node,
  * \param[out] err The error information (provide NULL to ignore)
  * \retval bool true if successful, false otherwise.
  */
-LS_API bool ls_htable_create(int buckets,
+LS_API bool ls_htable_create(int                buckets,
                              ls_htable_hashfunc hash,
-                             ls_htable_cmpfunc cmp,
-                             ls_htable *tbl,
-                             ls_err *err);
+                             ls_htable_cmpfunc  cmp,
+                             ls_htable        **tbl,
+                             ls_err            *err);
 
 /**
  * Destroys a hashtable.
  *
- * <b>NOTE:</b> This function will not attempt to clean up memory allocated
- * for the actual keys and values, only the structures used to reference the
- * keys and values.  Call ls_htable_clear() to free memory specific to
- * keys and values.
+ * <b>NOTE:</b> This function WILL clean up memory allocated
+ * for the actual keys and values by calling the cleaner function supplied
+ * when the values were inserted with ls_htable_put.  It is no longer necessary
+ * to call ls_htable_clear first.
  *
  * \invariant tbl != NULL
  * \param tbl Hashtable to be destroyed.
  */
-LS_API void ls_htable_destroy(ls_htable tbl);
+LS_API void ls_htable_destroy(ls_htable *tbl);
 
 /**
  * Returns the number of elements stored in the given hashtable
@@ -137,7 +150,7 @@ LS_API void ls_htable_destroy(ls_htable tbl);
  * \param tbl The hashtable
  * \retval unsigned int The number of elements in tbl
  */
-LS_API unsigned int ls_htable_get_count(ls_htable tbl);
+LS_API unsigned int ls_htable_get_count(ls_htable *tbl);
 
 /**
  * Retrieves the node stored in the hashtable.
@@ -148,8 +161,20 @@ LS_API unsigned int ls_htable_get_count(ls_htable tbl);
  * \retval ls_hnode the node corresponding to the specified key,
  *         or NULL if not found.
  */
-LS_API ls_hnode ls_htable_get_node(ls_htable tbl,
-                                   const void* key);
+LS_API ls_hnode *ls_htable_get_node(ls_htable  *tbl,
+                                    const void *key);
+
+/**
+ * Removes the node from the hashtable, calling whatever cleaner function
+ * is registered.
+ *
+ * \invariant tbl != NULL
+ * \invariant node != NULL
+ * \param tbl The table to remove from
+ * \param node The node to remove
+ */
+LS_API void ls_htable_remove_node(ls_htable *tbl,
+                                  ls_hnode  *node);
 
 /**
  * Retrieves a value stored in the hashtable.
@@ -159,13 +184,14 @@ LS_API ls_hnode ls_htable_get_node(ls_htable tbl,
  * \param key the key value to search on.
  * \retval void * Value corresponding to the specified key, NULL if not found.
  */
-LS_API void *ls_htable_get(ls_htable tbl,
+LS_API void *ls_htable_get(ls_htable  *tbl,
                            const void *key);
 
 /**
  * Associates a key with a value in this hashtable. If there is already
- * a value for this key, it is replaced. If pvalue is not NULL, it will be set
- * to the previous value for key, or NULL if there was no previous value.
+ * a value for this key, it is replaced, and the previous cleaner function
+ * (if any) is called for the previous value.  If required for the new value,
+ * a new cleaner function should be provided even when replacing.
  *
  * This function can generate the following errors (set when returning false):
  * \li \c LS_ERR_NO_MEMORY if the hashtable could not be allocated
@@ -174,39 +200,36 @@ LS_API void *ls_htable_get(ls_htable tbl,
  * \param[in] tbl Hashtable to add/update.
  * \param[in] key Key to use for the value in the table.
  * \param[in] value Value to add for this key.
- * \param[out] pvalue pointer to previous value for key, or NULL to ignore
+ * \param[in] cleaner Function to call when the item is deleted or replaced.
+ *                    (provide NULL to ignore)
  * \param[out] err The error information (provide NULL to ignore)
  * \retval bool if successful; false otherwise.
  */
-LS_API bool ls_htable_put(ls_htable tbl,
-                          const void *key,
-                          void *value,
-                          void **pvalue,
-                          ls_err *err);
+LS_API bool ls_htable_put(ls_htable          *tbl,
+                          const void         *key,
+                          void               *value,
+                          ls_htable_cleanfunc cleaner,
+                          ls_err             *err);
+
 /**
  * Removes an entry from a hashtable, given its key.
+ * Note, the cleaner function will be called.
  *
  * \invariant tbl != NULL
  * \param tbl Hashtable to remove from.
  * \param key Key of value to remove.
- * \retval void * previous value for the key, or NULL if none.
  */
-LS_API void *ls_htable_remove(ls_htable tbl,
-                              const void *key);
+LS_API void ls_htable_remove(ls_htable  *tbl,
+                             const void *key);
 
 /**
- * Frees all elements in a hashtable, possibly calling a callback function for
- * each element to free it.
+ * Frees all elements in a hashtable, calling the cleaner function for
+ * each item to free it.
  *
  * \invariant tbl != NULL
  * \param tbl Hash table to clear out.
- * \param cleanup The callback to be called for each node, NULL if not needed
- * \param user_data Value to use as the first parameter for the cleanup
- *                  function, if any.
  */
-LS_API void ls_htable_clear(ls_htable tbl,
-                            ls_htable_walkfunc cleanup,
-                            void *user_data);
+LS_API void ls_htable_clear(ls_htable *tbl);
 
 /**
  * Returns the first element in the hashtable.
@@ -216,7 +239,7 @@ LS_API void ls_htable_clear(ls_htable tbl,
  * \retval ls_hnode the first node in the hashtable or NULL if there
  *                          isn't one.
  */
-LS_API ls_hnode ls_htable_get_first_node(ls_htable tbl);
+LS_API ls_hnode *ls_htable_get_first_node(ls_htable *tbl);
 
 /**
  * Returns the next node in the hashtable
@@ -227,8 +250,8 @@ LS_API ls_hnode ls_htable_get_first_node(ls_htable tbl);
  * \retval ls_hnode a pointer to the next node or NULL if there isn't
                             one.
  */
-LS_API ls_hnode ls_htable_get_next_node(ls_htable tbl,
-                                        ls_hnode cur);
+LS_API ls_hnode *ls_htable_get_next_node(ls_htable *tbl,
+                                         ls_hnode  *cur);
 
 /**
  * Iterates through a hashtable, calling a callback function for each element
@@ -240,9 +263,9 @@ LS_API ls_hnode ls_htable_get_next_node(ls_htable tbl,
  * \return int Number of nodes visited up to and including the one for which
  *             the callback function returned 0, if it did
  */
-LS_API unsigned int ls_htable_walk(ls_htable tbl,
+LS_API unsigned int ls_htable_walk(ls_htable         *tbl,
                                    ls_htable_walkfunc func,
-                                   void *user_data);
+                                   void              *user_data);
 
 /**
  * Generates hashcodes for strings (case-sensitive).
@@ -304,3 +327,15 @@ LS_API unsigned int ls_int_hashcode(const void *key);
  *             0 if i1 and i2 are equal
  */
 LS_API int ls_int_compare(const void *key1, const void *key2);
+
+/**
+ * Calls ls_data_free only on the data associated with a node.  Use this when
+ * the keys are always static strings, and ls_data_free(data) is correct.
+ *
+ * \param replace Ignored
+ * \param destroy_key Ignored
+ * \param key Ignored
+ * \param data The data that will be freed with ls_data_free.
+ */
+LS_API void ls_htable_free_data_cleaner(
+        bool replace, bool destroy_key, void *key, void *data);

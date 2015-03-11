@@ -6,56 +6,73 @@
  * Copyright (c) 2010-2011 Cisco Systems, Inc.  All Rights Reserved.
  */
 
-#include "ls_eventing.h"
-#include "ls_htable.h"
-#include "ls_str.h"
-
 #include <assert.h>
 #include <string.h>
 
+#include "ls_eventing.h"
+#include "ls_htable.h"
+#include "ls_str.h"
+#include "ls_log.h"
 #include "ls_eventing_int.h"
 
 /* Internal Constants */
 static const int DISPATCH_BUCKETS = 7;
 static const size_t MOMENT_POOLSIZE = 0;
 
+/**
+ * Event triggering data.
+ */
+typedef struct _ls_event_trigger_t
+{
+    ls_event_moment_t *moment;
+    ls_pool            *pool;
+} ls_event_trigger_t;
+
+
+#define PUSH_EVENTING_NDC int _ndcDepth = _push_eventing_ndc(dispatch, __func__)
+#define POP_EVENTING_NDC ls_log_pop_ndc(_ndcDepth)
+static int _push_eventing_ndc(ls_event_dispatcher *dispatch,
+                              const char *entrypoint)
+{
+    assert(entrypoint);
+
+    return ls_log_push_ndc("eventing dispatcher=%p; entrypoint=%s",
+                           (void *)dispatch, entrypoint);
+}
+
 /* Internal Functions */
 /**
  * Searched the notifier for an existing binding of the given callback.
- * This function updates {pmatch} and {pprev} as appropriate, including
+ * This function updates {pmatch} and {pins} as appropriate, including
  * setting values to NULL if there is no match.
+ *
+ * returns whether the binding was found
  */
-static bool _find_binding(ls_event_notifier_t *notifier,
-                          ls_event_notify_callback cb,
-                          ls_event_binding_t **pmatch,
-                          ls_event_binding_t **pins)
+static inline bool _remove_binding(ls_event_notifier_t *notifier,
+                                   ls_event_notify_callback cb,
+                                   ls_event_binding_t **pmatch,
+                                   ls_event_binding_t **pins)
 {
+    LS_LOG_TRACE_FUNCTION_NO_ARGS;
+
     ls_event_binding_t *curr = notifier->bindings;
     ls_event_binding_t *prev = NULL;
-    bool head;
+    bool head = true;
 
     /* initialize to not found */
     *pmatch = NULL;
     while (curr != NULL)
     {
-        head = (notifier->bindings == curr);
-
         if (curr->cb == cb)
         {
-            /* callback matches; remove from list */
-            if (prev != NULL)
-            {
-                prev->next = curr->next;
-            }
-            else if (head == true)
+            // callback matches; remove from list
+            if (head)
             {
                 notifier->bindings = curr->next;
             }
-
-            /* update prev to insert point */
-            if (curr->next != NULL && head == false)
+            else
             {
-                prev = curr->next;
+                prev->next = curr->next;
             }
 
             /* remember found binding */
@@ -67,49 +84,57 @@ static bool _find_binding(ls_event_notifier_t *notifier,
             break;
         }
 
+        head = false;
         prev = curr;
         curr = curr->next;
     }
 
     /* update insert point */
-    *pins = prev;
+    if (pins)
+    {
+        *pins = prev;
+    }
 
     return (*pmatch != NULL);
 }
 
-static void _process_pending_unbinds(ls_event event)
+static inline void _process_pending_unbinds(ls_event *event)
 {
-    ls_event_binding_t *prev = NULL;
+    LS_LOG_TRACE_FUNCTION_NO_ARGS;
 
-    ls_event_binding_t *cur = event->bindings;
+    ls_event_binding_t *prev = NULL;
+    ls_event_binding_t *cur  = event->bindings;
+
     while (cur != NULL)
     {
-        if (cur->unbound == true)
+        ls_event_binding_t *remove = cur;
+        if (!cur->unbound)
         {
-            ls_event_binding_t *remove = cur;
-
+            prev = cur;
+            remove = NULL;
+        }
+        else
+        {
             if (prev != NULL)
             {
                 prev->next = cur->next;
             }
-            else if (cur == event->bindings)
+            else
             {
                 event->bindings = cur->next;
             }
-            cur = cur->next;
-
-            ls_data_free(remove);
-            remove = NULL;
-            continue;
         }
 
-        prev = cur;
         cur = cur->next;
+
+        ls_data_free(remove);
     }
 }
 
-static void _set_bind_status(ls_event event)
+static inline void _set_bind_status(ls_event *event)
 {
+    LS_LOG_TRACE_FUNCTION_NO_ARGS;
+
     ls_event_binding_t *cur = event->bindings;
     while (cur != NULL)
     {
@@ -118,85 +143,116 @@ static void _set_bind_status(ls_event event)
     }
 }
 
-/**
- * Enques and runs an event. If this dispatcher is not currently running,
- * the given moment is processed immediately. Otherwise, it is enqueued and
- * processed in the order it was added.
- */
-static void _dispatch_trigger(ls_event_dispatch_t *dispatcher,
-                              ls_event_moment_t *moment)
+static void _moment_destroy(ls_event_moment_t *moment)
 {
-    /* always enqueue! */
-    /* \TODO optimize for moments with no callbacks? */
-    if (dispatcher->queue != NULL)
+    LS_LOG_TRACE_FUNCTION_NO_ARGS;
+
+    assert(moment);
+
+    ls_pool_destroy(moment->evt.pool);
+}
+
+static void _handle_trigger_int(ls_event_dispatcher *dispatch)
+{
+    LS_LOG_TRACE_FUNCTION_NO_ARGS;
+
+    ls_event_moment_t *moment = dispatch->next_moment;
+    assert(moment);
+    ls_event_data      evt    = &moment->evt;
+
+    ls_log(LS_LOG_DEBUG, "processing event '%s'", evt->name);
+
+    assert(NULL == dispatch->running);
+    dispatch->running = evt->notifier;
+    _set_bind_status(evt->notifier);
+
+    // process callbacks
+    for (ls_event_binding_t *binding = moment->bindings;
+         NULL != binding;
+         binding = binding->next)
     {
-        /* add to tail */
-        dispatcher->queue->next = moment;
+        if (binding->normal_bound)
+        {
+            bool handled = evt->handled;
+
+            binding->cb(evt, binding->arg);
+
+            // prevent callbacks from "unhandling"
+            evt->handled = handled || evt->handled;
+        }
     }
-    dispatcher->queue = moment;
+
+    // report event results
+    if (moment->result_cb)
+    {
+        moment->result_cb(evt, evt->handled, moment->result_arg);
+    }
+
+    // clean up and prepare for next moment
+    _process_pending_unbinds(evt->notifier);
+    dispatch->next_moment = moment->next;
+    _moment_destroy(moment);
+
+    if (NULL == dispatch->next_moment)
+    {
+        dispatch->moment_queue_tail = NULL;
+    }
+    dispatch->running = NULL;
+}
+
+/**
+ * Enqueues an event and, if this dispatcher is synchronous and is not currently
+ * handling an event, processes it immediately.  If this dispatcher is async,
+ * processing is scheduled.
+ */
+static inline void _dispatch_trigger(ls_event_dispatcher *dispatcher,
+                                     ls_event_moment_t  *moment)
+{
+    LS_LOG_TRACE_FUNCTION_NO_ARGS;
+
+    if (NULL != dispatcher->moment_queue_tail)
+    {
+        dispatcher->moment_queue_tail->next = moment;
+    }
+    if (NULL == dispatcher->next_moment)
+    {
+        dispatcher->next_moment = moment;
+    }
+    dispatcher->moment_queue_tail = moment;
 
     if (dispatcher->running != NULL)
     {
-        /* already processing events */
+        ls_log(LS_LOG_DEBUG, "already processing events; deferring event '%s'",
+               moment->evt.name);
         return;
     }
 
-    /* this is the only event (currently); moment is the start */
-    dispatcher->running = moment->evt.notifier;
-    while (moment != NULL)
+    // handle queued triggers synchronously
+    while (NULL != dispatcher->next_moment && !dispatcher->destroy_pending)
     {
-        ls_event_binding_t  *binding;
-        ls_event_data       evt = &moment->evt;
-        ls_pool             pool;
-
-        _set_bind_status(evt->notifier);
-
-        /* process notify callbacks */
-        for (binding = moment->bindings;
-             binding != NULL;
-             binding = binding->next)
-        {
-            if (binding->normal_bound)
-            {
-                bool    handled = evt->handled;
-
-                binding->cb(evt, binding->arg);
-                /* prevent callbacks from unhandling */
-                evt->handled = handled | evt->handled;
-                /* \TODO break if handled? */
-            }
-        }
-
-        /* report event results */
-        if (moment->result_cb)
-        {
-            moment->result_cb(evt, evt->handled, moment->result_arg);
-        }
-
-        /* moveon and cleanup */
-        _process_pending_unbinds(evt->notifier);
-
-        pool = evt->pool;
-        moment = moment->next;
-        if (moment)
-        {
-            dispatcher->running = moment->evt.notifier;
-        }
-        ls_pool_destroy(pool);
+        _handle_trigger_int(dispatcher);
     }
 
-    /* done processing events */
-    dispatcher->queue = NULL;
-    dispatcher->running = NULL;
+    if (dispatcher->destroy_pending)
+    {
+        ls_event_dispatcher_destroy(dispatcher);
+    }
 }
 
-static int _clean_event(void *user_data, const void *key, void *data)
+static void _clean_event(bool replace, bool delete_key, void *key, void *data)
 {
-    ls_event event = (ls_event)data;
-    ls_event_binding_t *curr = (EXPAND_NOTIFIER(event))->bindings;
-
-    UNUSED_PARAM(user_data);
     UNUSED_PARAM(key);
+    UNUSED_PARAM(delete_key);
+#ifdef NDEBUG
+    UNUSED_PARAM(replace);
+#else
+    assert(!replace);
+#endif
+
+    LS_LOG_TRACE_FUNCTION_NO_ARGS;
+
+    ls_event *event = data;
+    ls_event_binding_t *curr = event->bindings;
 
     /* Clean up callbacks */
     while (curr != NULL)
@@ -208,21 +264,119 @@ static int _clean_event(void *user_data, const void *key, void *data)
     }
 
     ls_data_free((char *)ls_event_get_name(event));
-    ls_data_free(EXPAND_NOTIFIER(event));
-
-    return 1;
+    ls_data_free(event);
 }
 
+static bool _prepare_trigger(ls_event_dispatcher *dispatch,
+        ls_event_trigger_data **trigger_data, ls_err *err)
+{
+    LS_LOG_TRACE_FUNCTION_NO_ARGS;
+
+    assert(trigger_data);
+
+    union
+    {
+        ls_event_trigger_data *tdata;
+        void                 *tdataPtr;
+    } tdataUnion;
+
+    ls_pool *pool;
+
+    union
+    {
+        ls_event_moment_t *moment;
+        void              *momentPtr;
+    } momentUnion;
+
+    if (!ls_pool_create(MOMENT_POOLSIZE, &pool, err))
+    {
+        ls_log(LS_LOG_WARN, "unable to allocate pool with block size %zd",
+               MOMENT_POOLSIZE);
+        return false;
+    }
+
+    if (!ls_pool_malloc(pool,
+                        sizeof(struct _ls_event_moment_t),
+                        &momentUnion.momentPtr,
+                        err))
+    {
+        ls_log(LS_LOG_WARN, "unable to allocate moment");
+        ls_pool_destroy(pool);
+        return false;
+    }
+
+    memset(momentUnion.momentPtr, 0, sizeof(struct _ls_event_moment_t));
+
+    if (!ls_pool_malloc(pool,
+                        sizeof(ls_event_trigger_t), &tdataUnion.tdataPtr, err))
+    {
+        ls_log(LS_LOG_WARN, "unable to allocate event trigger data");
+        ls_pool_destroy(pool);
+        return false;
+    }
+
+    tdataUnion.tdata->pool = pool;
+    tdataUnion.tdata->moment = momentUnion.moment;
+    *trigger_data = tdataUnion.tdata;
+
+    return true;
+}
+
+static void _trigger_prepared(
+        ls_event_dispatcher *dispatch,
+        ls_event *event,
+        void *data,
+        ls_event_result_callback result_cb,
+        void *result_arg,
+        ls_event_trigger_data *trigger_data)
+{
+    LS_LOG_TRACE_FUNCTION_NO_ARGS;
+
+    assert(event);
+    assert(trigger_data);
+    assert(trigger_data->pool);
+    assert(trigger_data->moment);
+
+    ls_event_data       evt;
+    ls_event_moment_t  *moment;
+
+    ls_log(LS_LOG_DEBUG, "triggering event '%s'", event->name);
+
+    moment = trigger_data->moment;
+
+    /* setup the event moment */
+    moment->result_cb = result_cb;
+    moment->result_arg = result_arg;
+    moment->bindings = event->bindings;
+
+    /* setup event data */
+    evt = &moment->evt;
+    evt->source = dispatch->source;
+    evt->name = event->name;
+    evt->notifier = event;
+    evt->data = data;
+    evt->selected = NULL;
+    evt->pool = trigger_data->pool;
+    evt->handled = false;
+
+    // enqueue, and maybe run
+    // do not use the dispatcher after this line as it may have been destroyed
+    _dispatch_trigger(dispatch, moment);
+}
+
+
 /* External Functions */
-LS_API bool ls_event_dispatcher_create(const void *source,
-                                       ls_event_dispatcher *dispatch,
+LS_API bool ls_event_dispatcher_create(void *source,
+                                       ls_event_dispatcher **outdispatch,
                                        ls_err *err)
 {
-    ls_htable           events = NULL;
-    ls_event_dispatch_t *dispatcher = NULL;
+    LS_LOG_TRACE_FUNCTION_NO_ARGS;
 
     assert(source != NULL);
-    assert(dispatch != NULL);
+    assert(outdispatch != NULL);
+
+    ls_htable            *events   = NULL;
+    ls_event_dispatch_t *dispatch = NULL;
 
     if (!ls_htable_create(DISPATCH_BUCKETS,
                           ls_strcase_hashcode,
@@ -232,117 +386,146 @@ LS_API bool ls_event_dispatcher_create(const void *source,
     {
         return false;
     }
-    dispatcher = (ls_event_dispatch_t *)ls_data_malloc(sizeof(ls_event_dispatch_t));
-    if (dispatcher == NULL)
+
+    dispatch = ls_data_malloc(sizeof(ls_event_dispatch_t));
+    if (dispatch == NULL)
     {
         LS_ERROR(err, LS_ERR_NO_MEMORY);
         ls_htable_destroy(events);
         return false;
     }
 
-    memset(dispatcher, 0, sizeof(ls_event_dispatch_t));
-    dispatcher->source = source;
-    dispatcher->events = events;
-    *dispatch = (ls_event_dispatcher)dispatcher;
+    PUSH_EVENTING_NDC;
+    ls_log(LS_LOG_TRACE, "creating new event dispatcher");
+
+    memset(dispatch, 0, sizeof(ls_event_dispatch_t));
+    dispatch->source = source;
+    dispatch->events = events;
+    *outdispatch = dispatch;
+
+    POP_EVENTING_NDC;
 
     return true;
 }
-LS_API void ls_event_dispatcher_destroy(ls_event_dispatcher dispatch)
+
+LS_API void ls_event_dispatcher_destroy(ls_event_dispatcher *dispatch)
 {
-    ls_event_dispatch_t *dispatcher;
+    PUSH_EVENTING_NDC;
+    LS_LOG_TRACE_FUNCTION_NO_ARGS;
 
     assert(dispatch != NULL);
-    dispatcher = EXPAND_DISPATCHER(dispatch);
 
-    ls_htable_clear(dispatcher->events, _clean_event, NULL);
-    ls_htable_destroy(dispatcher->events);
-    ls_data_free(dispatcher);
+    if (NULL != dispatch->running)
+    {
+        ls_log(LS_LOG_DEBUG,
+               "currently processing events; deferring dispatcher destruction");
+        dispatch->destroy_pending = true;
+        POP_EVENTING_NDC;
+        return;
+    }
+
+    ls_log(LS_LOG_DEBUG, "destroying dispatcher");
+
+    ls_event_moment_t *moment = dispatch->next_moment;
+    while (moment)
+    {
+        ls_event_moment_t *next_moment = moment->next;
+        _moment_destroy(moment);
+        moment = next_moment;
+    }
+
+    ls_htable_destroy(dispatch->events);
+    ls_data_free(dispatch);
+
+    POP_EVENTING_NDC;
 }
 
-LS_API ls_event ls_event_dispatcher_get_event(
-                        ls_event_dispatcher dispatch,
+LS_API ls_event *ls_event_dispatcher_get_event(
+                        ls_event_dispatcher *dispatch,
                         const char *name)
 {
-    ls_event_dispatch_t *dispatcher;
-    ls_event            evt;
+    PUSH_EVENTING_NDC;
+    LS_LOG_TRACE_FUNCTION_NO_ARGS;
 
-    assert(dispatch != NULL);
-    assert(name != NULL);
-    dispatcher = EXPAND_DISPATCHER(dispatch);
+    assert(dispatch);
 
-    evt = (ls_event)ls_htable_get(dispatcher->events, name);
+    ls_event *evt = ls_htable_get(dispatch->events, name);
+
+    POP_EVENTING_NDC;
 
     return evt;
 }
 
 LS_API bool ls_event_dispatcher_create_event(
-                    ls_event_dispatcher dispatch,
+                    ls_event_dispatcher *dispatch,
                     const char *name,
-                    ls_event *event,
+                    ls_event **event,
                     ls_err *err)
 {
-    ls_event_dispatch_t *dispatcher;
+    PUSH_EVENTING_NDC;
+    LS_LOG_TRACE_FUNCTION_NO_ARGS;
+
     ls_event_notifier_t *notifier = NULL;
     char                *evt_name = NULL;
-    bool                retval = true;
-    size_t              nameLen;
+    bool                 retval   = true;
 
-    assert(dispatch != NULL);
-    assert(name != NULL);
-    assert(event != NULL);
-    dispatcher = EXPAND_DISPATCHER(dispatch);
+    assert(dispatch);
+    assert(name);
 
     if (name[0] == '\0')
     {
         LS_ERROR(err, LS_ERR_INVALID_ARG);
         retval = false;
-        goto finish;
+        goto ls_event_dispatcher_create_event_done_label;
     }
-    if (ls_htable_get(dispatcher->events, name) != NULL)
+    if (ls_htable_get(dispatch->events, name) != NULL)
     {
         LS_ERROR(err, LS_ERR_INVALID_STATE);
         retval = false;
-        goto finish;
+        goto ls_event_dispatcher_create_event_done_label;
     }
 
-    nameLen = ls_strlen(name);
+    size_t nameLen = ls_strlen(name);
     evt_name = (char *)ls_data_malloc(nameLen + 1);
     if (evt_name == NULL)
     {
         LS_ERROR(err, LS_ERR_NO_MEMORY);
         retval = false;
-        goto finish;
+        goto ls_event_dispatcher_create_event_done_label;
     }
     memcpy(evt_name, name, nameLen + 1);
 
-    notifier = (ls_event_notifier_t *)ls_data_malloc(sizeof(ls_event_notifier_t));
+    notifier = ls_data_malloc(sizeof(ls_event_notifier_t));
     if (notifier == NULL)
     {
         LS_ERROR(err, LS_ERR_NO_MEMORY);
         retval = false;
-        goto finish;
+        goto ls_event_dispatcher_create_event_done_label;
     }
 
     memset(notifier, 0, sizeof(ls_event_notifier_t));
-    notifier->dispatcher = dispatcher;
-    notifier->source = dispatcher->source;
+    notifier->dispatcher = dispatch;
+    notifier->source = dispatch->source;
     notifier->name = evt_name;
 
-    if (!ls_htable_put(dispatcher->events,
+    if (!ls_htable_put(dispatch->events,
                        evt_name,
                        notifier,
-                       NULL,
+                       _clean_event,
                        err))
     {
         retval = false;
-        goto finish;
+        goto ls_event_dispatcher_create_event_done_label;
     }
     evt_name = NULL;
 
-    *event = (ls_event)notifier;
+    if (event)
+    {
+        *event = notifier;
+    }
     notifier = NULL;
 
-    finish:
+ls_event_dispatcher_create_event_done_label:
     if (evt_name != NULL)
     {
         ls_data_free((char *)evt_name);
@@ -355,44 +538,52 @@ LS_API bool ls_event_dispatcher_create_event(
         notifier = NULL;
     }
 
+    POP_EVENTING_NDC;
     return retval;
 }
 
-LS_API const char *ls_event_get_name(ls_event event)
+LS_API const char *ls_event_get_name(ls_event *event)
 {
-    assert(event != NULL);
+    LS_LOG_TRACE_FUNCTION_NO_ARGS;
 
-    return (EXPAND_NOTIFIER(event))->name;
+    assert(event);
+
+    return event->name;
 }
 
-LS_API const void *ls_event_get_source(ls_event event)
+LS_API const void *ls_event_get_source(ls_event *event)
 {
-    assert(event != NULL);
+    LS_LOG_TRACE_FUNCTION_NO_ARGS;
 
-    return EXPAND_NOTIFIER(event)->source;
+    assert(event);
+
+    return event->source;
 }
 
-LS_API bool ls_event_bind(ls_event event,
-                          ls_event_notify_callback cb,
-                          void *arg,
-                          ls_err *err)
+LS_API bool ls_event_bind(ls_event                 *event,
+                                  ls_event_notify_callback cb,
+                                  void                    *arg,
+                                  ls_err                  *err)
 {
-    ls_event_notifier_t     *notifier;
-    ls_event_binding_t      *binding = NULL;
-    ls_event_binding_t      *prev = NULL;
+    assert(event);
+    assert(cb);
 
-    assert(event != NULL);
-    assert(cb != NULL);
-    notifier = EXPAND_NOTIFIER(event);
+    ls_event_dispatcher *dispatch = event->dispatcher;
+    PUSH_EVENTING_NDC;
+    LS_LOG_TRACE_FUNCTION_NO_ARGS;
+
+    ls_event_binding_t *binding = NULL;
+    ls_event_binding_t *prev    = NULL;
 
     /* look for existing binding first */
-    if (!_find_binding(notifier, cb, &binding, &prev))
+    if (!_remove_binding(event, cb, &binding, &prev))
     {
         /* no match found; allocate a new one */
-        binding = (ls_event_binding_t *)ls_data_malloc(sizeof(ls_event_binding_t));
+        binding = ls_data_malloc(sizeof(ls_event_binding_t));
         if (binding == NULL)
         {
             LS_ERROR(err, LS_ERR_NO_MEMORY);
+            POP_EVENTING_NDC;
             return false;
         }
         memset(binding, 0, sizeof(ls_event_binding_t));
@@ -412,10 +603,10 @@ LS_API bool ls_event_bind(ls_event event,
     binding->arg = arg;
 
     /* (re-)insert into list */
-    if (notifier->bindings == NULL)
+    if (event->bindings == NULL)
     {
         /* first binding; place on the front */
-        notifier->bindings = binding;
+        event->bindings = binding;
     }
     else if (prev != NULL)
     {
@@ -430,31 +621,35 @@ LS_API bool ls_event_bind(ls_event event,
             prev->next = binding;
         }
     }
-    else if (prev == NULL)
+    else // prev == NULL
     {
-        binding->next = notifier->bindings;
-        notifier->bindings = binding;
+        binding->next = event->bindings;
+        event->bindings = binding;
     }
 
+    POP_EVENTING_NDC;
     return true;
 }
-LS_API void ls_event_unbind(ls_event event,
-                            ls_event_notify_callback cb)
-{
-    ls_event_notifier_t *notifier;
-    ls_event_binding_t  *binding, *prev;
 
-    assert(event != NULL);
-    assert(cb != NULL);
-    notifier = EXPAND_NOTIFIER(event);
+LS_API void ls_event_unbind(ls_event *event,
+                                    ls_event_notify_callback cb)
+{
+    assert(event);
+    assert(event->dispatcher);
+    assert(cb);
+
+    ls_event_dispatcher *dispatch = event->dispatcher;
+    PUSH_EVENTING_NDC;
+    LS_LOG_TRACE_FUNCTION_NO_ARGS;
 
     /* If we're currently running the event we're requesting the unbind from
      * we need to defer the operation until the event has finished its
      * trigger
      */
-    if (notifier != notifier->dispatcher->running)
+    if (event != event->dispatcher->running)
     {
-        if (_find_binding(notifier, cb, &binding, &prev))
+        ls_event_binding_t *binding;
+        if (_remove_binding(event, cb, &binding, NULL))
         {
             /* match found; lists already updated */
             ls_data_free(binding);
@@ -463,75 +658,99 @@ LS_API void ls_event_unbind(ls_event event,
     }
     else
     {
-        ls_event_binding_t *cur = notifier->bindings;
-        while (cur != NULL)
+        // we are guaranteed to find the event (even if it is already unbound)
+        ls_event_binding_t *cur = event->bindings;
+        while (true)
         {
             if (cur->cb == cb)
             {
                 cur->unbound = true;
                 break;
             }
+
             cur = cur->next;
+            assert(cur);
         }
     }
 
-    return;
+    POP_EVENTING_NDC;
 }
 
-LS_API bool ls_event_trigger(ls_event event,
-                             void *data,
-                             ls_event_result_callback result_cb,
-                             void *result_arg,
-                             ls_err *err)
+LS_API bool ls_event_prepare_trigger(ls_event_dispatcher *dispatch,
+        ls_event_trigger_data **trigger_data, ls_err *err)
 {
-    ls_event_notifier_t     *notifier;
-    ls_event_dispatch_t     *dispatcher;
-    ls_event_data           evt;
-    ls_pool                 pool;
-    ls_event_moment_t       *moment;
+    PUSH_EVENTING_NDC;
+    LS_LOG_TRACE_FUNCTION_NO_ARGS;
 
-    union
+    bool ret = _prepare_trigger(dispatch, trigger_data, err);
+
+    POP_EVENTING_NDC;
+    return ret;
+}
+
+LS_API void ls_event_unprepare_trigger(
+        ls_event_trigger_data *trigger_data)
+{
+    assert(trigger_data);
+    assert(trigger_data->moment);
+
+    ls_event *evt = trigger_data->moment->evt.notifier;
+
+    ls_event_dispatcher *dispatch = evt ? evt->dispatcher : NULL;
+
+    PUSH_EVENTING_NDC;
+    LS_LOG_TRACE_FUNCTION_NO_ARGS;
+
+    ls_pool_destroy(trigger_data->pool);
+
+    POP_EVENTING_NDC;
+}
+
+LS_API void ls_event_trigger_prepared(
+        ls_event                 *event,
+        void                    *data,
+        ls_event_result_callback result_cb,
+        void                    *result_arg,
+        ls_event_trigger_data    *trigger_data)
+{
+    assert(event);
+
+    ls_event_dispatcher *dispatch = event->dispatcher;
+
+    PUSH_EVENTING_NDC;
+    LS_LOG_TRACE_FUNCTION_NO_ARGS;
+
+    _trigger_prepared(dispatch, event, data,
+                      result_cb, result_arg, trigger_data);
+
+    POP_EVENTING_NDC;
+}
+
+LS_API bool ls_event_trigger(ls_event *event,
+                                     void *data,
+                                     ls_event_result_callback result_cb,
+                                     void *result_arg,
+                                     ls_err *err)
+{
+    assert(event);
+
+    ls_event_dispatcher *dispatch = event->dispatcher;
+
+    PUSH_EVENTING_NDC;
+    LS_LOG_TRACE_FUNCTION_NO_ARGS;
+
+    ls_event_trigger_data *trigger_data;
+
+    if (!_prepare_trigger(dispatch, &trigger_data, err))
     {
-        ls_event_moment_t *moment;
-        void              *momentPtr;
-    } momentUnion;
-
-    assert(event != NULL);
-    notifier = EXPAND_NOTIFIER(event);
-    dispatcher = notifier->dispatcher;
-
-    if (!ls_pool_create(MOMENT_POOLSIZE, &pool, err))
-    {
+        POP_EVENTING_NDC;
         return false;
     }
-    if (!ls_pool_malloc(pool,
-                        sizeof(ls_event_moment_t),
-                        &momentUnion.momentPtr,
-                        err))
-    {
-        ls_pool_destroy(pool);
-        return false;
-    }
-    moment = momentUnion.moment;
 
-    /* setup the event moment */
-    moment->result_cb = result_cb;
-    moment->result_arg = result_arg;
-    moment->bindings = notifier->bindings;
-    moment->next = NULL;
+    _trigger_prepared(dispatch, event, data,
+                      result_cb, result_arg, trigger_data);
 
-    /* setup event data */
-    evt = &moment->evt;
-    evt->source = dispatcher->source;
-    evt->name = notifier->name;
-    evt->notifier = event;
-    evt->data = data;
-    evt->selected = NULL;
-    evt->pool = pool;
-    evt->handled = false;
-
-    /* enque, and maybe run */
-    _dispatch_trigger(dispatcher, moment);
+    POP_EVENTING_NDC;
 
     return true;
 }

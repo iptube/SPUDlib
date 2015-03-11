@@ -95,3 +95,20 @@ LS_API int ls_strncmp(const char *a, const char *b, size_t n)
     }
     return strncmp(a, b, n);
 }
+
+LS_API int ls_strncasecmp(const char *a, const char *b, size_t n)
+{
+    if (a == b)
+    {
+        return 0;
+    }
+    if (a == NULL)
+    {
+        return -1;
+    }
+    if (b == NULL)
+    {
+        return 1;
+    }
+    return strncasecmp(a, b, n);
+}

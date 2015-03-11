@@ -19,56 +19,44 @@
 
 #pragma once
 
-#include "ls_error.h"
 #include "ls_mem.h"
 
 /**
- * Datatype for an event dispatcher. Each event source contains an
- * event dispatcher. It creates and manages events, and regulates
- * any event triggerings for its owned events.
+ * Datatype for an event dispatcher. Each event source contains an event
+ * dispatcher. It creates and manages events, and regulates any event
+ * triggerings for its owned events.
  */
-typedef LS_API struct _ls_event_dispatcher_t *ls_event_dispatcher;
+typedef struct _ls_event_dispatch_t ls_event_dispatcher;
 
 /**
  * Datatype for an event (notifier). It manages the callbacks and triggerings
  * for a given event.
  */
-typedef LS_API struct _ls_event_t *ls_event;
+typedef struct _ls_event_t ls_event;
 
-/**
- * Event data passed to bound callbacks.
- */
+/** Data used by an event trigger. */
+typedef struct _ls_event_trigger_t ls_event_trigger_data;
+
+/** Event data passed to bound callbacks. */
 typedef struct _ls_event_data_t
 {
-    /**
-     * Event source
-     */
-    const void  *source;
-    /**
-     * Event name
-     */
-    const char  *name;
-    /**
-     * Event object
-     */
-    ls_event    notifier;
-    /**
-     * Data specific to this triggering of an event
-     */
-    void        *data;
-    /**
-     * Possible selection. Reserved for future use.
-     */
-    void        *selected;
-    /**
-     * Pool to use for any modification to this event data
-     */
-    ls_pool     pool;
+    /** Event source */
+    void       *source;
+    /** Event name */
+    const char *name;
+    /** Event object */
+    ls_event   *notifier;
+    /** Data specific to this triggering of an event */
+    void       *data;
+    /** Possible selection. Reserved for future use. */
+    void       *selected;
+    /** Pool to use for any modification to this event data */
+    ls_pool    *pool;
     /**
       * Flag to indicate the event has been handled in some manner.
       * Callbacks may set this value to true; the eventing logic will
       * ensure this value, once set to true, is propagated to all further
-      * callbacks.
+      * callbacks for this event.
       */
     bool        handled;
 } *ls_event_data;
@@ -80,8 +68,8 @@ typedef struct _ls_event_data_t
  * \param[in] evt Event information
  * \param[in] arg An argument bound to this callback
  */
-typedef void (*ls_event_notify_callback) (ls_event_data evt,
-                                          void *arg);
+typedef void (*ls_event_notify_callback)(ls_event_data evt,
+                                         void         *arg);
 
 /**
  * Callback executed when an event triggering is complete.
@@ -91,9 +79,9 @@ typedef void (*ls_event_notify_callback) (ls_event_data evt,
  *            otherwise
  * \param[in] arg The user-provided data when the event was triggered
  */
-typedef void (*ls_event_result_callback) (ls_event_data evt,
-                                          bool result,
-                                          void *arg);
+typedef void (*ls_event_result_callback)(ls_event_data evt,
+                                         bool          result,
+                                         void         *arg);
 
 /**
  * Creates a new ls_event_dispatcher for the given source.
@@ -108,17 +96,21 @@ typedef void (*ls_event_result_callback) (ls_event_data evt,
  * \param[out] err The error information (provide NULL to ignore)
  * \retval bool True if the dispatcher was created successfully.
  */
-LS_API bool ls_event_dispatcher_create(const void *source,
-                                       ls_event_dispatcher *dispatch,
-                                       ls_err *err);
+LS_API bool ls_event_dispatcher_create(void                 *source,
+                                       ls_event_dispatcher **dispatch,
+                                       ls_err               *err);
 
 /**
- * Destroys the given dispatcher and frees its resources.
+ * Destroys the given dispatcher and frees its resources.  If the handler for
+ * an event is currently running, the destruction is deferred until the handler
+ * returns.
+ *
+ * \b NOTE: Any remaining scheduled event handlers will not execute.
  *
  * \invariant dispatch != NULL
  * \param[in] dispatch The event dispatcher
  */
-LS_API void ls_event_dispatcher_destroy(ls_event_dispatcher dispatch);
+LS_API void ls_event_dispatcher_destroy(ls_event_dispatcher *dispatch);
 
 /**
  * Retrieves the event notifier from the dispatcher for the given name. Events are
@@ -130,9 +122,9 @@ LS_API void ls_event_dispatcher_destroy(ls_event_dispatcher dispatch);
  * \param[in] name The event name
  * \retval ls_event_notifier The event notifier, or NULL if not found
  */
-LS_API ls_event ls_event_dispatcher_get_event(
-               ls_event_dispatcher dispatch,
-               const char *name);
+LS_API ls_event *ls_event_dispatcher_get_event(
+        ls_event_dispatcher *dispatch,
+        const char          *name);
 
 /**
  * Create a new event for the given dispatcher and event name. When
@@ -152,18 +144,17 @@ LS_API ls_event ls_event_dispatcher_get_event(
  *
  * \invariant dispatch != NULL
  * \invariant name != NULL
- * \invariant event != NULL
  * \param[in] dispatch The owning event dispatcher
  * \param[in] name The event name
- * \param[out] event The created event
+ * \param[out] event The created event (provide NULL to ignore)
  * \param[out] err The error information (provide NULL to ignore)
  * \retval bool True if the event was created successfully.
  */
 LS_API bool ls_event_dispatcher_create_event(
-                    ls_event_dispatcher dispatch,
-                    const char *name,
-                    ls_event *event,
-                    ls_err *err);
+        ls_event_dispatcher *dispatch,
+        const char          *name,
+        ls_event           **event,
+        ls_err              *err);
 
 /**
  * Retrieves the name of this event. The value returned by this function is
@@ -173,7 +164,7 @@ LS_API bool ls_event_dispatcher_create_event(
  * \param[in] event The event
  * \retval const char * The name of the event
  */
-LS_API const char *ls_event_get_name(ls_event event);
+LS_API const char *ls_event_get_name(ls_event *event);
 
 /**
  * Retrieves the source for the given event.
@@ -182,13 +173,13 @@ LS_API const char *ls_event_get_name(ls_event event);
  * \param[in] event The event
  * \retval void * The event source
  */
-LS_API const void *ls_event_get_source(ls_event event);
+LS_API const void *ls_event_get_source(ls_event *event);
 
 /**
  * Binds the given callback to the event.
  *
  * \b NOTE: Callbacks are unique by their pointer reference. Registering the
- * same function multiple times has no affect and will not change binding
+ * same function multiple times has no effect and will not change binding
  * list position.
  *
  * This function can generate the following errors (set when returning false):
@@ -202,10 +193,10 @@ LS_API const void *ls_event_get_source(ls_event event);
  * \param[out] err The error information (provide NULL to ignore)
  * \retval bool True if the callback was successfully bound.
  */
-LS_API bool ls_event_bind(ls_event event,
-                          ls_event_notify_callback cb,
-                          void *arg,
-                          ls_err *err);
+LS_API bool ls_event_bind(ls_event                *event,
+                                  ls_event_notify_callback cb,
+                                  void                    *arg,
+                                  ls_err                  *err);
 
 /**
  * Unbinds the given event callback. If {cb} is not currently bound to the
@@ -216,8 +207,8 @@ LS_API bool ls_event_bind(ls_event event,
  * \param[in] event The event
  * \param[in] cb The callback to unbind
  */
-LS_API void ls_event_unbind(ls_event event,
-                            ls_event_notify_callback cb);
+LS_API void ls_event_unbind(ls_event                *event,
+                                    ls_event_notify_callback cb);
 
 /**
  * Fires an event on all registered callbacks, with the given data.
@@ -236,8 +227,55 @@ LS_API void ls_event_unbind(ls_event event,
  * \param[out] err The error information (provide NULL to ignore)
  * \retval bool True if the callback was successfully bound.
  */
-LS_API bool ls_event_trigger(ls_event event,
-                             void *data,
-                             ls_event_result_callback result_cb,
-                             void *result_arg,
-                             ls_err *err);
+LS_API bool ls_event_trigger(ls_event                *event,
+                                     void                    *data,
+                                     ls_event_result_callback result_cb,
+                                     void                    *result_arg,
+                                     ls_err                  *err);
+
+/**
+ * Same as ls_event_trigger except that no internal allocation takes place,
+ * ensuring the trigger succeeds, even in low memory conditions.
+ *
+ * \invariant event != NULL
+ * \invariant trigger_data != NULL
+ * \param[in] event The event
+ * \param[in] data The data for this event triggering
+ * \param[in] result_cb Callback to receive trigger result
+ * \param[in] result_arg User-specific data for result_cb
+ * \param[in] trigger_data The preallocated structures to use for the callback.
+ *                         This will be cleaned up by the triggering mechanism.
+ */
+LS_API void ls_event_trigger_prepared(
+        ls_event                *event,
+        void                    *data,
+        ls_event_result_callback result_cb,
+        void                    *result_arg,
+        ls_event_trigger_data   *trigger_data);
+
+/**
+ * Pre-allocates the data structures for a single call to
+ * ls_event_trigger_prepared.
+ *
+ * This function can generate the following errors (set when returning false):
+ * \li \c LS_ERR_NO_MEMORY if the triggering info could not be allocated
+ *
+ * \invariant trigger_data != NULL
+ * \param[in] dispatch The event dispatcher
+ * \param[out] trigger_data The created structure
+ * \param[out] err The error information (provide NULL to ignore)
+ * \retval bool True if the structures were successfully allocated
+ */
+LS_API bool ls_event_prepare_trigger(ls_event_dispatcher *dispatch,
+        ls_event_trigger_data **trigger_data, ls_err *err);
+
+/**
+ * Destroys unused trigger data.  Trigger data is normally destroyed by
+ * ls_event_trigger_prepared(), but this call is provided for the case where
+ * trigger data is prepared but the prepared event is never triggered.
+ *
+ * \invariant trigger_data != NULL
+ * \param[in] trigger_data The structure to be destroyed
+ */
+LS_API void ls_event_unprepare_trigger(
+        ls_event_trigger_data *trigger_data);

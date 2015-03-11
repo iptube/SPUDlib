@@ -12,9 +12,7 @@
 #pragma once
 
 #include "ls_basics.h"
-
-#include <stdarg.h>
-#include <unistd.h>
+#include <sys/types.h>
 
 /**
  * Converts the given string into an integer. This function behaves as atoi,
@@ -57,9 +55,10 @@ LS_API size_t ls_strnlen(const char *a, size_t len);
  *             0 if a and be are equal
  */
 LS_API int ls_strcmp(const char *a, const char *b);
+
 /**
  * Compares two NULL-terminated strings (case-insensitive), allowing for either
- * to be NULL. This function behaves as strcmp, with the difference that a
+ * to be NULL. This function behaves as strcasecmp, with the difference that a
  * and/or b may be NULL.
  *
  * \param a The first string to compare
@@ -72,7 +71,7 @@ LS_API int ls_strcasecmp(const char *a, const char *b);
 
 /**
  * Compares part of two NULL-terminated strings, allowing for either to be
- * NULL. This function behaves as strcmp, with the difference that a and/or
+ * NULL. This function behaves as strncmp, with the difference that a and/or
  * b may be NULL.
  *
  * \param a The first string to compare
@@ -83,3 +82,17 @@ LS_API int ls_strcasecmp(const char *a, const char *b);
  *             0 if a and be are equal
  */
 LS_API int ls_strncmp(const char *a, const char *b, size_t n);
+
+/**
+ * Compares two NULL-terminated strings (case-insensitive), allowing for either
+ * to be NULL. This function behaves as strncasecmp, with the difference that a
+ * and/or b may be NULL.
+ *
+ * \param a The first string to compare
+ * \param b The second string to compare
+ * \param n The number of bytes to compare
+ * \retval int less than 0 if a is before b;
+ *             greater than 0 if a is after b;
+ *             0 if a and be are equal
+ */
+LS_API int ls_strncasecmp(const char *a, const char *b, size_t n);

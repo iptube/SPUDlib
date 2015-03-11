@@ -20,7 +20,7 @@
 #define MAX_LISTEN_SOCKETS 10
 
 int sockfd = -1;
-ls_htable clients = NULL;
+ls_htable *clients = NULL;
 bool keepGoing = true;
 
 typedef struct _context_t {
@@ -78,7 +78,6 @@ static void close_cb(ls_event_data evt,
     tubeData *td = evt->data;
     context_t *c = td->t->data;
     char idStr[SPUD_ID_STRING_SIZE+1];
-    tube old;
 
     ls_log(LS_LOG_VERBOSE,
            "Spud ID: %s CLOSED: %zd data packets",
@@ -86,37 +85,36 @@ static void close_cb(ls_event_data evt,
                            sizeof(idStr),
                            &td->t->id, NULL),
            c->count);
-    old = ls_htable_remove(clients, &td->t->id);
-    if (old != td->t) {
-        ls_log(LS_LOG_ERROR, "Invalid state closing tube\n");
-    }
+    ls_htable_remove(clients, &td->t->id);
     ls_data_free(c);
     tube_destroy(td->t);
     td->t = NULL;
 }
 
-static int clean_tube(void *user_data, const void *key, void *data) {
-    UNUSED_PARAM(user_data);
+static void clean_tube(bool replace, bool destroy_key, void *key, void *data)
+{
+    UNUSED_PARAM(replace);
+    UNUSED_PARAM(destroy_key);
     UNUSED_PARAM(key);
-    tube t = data;
+    tube *t = data;
     context_t *c = t->data;
     ls_data_free(c);
     tube_destroy(t);
-    return 1;
 }
 
-static int socketListen() {
+static int socketListen()
+{
     struct sockaddr_storage their_addr;
     uint8_t buf[MAXBUFLEN];
     char idStr[SPUD_ID_STRING_SIZE+1];
     socklen_t addr_len = sizeof(their_addr);
     int numbytes;
-    tube t;
+    tube *t;
     spud_message_t sMsg = {NULL, NULL};
     ls_err err;
     spud_tube_id_t uid;
     int ret = 0;
-    ls_event_dispatcher dispatcher;
+    ls_event_dispatcher *dispatcher;
 
     if (!ls_event_dispatcher_create(&sMsg, &dispatcher, &err)) {
         goto error;
@@ -152,7 +150,7 @@ static int socketListen() {
             goto cleanup;
         }
 
-        t = (tube)ls_htable_get(clients, &uid);
+        t = ls_htable_get(clients, &uid);
         if (!t) {
             // get started
             if (!tube_create(sockfd, dispatcher, &t, &err)) {
@@ -161,7 +159,7 @@ static int socketListen() {
                 goto error;
             }
             t->data = new_context();
-            if (!ls_htable_put(clients, &uid, t, NULL, &err)) {
+            if (!ls_htable_put(clients, &uid, t, clean_tube, &err)) {
                 LS_LOG_ERR(err, "ls_htable_put");
                 ret = 1;
                 goto error;
@@ -179,7 +177,7 @@ cleanup:
         spud_unparse(&sMsg);
     }
 error:
-    ls_htable_clear(clients, clean_tube, NULL);
+    ls_htable_clear(clients);
     ls_htable_destroy(clients);
     return ret;
 }
@@ -221,7 +219,7 @@ int main(void)
     // 65521 is max prime under 65535, which seems like an interesting
     // starting point for scale.
     if (!ls_htable_create(65521, hash_id, compare_id, &clients, &err)) {
-        LS_LOG_ERR(err, ls_htable_create);
+        LS_LOG_ERR(err, "ls_htable_create");
         return 1;
     }
 

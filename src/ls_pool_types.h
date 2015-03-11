@@ -15,6 +15,31 @@
 #include <stdlib.h>
 
 /**
+ * When DISABLE_POOL_PAGES is defined, page functionality is disabled by forcing
+ * the page size to 0. All memory operations use ls_data_* functions directly.
+ * ls_pool was designed to work correctly in this senario, see paragraph 2
+ * of pool_page documentation below.
+ *
+ * Disabling page sub-allocations allows valgrind to fully inspect all pointer
+ * allocations and usage, and gives a meaningful call stack when tracing
+ * malloc origins (see valgrind documentation --track-origins).
+ *
+ * Page specific unit tests (in mem_test.c) are not included when
+ * DISABLE_POOL_PAGES is defined.
+ */
+//#define DISABLE_POOL_PAGES
+
+/**
+ * Enable/disable memory pool paging by setting the pool's page size to 0.
+ *
+ * NOTE: Page size is only checked during construction, exisiting pools are not
+ * effected by this function.
+ *
+ * \param[in] enable enable or disable pool paging for newly constructed ls_pools.
+ */
+void ls_pool_enable_paging(bool enable);
+
+/**
  * Pools use "page"s, blocks of allocated mem, for allocation
  * and release efficiency. When possible pools "malloc" by just
  * return pointers into a page. When releasing pools free entire

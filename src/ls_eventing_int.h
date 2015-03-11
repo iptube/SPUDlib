@@ -12,6 +12,9 @@
 
 #pragma once
 
+#include "ls_eventing.h"
+#include "ls_htable.h"
+
 /**
  * Event binding information. This structure is created for each call to
  * ls_event_bind with a unique callback.
@@ -38,7 +41,7 @@ typedef struct _ls_event_binding_t
  */
 typedef struct _ls_event_moment_t
 {
-    struct _ls_event_data_t          evt;
+    struct _ls_event_data_t         evt;
     ls_event_result_callback        result_cb;
     void                            *result_arg;
     ls_event_binding_t              *bindings;
@@ -50,16 +53,13 @@ typedef struct _ls_event_moment_t
  */
 typedef struct _ls_event_dispatch_t
 {
-    const void              *source;
-    ls_htable               events;
-    ls_event                running;
-    /**
-     * The queue of event moments.
-     * NOTE: tail of the queue
-     */
-    ls_event_moment_t       *queue;
+    void                    *source;
+    ls_htable               *events;
+    ls_event                *running;
+    ls_event_moment_t       *moment_queue_tail;
+    ls_event_moment_t       *next_moment;
+    bool                    destroy_pending;
 } ls_event_dispatch_t;
-#define EXPAND_DISPATCHER(dispatch) ((ls_event_dispatch_t *)(dispatch))
 
 /**
  * Notifier members. This is the structure underlying ls_event.
@@ -71,4 +71,3 @@ typedef struct _ls_event_t
     const char          *name;
     ls_event_binding_t  *bindings;
 } ls_event_notifier_t;
-#define EXPAND_NOTIFIER(event) ((ls_event_notifier_t *)(event))

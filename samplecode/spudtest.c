@@ -46,7 +46,7 @@ struct test_config {
 
     struct sockaddr_storage remoteAddr;
     struct sockaddr_storage localAddr;
-    tube t;
+    tube *t;
 
     int numSentPkts;
     int numRcvdPkts;

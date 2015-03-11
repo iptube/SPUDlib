@@ -58,21 +58,21 @@ typedef struct _tube {
   struct sockaddr_storage peer;
   spud_tube_id_t id;
   void *data;
-  ls_event_dispatcher dispatcher;
-  ls_event e_running;
-  ls_event e_data;
-  ls_event e_close;
+  ls_event_dispatcher *dispatcher;
+  ls_event *e_running;
+  ls_event *e_data;
+  ls_event *e_close;
   bool my_dispatcher;
-} *tube;
+} tube;
 
 typedef struct _tubeData {
-    tube t;
+    tube *t;
     const cn_cbor *cbor;
     const struct sockaddr* addr;
 } tubeData;
 
 /* When you want to create a single dispatcher for a lot of tubes */
-LS_API bool tube_bind_events(ls_event_dispatcher dispatcher,
+LS_API bool tube_bind_events(ls_event_dispatcher *dispatcher,
                              ls_event_notify_callback running_cb,
                              ls_event_notify_callback data_cb,
                              ls_event_notify_callback close_cb,
@@ -80,27 +80,27 @@ LS_API bool tube_bind_events(ls_event_dispatcher dispatcher,
                              ls_err *err);
 
 /* multiple tubes per socket */
-LS_API bool tube_create(int sock, ls_event_dispatcher dispatcher, tube *t, ls_err *err);
-LS_API void tube_destroy(tube t);
+LS_API bool tube_create(int sock, ls_event_dispatcher *dispatcher, tube **t, ls_err *err);
+LS_API void tube_destroy(tube *t);
 
 /* print [local address]:port to stdout */
-LS_API bool tube_print(const tube t, ls_err *err);
-LS_API bool tube_open(tube t, const struct sockaddr *dest, ls_err *err);
-LS_API bool tube_ack(tube t,
+LS_API bool tube_print(const tube *t, ls_err *err);
+LS_API bool tube_open(tube *t, const struct sockaddr *dest, ls_err *err);
+LS_API bool tube_ack(tube *t,
                      const spud_tube_id_t *id,
                      const struct sockaddr *dest,
                      ls_err *err);
-LS_API bool tube_data(tube t, uint8_t *data, size_t len, ls_err *err);
-LS_API bool tube_close(tube t, ls_err *err);
+LS_API bool tube_data(tube *t, uint8_t *data, size_t len, ls_err *err);
+LS_API bool tube_close(tube *t, ls_err *err);
 
-LS_API bool tube_send(tube t,
+LS_API bool tube_send(tube *t,
                       spud_command_t cmd,
                       bool adec, bool pdec,
                       uint8_t **data, size_t *len,
                       int num,
                       ls_err *err);
 
-LS_API bool tube_recv(tube t,
+LS_API bool tube_recv(tube *t,
                       spud_message_t *msg,
                       const struct sockaddr* addr,
                       ls_err *err);
