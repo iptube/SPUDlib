@@ -11,7 +11,6 @@
 #include "spud.h"
 #include "ls_error.h"
 #include "ls_sockaddr.h"
-#include "ls_str.h"
 
 void spudlib_setup (void);
 void spudlib_teardown (void);
@@ -105,36 +104,6 @@ START_TEST (spud_parse_test)
 }
 END_TEST
 
-START_TEST (ls_sockaddr_test)
-{
-    struct sockaddr_in ip4addr;
-    struct sockaddr_in6 ip6addr;
-
-    ip4addr.sin_family = AF_INET;
-    ip4addr.sin_port = htons(3490);
-    inet_pton(AF_INET, "10.0.0.1", &ip4addr.sin_addr);
-
-    ip6addr.sin6_family = AF_INET6;
-    ip6addr.sin6_port = htons(4950);
-    inet_pton(AF_INET6, "2001:db8:8714:3a90::12", &ip6addr.sin6_addr);
-
-    fail_unless( ls_sockaddr_get_length( (struct sockaddr *)&ip4addr ) == sizeof(struct sockaddr_in));
-    fail_unless( ls_sockaddr_get_length( (struct sockaddr *)&ip6addr ) == sizeof(struct sockaddr_in6));
-}
-END_TEST
-
-START_TEST (ls_sockaddr_test_assert)
-{
-    struct sockaddr_in ip4addr;
-
-    ip4addr.sin_family = 12;
-    ip4addr.sin_port = htons(3490);
-    inet_pton(AF_INET, "10.0.0.1", &ip4addr.sin_addr);
-    //This should trigger the assert()
-    printf("Length %zd:\n",ls_sockaddr_get_length( (struct sockaddr *)&ip4addr ));
-}
-END_TEST
-
 
 
 START_TEST (tube_create_test)
@@ -203,10 +172,10 @@ START_TEST (tube_open_test)
     int sockfd;
     ls_err err;
     struct sockaddr_in6 remoteAddr;
-    fail_unless( ls_get_remote_ip_addr(&remoteAddr,
-                                       "1.2.3.4",
-                                       "1402",
-                                       &err),
+    fail_unless( ls_sockaddr_get_remote_ip_addr(&remoteAddr,
+                                                "1.2.3.4",
+                                                "1402",
+                                                &err),
                  ls_err_message( err.code ) );
 
     sockfd = socket(PF_INET6, SOCK_DGRAM, 0);
@@ -223,10 +192,10 @@ START_TEST (tube_ack_test)
     int sockfd;
     ls_err err;
     struct sockaddr_in6 remoteAddr;
-    fail_unless( ls_get_remote_ip_addr(&remoteAddr,
-                                       "1.2.3.4",
-                                       "1402",
-                                       &err),
+    fail_unless( ls_sockaddr_get_remote_ip_addr(&remoteAddr,
+                                                "1.2.3.4",
+                                                "1402",
+                                                &err),
                  ls_err_message( err.code ) );
 
     sockfd = socket(PF_INET6, SOCK_DGRAM, 0);
@@ -247,10 +216,10 @@ START_TEST (tube_data_test)
     ls_err err;
     char data[] = "SPUD_make_TUBES_FUN";
     struct sockaddr_in6 remoteAddr;
-    fail_unless( ls_get_remote_ip_addr(&remoteAddr,
-                                       "1.2.3.4",
-                                       "1402",
-                                       &err),
+    fail_unless( ls_sockaddr_get_remote_ip_addr(&remoteAddr,
+                                                "1.2.3.4",
+                                                "1402",
+                                                &err),
                  ls_err_message( err.code ) );
 
     sockfd = socket(PF_INET6, SOCK_DGRAM, 0);
@@ -282,10 +251,10 @@ START_TEST (tube_close_test)
     ls_err err;
     char data[] = "SPUD_make_TUBES_FUN";
     struct sockaddr_in6 remoteAddr;
-    fail_unless( ls_get_remote_ip_addr(&remoteAddr,
-                                       "1.2.3.4",
-                                       "1402",
-                                       &err),
+    fail_unless( ls_sockaddr_get_remote_ip_addr(&remoteAddr,
+                                                "1.2.3.4",
+                                                "1402",
+                                                &err),
                  ls_err_message( err.code ) );
 
     sockfd = socket(PF_INET6, SOCK_DGRAM, 0);
@@ -311,10 +280,10 @@ START_TEST (tube_recv_test)
     spud_message_t sMsg = {NULL, NULL};
     spud_header_t smh;
     struct sockaddr_in6 remoteAddr;
-    fail_unless( ls_get_remote_ip_addr(&remoteAddr,
-                                       "1.2.3.4",
-                                       "1402",
-                                       &err),
+    fail_unless( ls_sockaddr_get_remote_ip_addr(&remoteAddr,
+                                                "1.2.3.4",
+                                                "1402",
+                                                &err),
                  ls_err_message( err.code ) );
 
     sockfd = socket(PF_INET6, SOCK_DGRAM, 0);
@@ -395,13 +364,6 @@ Suite * spudlib_suite (void)
       suite_add_tcase (s, tc_tube);
   }
 
-  {/* Sockaddr test case */
-      TCase *tc_ls_sockaddr = tcase_create ("Sockaddr");
-      tcase_add_checked_fixture (tc_ls_sockaddr, spudlib_setup, spudlib_teardown);
-      tcase_add_test (tc_ls_sockaddr, ls_sockaddr_test);
-      tcase_add_test_raise_signal(tc_ls_sockaddr, ls_sockaddr_test_assert, 6);
-      suite_add_tcase (s, tc_ls_sockaddr);
-  }
-
+  
   return s;
 }
