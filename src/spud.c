@@ -7,7 +7,7 @@
 #include "spud.h"
 #include "../config.h"
 
-bool spud_isSpud(const uint8_t *payload, size_t length)
+bool spud_is_spud(const uint8_t *payload, size_t length)
 {
     if (length < sizeof(spud_header_t)) {
         return false;
@@ -20,13 +20,13 @@ bool spud_init(spud_header_t *hdr, spud_tube_id_t *id, ls_err *err)
     memcpy(hdr->magic, SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE);
     hdr->flags = 0;
     if (id != NULL) {
-        return spud_setId(hdr, id, err);
+        return spud_set_id(hdr, id, err);
     } else {
-        return spud_createId(&hdr->tube_id, err);
+        return spud_create_id(&hdr->tube_id, err);
     }
 }
 
-static bool get_randBuf(void *buf, size_t sz, ls_err *err)
+static bool get_rand_buf(void *buf, size_t sz, ls_err *err)
 {
 #ifdef HAVE_ARC4RANDOM
     arc4random_buf(buf, sz);
@@ -55,14 +55,14 @@ static bool get_randBuf(void *buf, size_t sz, ls_err *err)
 #endif
 }
 
-bool spud_createId(spud_tube_id_t *id, ls_err *err)
+bool spud_create_id(spud_tube_id_t *id, ls_err *err)
 {
     if (id == NULL) {
         LS_ERROR(err, LS_ERR_INVALID_ARG);
         return false;
     }
 
-    if (!get_randBuf(id, sizeof(*id), err)) {
+    if (!get_rand_buf(id, sizeof(*id), err)) {
         return false;
     }
     return true;
@@ -71,7 +71,7 @@ bool spud_createId(spud_tube_id_t *id, ls_err *err)
 bool spud_parse(const uint8_t *payload, size_t length, spud_message_t *msg, ls_err *err)
 {
     cn_cbor_errback cbor_err;
-    if ((payload == NULL) || (msg == NULL) || !spud_isSpud(payload, length)) {
+    if ((payload == NULL) || (msg == NULL) || !spud_is_spud(payload, length)) {
         LS_ERROR(err, LS_ERR_INVALID_ARG);
         return false;
     }
@@ -105,7 +105,7 @@ void spud_unparse(spud_message_t *msg)
     msg->cbor = NULL;
 }
 
-bool spud_setId(spud_header_t *hdr, const spud_tube_id_t *id, ls_err *err)
+bool spud_set_id(spud_header_t *hdr, const spud_tube_id_t *id, ls_err *err)
 {
     if (hdr == NULL || id == NULL) {
         LS_ERROR(err, LS_ERR_INVALID_ARG);
@@ -115,7 +115,7 @@ bool spud_setId(spud_header_t *hdr, const spud_tube_id_t *id, ls_err *err)
     return true;
 }
 
-bool spud_isIdEqual(const spud_tube_id_t *a, const spud_tube_id_t *b)
+bool spud_is_id_equal(const spud_tube_id_t *a, const spud_tube_id_t *b)
 {
     if (a == NULL || b == NULL) {
         return false;
@@ -124,7 +124,7 @@ bool spud_isIdEqual(const spud_tube_id_t *a, const spud_tube_id_t *b)
     return memcmp(a, b, SPUD_TUBE_ID_SIZE) == 0;
 }
 
-char* spud_idToString(char* buf, size_t len, const spud_tube_id_t *id, ls_err *err)
+char* spud_id_to_string(char* buf, size_t len, const spud_tube_id_t *id, ls_err *err)
 {
     size_t i;
 
@@ -140,7 +140,7 @@ char* spud_idToString(char* buf, size_t len, const spud_tube_id_t *id, ls_err *e
     return buf;
 }
 
-bool spud_copyId(const spud_tube_id_t *src, spud_tube_id_t *dest, ls_err *err) {
+bool spud_copy_id(const spud_tube_id_t *src, spud_tube_id_t *dest, ls_err *err) {
     if (src == NULL || dest == NULL) {
         LS_ERROR(err, LS_ERR_INVALID_ARG);
         return false;

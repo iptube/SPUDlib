@@ -56,8 +56,8 @@ static int markov()
         case TS_UNKNOWN:
             // tube_open(t, (struct sockaddr*)&remoteAddr, &err);
             // TODO: tube_open as a race condition
-            if (!spud_createId(&t->id, &err)) {
-                LS_LOG_ERR(err, "spud_createId");
+            if (!spud_create_id(&t->id, &err)) {
+                LS_LOG_ERR(err, "spud_create_id");
                 return 1;
             }
             t->state = TS_OPENING;
@@ -127,8 +127,8 @@ static void *socketListen(void *ptr)
                    err.code, ls_err_message(err.code));
             goto cleanup;
         }
-        if (!spud_copyId(&sMsg.header->tube_id, &uid, &err)) {
-            LS_LOG_ERR(err, "spud_copyId");
+        if (!spud_copy_id(&sMsg.header->tube_id, &uid, &err)) {
+            LS_LOG_ERR(err, "spud_copy_id");
             goto cleanup;
         }
 
@@ -136,9 +136,9 @@ static void *socketListen(void *ptr)
         if (!t) {
              // it's another kind of attack
             ls_log(LS_LOG_WARN, "Unknown ID: %s",
-                   spud_idToString(idStr,
-                                   sizeof(idStr),
-                                   &sMsg.header->tube_id, NULL));
+                   spud_id_to_string(idStr,
+                                     sizeof(idStr),
+                                     &sMsg.header->tube_id, NULL));
             goto cleanup;
         }
         // TODO: figure out which socket this came in on

@@ -68,20 +68,20 @@ typedef struct _spud_message_t
 } spud_message_t;
 
 
-bool spud_isSpud(const uint8_t *payload, size_t length);
+bool spud_is_spud(const uint8_t *payload, size_t length);
 
 bool spud_parse(const uint8_t *payload, size_t length, spud_message_t *msg, ls_err *err);
 void spud_unparse(spud_message_t *msg);
 
 bool spud_init(spud_header_t *hdr, spud_tube_id_t *id, ls_err *err);
 
-bool spud_createId(spud_tube_id_t *id, ls_err *err);
+bool spud_create_id(spud_tube_id_t *id, ls_err *err);
 
-bool spud_isIdEqual(const spud_tube_id_t *a,
-                    const spud_tube_id_t *b);
+bool spud_is_id_equal(const spud_tube_id_t *a,
+                      const spud_tube_id_t *b);
 
-bool spud_setId(spud_header_t *hdr, const spud_tube_id_t *id, ls_err *err);
+bool spud_set_id(spud_header_t *hdr, const spud_tube_id_t *id, ls_err *err);
 
-char* spud_idToString(char* buf, size_t len, const spud_tube_id_t *id, ls_err *err);
+char* spud_id_to_string(char* buf, size_t len, const spud_tube_id_t *id, ls_err *err);
 
-bool spud_copyId(const spud_tube_id_t *src, spud_tube_id_t *dest, ls_err *err);
+bool spud_copy_id(const spud_tube_id_t *src, spud_tube_id_t *dest, ls_err *err);

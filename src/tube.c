@@ -227,7 +227,7 @@ LS_API bool tube_open(tube *t, const struct sockaddr *dest, ls_err *err)
     assert(t!=NULL);
     assert(dest!=NULL);
     memcpy(&t->peer, dest, ls_sockaddr_get_length(dest));
-    if (!spud_createId(&t->id, err)) {
+    if (!spud_create_id(&t->id, err)) {
         return false;
     }
     t->state = TS_OPENING;
@@ -243,7 +243,7 @@ LS_API bool tube_ack(tube *t,
     assert(id!=NULL);
     assert(dest!=NULL);
 
-    spud_copyId(id, &t->id, err);
+    spud_copy_id(id, &t->id, err);
 
     memcpy(&t->peer, dest, ls_sockaddr_get_length(dest));
     t->state = TS_RUNNING;

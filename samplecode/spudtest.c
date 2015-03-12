@@ -107,7 +107,7 @@ static void *socketListen(void *ptr){
             // It's an attack
             goto cleanup;
         }
-        if (!spud_isIdEqual(&config->t->id, &sMsg.header->tube_id)) {
+        if (!spud_is_id_equal(&config->t->id, &sMsg.header->tube_id)) {
             // it's another kind of attack
             goto cleanup;
         }

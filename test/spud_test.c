@@ -49,7 +49,7 @@ START_TEST (is_spud)
     //copy the whole spud msg into the buffer..
     memcpy(buf, &hdr, sizeof(hdr));
 
-    fail_unless( spud_isSpud((const uint8_t *)&buf,len),
+    fail_unless( spud_is_spud((const uint8_t *)&buf,len),
                  "isSpud() failed");
 }
 END_TEST
@@ -65,16 +65,16 @@ START_TEST (createId)
     //should this be in init() instead?
     fail_unless(spud_init(&hdr, NULL, &err));
 
-    printf("ID: %s\n", spud_idToString(idStr, len, &hdr.tube_id, NULL));
+    printf("ID: %s\n", spud_id_to_string(idStr, len, &hdr.tube_id, NULL));
 
-    fail_if(spud_isSpud((const uint8_t *)&buf,len),
+    fail_if(spud_is_spud((const uint8_t *)&buf,len),
             "isSpud() failed");
 
 
     //copy the whole spud msg into the buffer..
     memcpy(buf, &hdr, sizeof(hdr));
 
-    fail_unless(spud_isSpud((const uint8_t *)&buf,len),
+    fail_unless(spud_is_spud((const uint8_t *)&buf,len),
                 "isSpud() failed");
 }
 END_TEST
@@ -91,9 +91,9 @@ START_TEST (isIdEqual)
     fail_unless(spud_init(&msgB, &msgA.tube_id, &err));
     fail_unless(spud_init(&msgC, NULL, &err));
 
-    fail_unless( spud_isIdEqual(&msgA.tube_id, &msgB.tube_id));
-    fail_if( spud_isIdEqual(&msgA.tube_id, &msgC.tube_id));
-    fail_if( spud_isIdEqual(&msgB.tube_id, &msgC.tube_id));
+    fail_unless( spud_is_id_equal(&msgA.tube_id, &msgB.tube_id));
+    fail_if( spud_is_id_equal(&msgA.tube_id, &msgC.tube_id));
+    fail_if( spud_is_id_equal(&msgB.tube_id, &msgC.tube_id));
 }
 END_TEST
 
