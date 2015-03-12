@@ -1,11 +1,11 @@
-[![Build Status](https://travis-ci.org/iptube/SPUDlib.svg?branch=master)](https://travis-ci.org/iptube/SPUDlib) 
+[![Build Status](https://travis-ci.org/iptube/SPUDlib.svg?branch=master)](https://travis-ci.org/iptube/SPUDlib)
 [![Coverage Status](https://coveralls.io/repos/iptube/SPUDlib/badge.svg?branch=master)](https://coveralls.io/r/iptube/SPUDlib?branch=master)
 # SPUDlib
 Session Protocol for User Datagrams (SPUD) Prototype
 
 ## Compiling
 
-./bootstrap   (To create the ./configure script)
+./bootstrap.sh   (To create the ./configure script)
 ./configure   (To create the Makefiles)
 make          (To build the code)
 
@@ -55,4 +55,3 @@ White-spaces when committing should be avoided. (Usual rant on diffs and readabi
 ## Contributing
 
 Do a fork and send push requests!
-
