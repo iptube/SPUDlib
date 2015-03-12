@@ -42,7 +42,7 @@ START_TEST (is_spud)
     int len = 1024;
     unsigned char buf[len];
 
-    spud_header_t hdr;
+    spud_header hdr;
     //should this be in init() instead?
     memcpy(hdr.magic, SpudMagicCookie, SPUD_MAGIC_COOKIE_SIZE);
 
@@ -61,11 +61,11 @@ START_TEST (createId)
     char idStr[len];
     ls_err err;
 
-    spud_header_t hdr;
+    spud_header hdr;
     //should this be in init() instead?
     fail_unless(spud_init(&hdr, NULL, &err));
 
-    printf("ID: %s\n", spud_id_to_string(idStr, len, &hdr.tube_id, NULL));
+    printf("ID: %s\n", spud_ido_string(idStr, len, &hdr.tube_id, NULL));
 
     fail_if(spud_is_spud((const uint8_t *)&buf,len),
             "isSpud() failed");
@@ -83,9 +83,9 @@ START_TEST (isIdEqual)
 {
     ls_err err;
 
-    spud_header_t msgA;
-    spud_header_t msgB;//Equal to A
-    spud_header_t msgC;//New random
+    spud_header msgA;
+    spud_header msgB;//Equal to A
+    spud_header msgC;//New random
 
     fail_unless(spud_init(&msgA, NULL, &err));
     fail_unless(spud_init(&msgB, &msgA.tube_id, &err));
@@ -97,7 +97,7 @@ START_TEST (isIdEqual)
 }
 END_TEST
 
-START_TEST (spud_parse_test)
+START_TEST (spud_parseest)
 {
 
 
@@ -212,7 +212,7 @@ START_TEST (tube_data_test)
     tube *t;
     int sockfd;
     ls_err err;
-    uint8_t data[] = "SPUD_make_TUBES_FUN";
+    uint8_t data[] = "SPUD_makeUBES_FUN";
     struct sockaddr_in6 remoteAddr;
     fail_unless( ls_sockaddr_get_remote_ip_addr(&remoteAddr,
                                                 "1.2.3.4",
@@ -247,7 +247,7 @@ START_TEST (tube_close_test)
     tube *t;
     int sockfd;
     ls_err err;
-    char data[] = "SPUD_make_TUBES_FUN";
+    char data[] = "SPUD_makeUBES_FUN";
     struct sockaddr_in6 remoteAddr;
     fail_unless( ls_sockaddr_get_remote_ip_addr(&remoteAddr,
                                                 "1.2.3.4",
@@ -274,9 +274,9 @@ START_TEST (tube_recv_test)
     tube *t;
     int sockfd;
     ls_err err;
-    char data[] = "SPUD_make_TUBES_FUN";
-    spud_message_t sMsg = {NULL, NULL};
-    spud_header_t smh;
+    char data[] = "SPUD_makeUBES_FUN";
+    spud_message sMsg = {NULL, NULL};
+    spud_header smh;
     struct sockaddr_in6 remoteAddr;
     fail_unless( ls_sockaddr_get_remote_ip_addr(&remoteAddr,
                                                 "1.2.3.4",

@@ -91,7 +91,7 @@ static void *socketListen(void *ptr){
     unsigned char buf[MAXBUFLEN];
     socklen_t addr_len;
     int numbytes;
-    spud_message_t sMsg;
+    spud_message sMsg;
     ls_err err;
 
     while (keepGoing) {

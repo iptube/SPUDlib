@@ -106,11 +106,11 @@ static void *socketListen(void *ptr)
     unsigned char buf[MAXBUFLEN];
     socklen_t addr_len;
     int numbytes;
-    spud_message_t sMsg = {NULL, NULL};
+    spud_message sMsg = {NULL, NULL};
     ls_err err;
     tube *t;
     char idStr[SPUD_ID_STRING_SIZE+1];
-    spud_tube_id_t uid;
+    spud_tube_id uid;
 
     while (keepGoing) {
         addr_len = sizeof(their_addr);
@@ -136,7 +136,7 @@ static void *socketListen(void *ptr)
         if (!t) {
              // it's another kind of attack
             ls_log(LS_LOG_WARN, "Unknown ID: %s",
-                   spud_id_to_string(idStr,
+                   spud_ido_string(idStr,
                                      sizeof(idStr),
                                      &sMsg.header->tube_id, NULL));
             goto cleanup;

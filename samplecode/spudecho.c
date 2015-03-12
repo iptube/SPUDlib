@@ -81,7 +81,7 @@ static void close_cb(ls_event_data evt,
 
     ls_log(LS_LOG_VERBOSE,
            "Spud ID: %s CLOSED: %zd data packets",
-           spud_id_to_string(idStr,
+           spud_ido_string(idStr,
                              sizeof(idStr),
                              &td->t->id, NULL),
            c->count);
@@ -110,9 +110,9 @@ static int socketListen()
     socklen_t addr_len = sizeof(their_addr);
     int numbytes;
     tube *t;
-    spud_message_t sMsg = {NULL, NULL};
+    spud_message sMsg = {NULL, NULL};
     ls_err err;
-    spud_tube_id_t uid;
+    spud_tube_id uid;
     int ret = 0;
     ls_event_dispatcher *dispatcher;
 
@@ -166,7 +166,7 @@ static int socketListen()
             }
 
             ls_log(LS_LOG_VERBOSE, "Spud ID: %s created",
-                   spud_id_to_string(idStr, sizeof(idStr), &uid, NULL));
+                   spud_ido_string(idStr, sizeof(idStr), &uid, NULL));
 
         }
         if (!tube_recv(t, &sMsg, (struct sockaddr *)&their_addr, &err)) {

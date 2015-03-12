@@ -56,7 +56,7 @@ typedef struct _tube {
   tube_states_t state;
   int sock;
   struct sockaddr_storage peer;
-  spud_tube_id_t id;
+  spud_tube_id id;
   void *data;
   ls_event_dispatcher *dispatcher;
   ls_event *e_running;
@@ -87,20 +87,20 @@ LS_API void tube_destroy(tube *t);
 LS_API bool tube_print(const tube *t, ls_err *err);
 LS_API bool tube_open(tube *t, const struct sockaddr *dest, ls_err *err);
 LS_API bool tube_ack(tube *t,
-                     const spud_tube_id_t *id,
+                     const spud_tube_id *id,
                      const struct sockaddr *dest,
                      ls_err *err);
 LS_API bool tube_data(tube *t, uint8_t *data, size_t len, ls_err *err);
 LS_API bool tube_close(tube *t, ls_err *err);
 
 LS_API bool tube_send(tube *t,
-                      spud_command_t cmd,
+                      spud_command cmd,
                       bool adec, bool pdec,
                       uint8_t **data, size_t *len,
                       int num,
                       ls_err *err);
 
 LS_API bool tube_recv(tube *t,
-                      spud_message_t *msg,
+                      spud_message *msg,
                       const struct sockaddr* addr,
                       ls_err *err);

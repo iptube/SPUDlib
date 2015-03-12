@@ -19,7 +19,7 @@ typedef enum {
     SPUD_OPEN  = 0x01 << 6,
     SPUD_CLOSE = 0x02 << 6,
     SPUD_ACK   = 0x03 << 6
-} spud_command_t;
+} spud_command;
 
 #define SPUD_ADEC    0x20
 #define SPUD_PDEC    0x10
@@ -43,45 +43,45 @@ typedef enum {
  */
 
 
-typedef struct _spud_tube_id_t {
+typedef struct _spud_tube_id {
     /* 64 bits */
     uint8_t octet[SPUD_TUBE_ID_SIZE];
-} spud_tube_id_t;
+} spud_tube_id;
 
 /*
  * SPUD message header.
  */
-typedef struct _spud_header_t
+typedef struct _spud_header
 {
     uint8_t magic[SPUD_MAGIC_COOKIE_SIZE];
-    spud_tube_id_t tube_id;
+    spud_tube_id tube_id;
     uint8_t flags;
-} spud_header_t;
+} spud_header;
 
 
 /* Decoded  SPUD message */
-typedef struct _spud_message_t
+typedef struct _spud_message
 {
-    spud_header_t *header;
+    spud_header *header;
     /* CBOR MAP */
     const cn_cbor *cbor;
-} spud_message_t;
+} spud_message;
 
 
 bool spud_is_spud(const uint8_t *payload, size_t length);
 
-bool spud_parse(const uint8_t *payload, size_t length, spud_message_t *msg, ls_err *err);
-void spud_unparse(spud_message_t *msg);
+bool spud_parse(const uint8_t *payload, size_t length, spud_message *msg, ls_err *err);
+void spud_unparse(spud_message *msg);
 
-bool spud_init(spud_header_t *hdr, spud_tube_id_t *id, ls_err *err);
+bool spud_init(spud_header *hdr, spud_tube_id *id, ls_err *err);
 
-bool spud_create_id(spud_tube_id_t *id, ls_err *err);
+bool spud_create_id(spud_tube_id *id, ls_err *err);
 
-bool spud_is_id_equal(const spud_tube_id_t *a,
-                      const spud_tube_id_t *b);
+bool spud_is_id_equal(const spud_tube_id *a,
+                      const spud_tube_id *b);
 
-bool spud_set_id(spud_header_t *hdr, const spud_tube_id_t *id, ls_err *err);
+bool spud_set_id(spud_header *hdr, const spud_tube_id *id, ls_err *err);
 
-char* spud_id_to_string(char* buf, size_t len, const spud_tube_id_t *id, ls_err *err);
+char* spud_ido_string(char* buf, size_t len, const spud_tube_id *id, ls_err *err);
 
-bool spud_copy_id(const spud_tube_id_t *src, spud_tube_id_t *dest, ls_err *err);
+bool spud_copy_id(const spud_tube_id *src, spud_tube_id *dest, ls_err *err);
