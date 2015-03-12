@@ -12,7 +12,7 @@
 #include "ls_error.h"
 #include "ls_eventing.h"
 #include "ls_mem.h"
-#include "cn-cbor.h"
+#include "cn-cbor/cn-cbor.h"
 
 typedef enum {
   TS_START,

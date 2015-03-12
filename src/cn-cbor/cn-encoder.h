@@ -11,7 +11,7 @@ extern "C" {
 #include <stdlib.h>
 #include <sys/types.h>
 
-#include "cn-cbor.h"
+#include "cn-cbor/cn-cbor.h"
 
 /* returns -1 on fail, or number of bytes written */
 ssize_t cbor_encoder_write_head(uint8_t *buf,

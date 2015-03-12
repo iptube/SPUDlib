@@ -8,7 +8,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include "ls_error.h"
-#include "cn-cbor.h"
+#include "cn-cbor/cn-cbor.h"
 
 #define SPUD_TUBE_ID_SIZE               8
 #define SPUD_ID_STRING_SIZE             (2*SPUD_TUBE_ID_SIZE)

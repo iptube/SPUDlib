@@ -12,7 +12,7 @@
 #include "../config.h"
 #include "tube.h"
 #include "ls_sockaddr.h"
-#include "cn-encoder.h"
+#include "cn-cbor/cn-encoder.h"
 
 #define EV_RUNNING_NAME "running"
 #define EV_DATA_NAME    "data"

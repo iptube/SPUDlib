@@ -12,7 +12,7 @@ extern "C" {
 #include <string.h>
 #include <strings.h>
 
-#include "cn-encoder.h"
+#include "cn-cbor/cn-encoder.h"
 #include "cbor.h"
 
 #define hton8p(p) (*(uint8_t*)(p))
