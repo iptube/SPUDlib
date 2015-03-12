@@ -201,6 +201,10 @@ Suite * ls_str_suite (void)
       tcase_add_test (tc_ls_string, ls_string_strcmp);
       tcase_add_test (tc_ls_string, ls_string_strcasecmp);
       tcase_add_test (tc_ls_string, ls_string_strncmp);
+      tcase_add_test (tc_ls_string, ls_str_atoi_test);
+      tcase_add_test (tc_ls_string, ls_str_compare_test);
+      tcase_add_test (tc_ls_string, ls_str_ncompare_test);
+      tcase_add_test (tc_ls_string, ls_str_length_test);
       suite_add_tcase (s, tc_ls_string);
   }
 
