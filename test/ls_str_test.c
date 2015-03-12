@@ -24,7 +24,6 @@ START_TEST (ls_string_strlen)
 }
 END_TEST
 
-
 START_TEST (ls_string_strnlen)
 {
     char test[] = "ABCDEFG";
@@ -85,7 +84,109 @@ START_TEST (ls_string_strncmp)
 }
 END_TEST
 
+START_TEST (ls_str_atoi_test)
+{
+    ck_assert_int_eq(ls_atoi("24", 0), 24);
+    ck_assert_int_eq(ls_atoi("-42", 0), -42);
+    ck_assert_int_eq(ls_atoi("", 0), 0);
+    ck_assert_int_eq(ls_atoi(NULL, 0), 0);
 
+    ck_assert_int_eq(ls_atoi("24", 5), 24);
+    ck_assert_int_eq(ls_atoi("-42", 5), -42);
+    ck_assert_int_eq(ls_atoi("", 5), 0);
+    ck_assert_int_eq(ls_atoi(NULL, 5), 5);
+}
+END_TEST
+
+START_TEST (ls_str_compare_test)
+{
+    char *str1, *str2;
+
+    str1 = str2 = "a test string";
+    ck_assert(ls_strcmp(str1, str2) == 0);
+    ck_assert(ls_strcasecmp(str1, str2) == 0);
+    str2 = "b test string";
+    ck_assert(ls_strcmp(str1, str2) < 0);
+    ck_assert(ls_strcasecmp(str1, str2) < 0);
+    str1 = "c test";
+    ck_assert(ls_strcmp(str1, str2) > 0);
+    ck_assert(ls_strcasecmp(str1, str2) > 0);
+
+    str1 = "a test string";
+    str2 = "A test String";
+    ck_assert(ls_strcmp(str1, str2) > 0);
+    ck_assert(ls_strcasecmp(str1, str2) == 0);
+
+    ck_assert(ls_strcmp(NULL, NULL) == 0);
+    ck_assert(ls_strcasecmp(NULL, NULL) == 0);
+
+    ck_assert(ls_strcmp(str1, NULL) > 0);
+    ck_assert(ls_strcasecmp(str1, NULL) > 0);
+
+    ck_assert(ls_strcmp(NULL, str2) < 0);
+    ck_assert(ls_strcasecmp(NULL, str2) < 0);
+}
+END_TEST
+
+START_TEST (ls_str_ncompare_test)
+{
+    char *str1, *str2, *str2case;
+
+    str1 = str2 = "test string alpha";
+    str2case = "Test String AlphA";
+    ck_assert(ls_strncmp(str1, str2, 17) == 0);
+    ck_assert(ls_strncasecmp(str1, str2, 17) == 0);
+    ck_assert(ls_strncasecmp(str1, str2case, 17) == 0);
+
+    str2 = "test string beta";
+    str2case = "Test String BetA";
+    ck_assert(ls_strncmp(str1, str2, 17) < 0);
+    ck_assert(ls_strncasecmp(str1, str2case, 17) < 0);
+
+    str2 = "test string al";
+    str2case = "Test String Al";
+    ck_assert(ls_strncmp(str1, str2, 17) > 0);
+    ck_assert(ls_strncmp(str1, str2case, 17) > 0);
+
+    ck_assert(ls_strncmp(NULL, NULL, 10) == 0);
+    ck_assert(ls_strncasecmp(NULL, NULL, 10) == 0);
+    ck_assert(ls_strncmp(str1, NULL, 10) > 0);
+    ck_assert(ls_strncasecmp(str1, NULL, 10) > 0);
+    ck_assert(ls_strncmp(NULL, str2, 10) < 0);
+    ck_assert(ls_strncasecmp(NULL, str2, 10) < 0);
+}
+END_TEST
+
+START_TEST (ls_str_length_test)
+{
+    char *str;
+
+    str = "a test string";
+    ck_assert_int_eq(ls_strlen(str), 13);
+
+    str = "";
+    ck_assert_int_eq(ls_strlen(str), 0);
+
+    str = "another test string";
+    ck_assert_int_eq(ls_strlen(str), 19);
+
+    ck_assert_int_eq(ls_strlen(NULL), 0);
+
+    str = "a test string";
+    ck_assert_int_eq(ls_strnlen(str, 13), 13);
+
+    str = "a test string";
+    ck_assert_int_eq(ls_strnlen(str, 17), 13);
+
+    str = "";
+    ck_assert_int_eq(ls_strnlen(str, 4), 0);
+
+    str = "another test string";
+    ck_assert_int_eq(ls_strnlen(str, 12), 12);
+
+    ck_assert_int_eq(ls_strnlen(NULL, 4), 0);
+}
+END_TEST
 
 Suite * ls_str_suite (void)
 {
