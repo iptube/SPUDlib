@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2015 SPUDlib authors.  See LICENSE file.
+ */
+
 #include <stdio.h>
 #include <string.h>
 

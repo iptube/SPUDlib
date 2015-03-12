@@ -11,10 +11,7 @@
  *
  * The name should match lexically in an ASCII case-insensitive manner.
  *
- * Copyrights
- *
- * Portions created or assigned to Cisco Systems, Inc. are
- * Copyright (c) 2010-2011 Cisco Systems, Inc.  All Rights Reserved.
+ * Copyright (c) 2015 SPUDlib authors.  See LICENSE file.
  */
 
 #pragma once

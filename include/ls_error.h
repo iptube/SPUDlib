@@ -3,10 +3,7 @@
  * \brief
  * Datatypes and functions for error reporting.
  *
- * Copyrights
- *
- * Portions created or assigned to Cisco Systems, Inc. are
- * Copyright (c) 2010 Cisco Systems, Inc.  All Rights Reserved.
+ * Copyright (c) 2015 SPUDlib authors.  See LICENSE file.
  */
 #pragma once
 

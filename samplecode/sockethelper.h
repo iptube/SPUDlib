@@ -1,6 +1,8 @@
+/*
+ * Copyright (c) 2015 SPUDlib authors.  See LICENSE file.
+ */
 
-#ifndef SOCKETHELPER_H
-#define SOCKETHELPER_H
+#pragma once
 
 #include <sockaddr_util.h>
 #include <sys/socket.h>
@@ -23,6 +25,3 @@ void sendPacket(int sockHandle,
                 int bufLen,
                 const struct sockaddr *dstAddr,
                 uint8_t ttl);
-
-
-#endif

@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2015 SPUDlib authors.  See LICENSE file.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <netdb.h>
