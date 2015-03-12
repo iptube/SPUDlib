@@ -21,24 +21,12 @@
 #define MAXBUFLEN 2048
 #define NUM_TUBES 1024
 
-bool keepGoing = true;
-
 pthread_t listenThread;
-int sockfd = -1;
+tube_manager *mgr = NULL;
 tube *tubes[NUM_TUBES];
-ls_htable *tube_table = NULL;
 struct sockaddr_in6 remoteAddr;
 struct sockaddr_in6 localAddr;
 uint8_t data[1024];
-
-static void clean_tube(bool replace, bool destroy_key, void *key, void *data)
-{
-    UNUSED_PARAM(replace);
-    UNUSED_PARAM(destroy_key);
-    UNUSED_PARAM(key);
-    tube *t = data;
-    tube_destroy(t);
-}
 
 static int markov()
 {
@@ -46,36 +34,31 @@ static int markov()
     struct timespec remaining;
     tube *t;
     ls_err err;
+    int i;
 
     timer.tv_sec = 0;
 
-    while (keepGoing) {
+    while (mgr->keep_going) {
         timer.tv_nsec = gauss(50000000, 10000000);
         nanosleep(&timer, &remaining);
-        t = tubes[random() % NUM_TUBES];
+        i = random() % NUM_TUBES;
+        t = tubes[i];
+        if (!t) {
+            if (!tube_create(mgr, &t, &err)) {
+                LS_LOG_ERR(err, "tube_create");
+                return 1;
+            }
+            tubes[i] = t;
+        }
         switch (t->state) {
         case TS_START:
             ls_log(LS_LOG_ERROR, "invalid tube state");
             return 1;
         case TS_UNKNOWN:
-            // tube_open(t, (struct sockaddr*)&remoteAddr, &err);
-            // TODO: tube_open as a race condition
-            if (!spud_create_id(&t->id, &err)) {
-                LS_LOG_ERR(err, "spud_create_id");
+            if (!tube_open(t, (struct sockaddr*)&remoteAddr, &err)) {
+                LS_LOG_ERR(err, "tube_open");
                 return 1;
             }
-            t->state = TS_OPENING;
-            if (!ls_htable_put(tube_table, &t->id, t, clean_tube, &err)) {
-                LS_LOG_ERR(err, "ls_htable_put");
-                return 1;
-            }
-            ls_log(LS_LOG_VERBOSE, "Created.  Hashtable size: %d",
-                   ls_htable_get_count(tube_table));
-            if (!tube_send(t, SPUD_OPEN, false, false, NULL, NULL, 0, &err)) {
-                LS_LOG_ERR(err, "tube_send");
-                return 1;
-            }
-
             break;
         case TS_OPENING:
             // keep waiting by the mailbox, Charlie Brown
@@ -87,7 +70,6 @@ static int markov()
                     LS_LOG_ERR(err, "tube_close");
                     return 1;
                 }
-                ls_htable_remove(tube_table, &t->id);
             } else {
                 // TODO: put something intersting in the buffer
                 if (!tube_data(t, data, random() % sizeof(data), &err)) {
@@ -105,108 +87,32 @@ static int markov()
 
 static void *socketListen(void *ptr)
 {
-    UNUSED_PARAM(ptr);
-    struct sockaddr_storage their_addr;
-    unsigned char buf[MAXBUFLEN];
-    socklen_t addr_len;
-    int numbytes;
-    spud_message sMsg = {NULL, NULL};
     ls_err err;
-    tube *t;
-    char idStr[SPUD_ID_STRING_SIZE+1];
-    spud_tube_id uid;
+    UNUSED_PARAM(ptr);
 
-    while (keepGoing) {
-        addr_len = sizeof(their_addr);
-        if ((numbytes = recvfrom(sockfd, buf,
-                                 MAXBUFLEN , 0,
-                                 (struct sockaddr *)&their_addr,
-                                 &addr_len)) == -1) {
-            LS_LOG_PERROR("recvfrom (data)");
-            continue;
-        }
-        if (!spud_parse(buf, numbytes, &sMsg, &err)) {
-            // It's an attack
-            ls_log(LS_LOG_WARN, "spud_cast %d, %s",
-                   err.code, ls_err_message(err.code));
-            goto cleanup;
-        }
-        if (!spud_copy_id(&sMsg.header->tube_id, &uid, &err)) {
-            LS_LOG_ERR(err, "spud_copy_id");
-            goto cleanup;
-        }
-
-        t = ls_htable_get(tube_table, &uid);
-        if (!t) {
-             // it's another kind of attack
-            ls_log(LS_LOG_WARN, "Unknown ID: %s",
-                   spud_ido_string(idStr,
-                                     sizeof(idStr),
-                                     &sMsg.header->tube_id, NULL));
-            goto cleanup;
-        }
-        // TODO: figure out which socket this came in on
-        tube_recv(t, &sMsg, (struct sockaddr *)&their_addr, &err);
-    cleanup:
-        spud_unparse(&sMsg);
+    if (!tube_manager_loop(mgr, &err)) {
+        LS_LOG_ERR(err, "tube_manager_loop");
     }
     return NULL;
 }
 
-static void data_cb(ls_event_data evt, void *arg)
-{
-    UNUSED_PARAM(evt);
-    UNUSED_PARAM(arg);
-}
 
-static void running_cb(ls_event_data evt, void *arg)
+static void remove_cb(ls_event_data evt, void *arg)
 {
-    UNUSED_PARAM(evt);
-    UNUSED_PARAM(arg);
-}
-
-static void close_cb(ls_event_data evt, void *arg)
-{
-    tubeData *td = evt->data;
+    tube *t = evt->data;
+    int i = *((int*)t->data);
     UNUSED_PARAM(arg);
 
-    ls_htable_remove(tube_table, &td->t->id);
+    tubes[i] = NULL;
+    ls_data_free(t->data);
 }
 
 void done() {
-    keepGoing = false;
+    mgr->keep_going = false;
     pthread_cancel(listenThread);
     pthread_join(listenThread, NULL);
-    close(sockfd);
     ls_log(LS_LOG_INFO, "DONE!");
     exit(0);
-}
-
-unsigned int hash_id(const void *id) {
-    // treat the 8 bytes of tube ID like a long long.
-    uint64_t key = *(uint64_t *)id;
-
-    // from
-    // https://gist.github.com/badboy/6267743#64-bit-to-32-bit-hash-functions
-    key = (~key) + (key << 18);
-    key = key ^ (key >> 31);
-    key = key * 21;
-    key = key ^ (key >> 11);
-    key = key + (key << 6);
-    key = key ^ (key >> 22);
-    return (unsigned int) key;
-}
-
-int compare_id(const void *key1, const void *key2) {
-    int ret = 0;
-    uint64_t k1 = *(uint64_t *)key1;
-    uint64_t k2 = *(uint64_t *)key2;
-    if (k1<k2) {
-        ret = -1;
-    } else {
-        ret = (k1==k2) ? 0 : 1;
-    }
-    return ret;
 }
 
 int spudtest(int argc, char **argv)
@@ -214,7 +120,6 @@ int spudtest(int argc, char **argv)
     ls_err err;
     size_t i;
     const char nums[] = "0123456789";
-    ls_event_dispatcher *dispatcher;
 
     if (argc < 2) {
         fprintf(stderr, "spudload <destination>\n");
@@ -237,39 +142,21 @@ int spudtest(int argc, char **argv)
         return 1;
     }
 
-    sockfd = socket(PF_INET6, SOCK_DGRAM, 0);
-    sockaddr_initAsIPv6Any(&localAddr, 0);
-
-    if (bind(sockfd,
-             (struct sockaddr *)&localAddr,
-             ls_sockaddr_get_length((struct sockaddr *)&localAddr)) != 0) {
-        LS_LOG_PERROR("bind");
+    if (!tube_manager_create(0, &mgr, &err)) {
+        LS_LOG_ERR(err, "tube_manager_create");
+        return 1;
+    }
+    if (!tube_manager_socket(mgr, 0, &err)) {
+        LS_LOG_ERR(err, "tube_manager_socket");
         return 1;
     }
 
-    if (!ls_htable_create(65521, hash_id, compare_id, &tube_table, &err)) {
-        LS_LOG_ERR(err, "ls_htable_create");
+    if (!tube_manager_bind_event(mgr, EV_REMOVE_NAME, remove_cb, &err)) {
+        LS_LOG_ERR(err, "tube_manager_bind_event");
         return 1;
     }
 
-    if (!ls_event_dispatcher_create(tube_table, &dispatcher, &err)) {
-        LS_LOG_ERR(err, "ls_event_dispatcher_create");
-        return 1;
-    }
-
-    if (!tube_bind_events(dispatcher,
-                          running_cb, data_cb, close_cb,
-                          tube_table, &err)) {
-        LS_LOG_ERR(err, "tube_bind_events");
-        return 1;
-    }
-
-    for (int i=0; i<NUM_TUBES; i++) {
-        tube_create(sockfd, dispatcher, &tubes[i], &err);
-        memcpy(&tubes[i]->peer,
-               &remoteAddr,
-               ls_sockaddr_get_length((struct sockaddr*)&remoteAddr));
-    }
+    memset(tubes, 0, sizeof(tubes));
 
     //Start and listen to the sockets.
     pthread_create(&listenThread, NULL, socketListen, NULL);

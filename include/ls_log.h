@@ -71,12 +71,6 @@ typedef enum
 typedef void (*ls_log_generator_fn)(
         const char **chunk, size_t *len, ls_data_free_func *free_fn, void *arg);
 
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 /**
  * Retrieve the string version of the ls_loglevel enum.
  *

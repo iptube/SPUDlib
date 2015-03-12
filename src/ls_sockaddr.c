@@ -54,3 +54,16 @@ LS_API bool ls_sockaddr_get_remote_ip_addr(struct sockaddr_in6 *remoteAddr,
     freeaddrinfo(res); // free the linked list
     return found;
 }
+
+LS_API void ls_sockaddr_v6_any(struct sockaddr_in6 * sa, int port)
+{
+    memset(sa, 0, sizeof(*sa));
+    sa->sin6_family = AF_INET6;
+    sa->sin6_addr = in6addr_any;
+    //sa->sin6_len = sizeof(*sa);
+    sa->sin6_port = htons(port);
+}
+
+LS_API void ls_sockaddr_copy(const struct sockaddr *src, struct sockaddr *dest) {
+    memcpy(dest, src, ls_sockaddr_get_length(src));
+}

@@ -16,3 +16,7 @@ LS_API bool ls_sockaddr_get_remote_ip_addr(struct sockaddr_in6 *remoteAddr,
                                            const char *fqdn,
                                            const char *port,
                                            ls_err *err);
+
+LS_API void ls_sockaddr_v6_any(struct sockaddr_in6 * sa, int port);
+
+LS_API void ls_sockaddr_copy(const struct sockaddr *src, struct sockaddr *dest);

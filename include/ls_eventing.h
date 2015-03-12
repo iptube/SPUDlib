@@ -191,9 +191,9 @@ LS_API const void *ls_event_get_source(ls_event *event);
  * \retval bool True if the callback was successfully bound.
  */
 LS_API bool ls_event_bind(ls_event                *event,
-                                  ls_event_notify_callback cb,
-                                  void                    *arg,
-                                  ls_err                  *err);
+                          ls_event_notify_callback cb,
+                          void                    *arg,
+                          ls_err                  *err);
 
 /**
  * Unbinds the given event callback. If {cb} is not currently bound to the
@@ -205,7 +205,7 @@ LS_API bool ls_event_bind(ls_event                *event,
  * \param[in] cb The callback to unbind
  */
 LS_API void ls_event_unbind(ls_event                *event,
-                                    ls_event_notify_callback cb);
+                            ls_event_notify_callback cb);
 
 /**
  * Fires an event on all registered callbacks, with the given data.
@@ -225,10 +225,10 @@ LS_API void ls_event_unbind(ls_event                *event,
  * \retval bool True if the callback was successfully bound.
  */
 LS_API bool ls_event_trigger(ls_event                *event,
-                                     void                    *data,
-                                     ls_event_result_callback result_cb,
-                                     void                    *result_arg,
-                                     ls_err                  *err);
+                             void                    *data,
+                             ls_event_result_callback result_cb,
+                             void                    *result_arg,
+                             ls_err                  *err);
 
 /**
  * Same as ls_event_trigger except that no internal allocation takes place,

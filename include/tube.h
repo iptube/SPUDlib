@@ -12,6 +12,7 @@
 #include "ls_error.h"
 #include "ls_eventing.h"
 #include "ls_mem.h"
+#include "ls_htable.h"
 #include "cn-cbor/cn-cbor.h"
 
 typedef enum {
@@ -22,50 +23,75 @@ typedef enum {
   TS_RESUMING
 } tube_states_t;
 
-struct _tube;
+typedef enum {
+  TP_IGNORE_SOURCE = 1 << 0,
+  TP_SERVER        = 1 << 1
+} tube_policies;
 
+#define EV_RUNNING_NAME "running"
+#define EV_DATA_NAME    "data"
+#define EV_CLOSE_NAME   "close"
+#define EV_ADD_NAME     "add"
+#define EV_REMOVE_NAME  "remove"
 
-typedef void (*tube_state_cb)(struct _tube* t,
-                              const struct sockaddr* addr);
-
-typedef struct _tube {
-  tube_states_t state;
+typedef struct _tube_manager {
   int sock;
-  struct sockaddr_storage peer;
-  spud_tube_id id;
-  void *data;
+  ls_htable *tubes;
   ls_event_dispatcher *dispatcher;
   ls_event *e_running;
   ls_event *e_data;
   ls_event *e_close;
-  bool my_dispatcher;
+  ls_event *e_add;
+  ls_event *e_remove;
+  tube_policies policy;
+  bool keep_going;
+} tube_manager;
+
+typedef struct _tube {
+  tube_states_t state;
+  struct sockaddr_storage peer;
+  spud_tube_id id;
+  void *data;
+  tube_manager *mgr;
 } tube;
 
-typedef struct _tubeData {
+typedef struct _tube_event_data {
     tube *t;
     const cn_cbor *cbor;
     const struct sockaddr* addr;
-} tubeData;
+} tube_event_data;
 
-/* When you want to create a single dispatcher for a lot of tubes */
-LS_API bool tube_bind_events(ls_event_dispatcher *dispatcher,
-                             ls_event_notify_callback running_cb,
-                             ls_event_notify_callback data_cb,
-                             ls_event_notify_callback close_cb,
-                             void *arg,
+LS_API bool tube_manager_create(int buckets,
+                                tube_manager **m,
+                                ls_err *err);
+LS_API void tube_manager_destroy(tube_manager *mgr);
+
+LS_API bool tube_manager_socket(tube_manager *m,
+                                int port,
+                                ls_err *err);
+
+LS_API bool tube_manager_bind_event(tube_manager *mgr,
+                                    const char *name,
+                                    ls_event_notify_callback cb,
+                                    ls_err *err);
+
+LS_API bool tube_manager_add(tube_manager *mgr,
+                             tube *t,
                              ls_err *err);
 
-/* multiple tubes per socket */
-LS_API bool tube_create(int sock, ls_event_dispatcher *dispatcher, tube **t, ls_err *err);
+LS_API void tube_manager_remove(tube_manager *mgr,
+                                tube *t);
+
+LS_API bool tube_manager_loop(tube_manager *mgr, ls_err *err);
+
+
+LS_API bool tube_create(tube_manager *mgr, tube **t, ls_err *err);
 LS_API void tube_destroy(tube *t);
 
 /* print [local address]:port to stdout */
 LS_API bool tube_print(const tube *t, ls_err *err);
 LS_API bool tube_open(tube *t, const struct sockaddr *dest, ls_err *err);
-LS_API bool tube_ack(tube *t,
-                     const spud_tube_id *id,
-                     const struct sockaddr *dest,
-                     ls_err *err);
+LS_API bool tube_ack(tube *t, ls_err *err);
 LS_API bool tube_data(tube *t, uint8_t *data, size_t len, ls_err *err);
 LS_API bool tube_close(tube *t, ls_err *err);
 
@@ -74,9 +100,4 @@ LS_API bool tube_send(tube *t,
                       bool adec, bool pdec,
                       uint8_t **data, size_t *len,
                       int num,
-                      ls_err *err);
-
-LS_API bool tube_recv(tube *t,
-                      spud_message *msg,
-                      const struct sockaddr* addr,
                       ls_err *err);

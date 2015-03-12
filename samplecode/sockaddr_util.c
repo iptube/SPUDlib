@@ -44,15 +44,6 @@ void sockaddr_initAsIPv4Any(struct sockaddr_in * sa, int port)
     sa->sin_addr.s_addr = INADDR_ANY;
 }
 
-void sockaddr_initAsIPv6Any(struct sockaddr_in6 * sa, int port)
-{
-    memset(sa, 0, sizeof(*sa));
-    sa->sin6_family = AF_INET6;
-    sa->sin6_addr = in6addr_any;
-    //sa->sin6_len = sizeof(*sa);
-    sa->sin6_port = htons(port);
-}
-
 bool sockaddr_initFromIPv6String(struct sockaddr_in6 *sa,
                                  const char *addr_str)
 {

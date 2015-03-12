@@ -279,10 +279,10 @@ LS_API void *ls_htable_get(ls_htable *tbl,
 }
 
 LS_API bool ls_htable_put(ls_htable *tbl,
-                                  const void *key,
-                                  void *value,
-                                  ls_htable_cleanfunc cleaner,
-                                  ls_err *err)
+                          const void *key,
+                          void *value,
+                          ls_htable_cleanfunc cleaner,
+                          ls_err *err)
 {
     unsigned int khash;
     unsigned int bucket;

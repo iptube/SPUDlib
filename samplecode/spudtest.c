@@ -39,12 +39,13 @@
 
 #define MAXBUFLEN 2048
 
-bool keepGoing = true;
 pthread_t sendDataThread;
 pthread_t listenThread;
 
 static const int numChar = 53;
 static const char* s1= "[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~";
+
+tube_manager *mgr;
 
 struct test_config {
 
@@ -56,88 +57,63 @@ struct test_config {
     int numRcvdPkts;
     int numSentProbe;
 };
+struct test_config config;
 
-static void *sendData(struct test_config *config)
+static void *sendData(void *arg)
 {
     struct timespec timer;
     struct timespec remaining;
     unsigned char buf[1024];
     int i;
     ls_err err;
+    UNUSED_PARAM(arg);
 
     //How fast? Pretty fast..
     timer.tv_sec = 0;
     timer.tv_nsec = 50000000;
 
-    while (keepGoing) {
+    while (mgr->keep_going) {
         nanosleep(&timer, &remaining);
-        config->numSentPkts++;
+        config.numSentPkts++;
 #ifndef ANDROID
-        LOGI("\rTX: %i", config->numSentPkts);
+        LOGI("\rTX: %i", config.numSentPkts);
         fflush(stdout);
 #endif
 
         for (i=0; i<1; i++) {
             int len = (numChar*i);
             // TODO: parse this.
-            memcpy(buf+len, s1+(config->numSentPkts%numChar)+(numChar*i), numChar);
+            memcpy(buf+len, s1+(config.numSentPkts%numChar)+(numChar*i), numChar);
         }
-        if (!tube_data(config->t, buf, strlen(s1), &err)) {
+        if (!tube_data(config.t, buf, strlen(s1), &err)) {
             LS_LOG_ERR(err, "tube_data");
         }
     }
     return NULL;
 }
 
-static void *socketListen(void *ptr){
-    struct test_config *config = (struct test_config *)ptr;
-    struct sockaddr_storage their_addr;
-    unsigned char buf[MAXBUFLEN];
-    socklen_t addr_len;
-    int numbytes;
-    spud_message sMsg;
+static void *socketListen(void *arg){
     ls_err err;
+    UNUSED_PARAM(arg);
 
-    while (keepGoing) {
-        addr_len = sizeof(their_addr);
-        if ((numbytes = recvfrom(config->t->sock, buf,
-                                 MAXBUFLEN , 0,
-                                 (struct sockaddr *)&their_addr,
-                                 &addr_len)) == -1) {
-            LOGE("recvfrom (data)");
-            continue;
-        }
-        if (!spud_parse(buf, numbytes, &sMsg, &err)) {
-            // It's an attack
-            goto cleanup;
-        }
-        if (!spud_is_id_equal(&config->t->id, &sMsg.header->tube_id)) {
-            // it's another kind of attack
-            goto cleanup;
-        }
-        if (!tube_recv(config->t, &sMsg, (struct sockaddr *)&their_addr, &err)) {
-            LS_LOG_ERR(err, "tube_recv");
-        }
-    cleanup:
-        spud_unparse(&sMsg);
-    }
-    if (!tube_close(config->t, &err)) {
-        LS_LOG_ERR(err, "tube_close");
+    if (!tube_manager_loop(mgr, &err)) {
+        LS_LOG_ERR(err, "tube_manager_loop");
     }
     return NULL;
 }
 
 static void data_cb(ls_event_data evt, void *arg)
 {
-    struct test_config *config = arg;
-    tubeData *td = evt->data;
-    config->numRcvdPkts++;
+    tube_event_data *td = evt->data;
+    UNUSED_PARAM(arg);
+    
+    config.numRcvdPkts++;
     if (td->cbor) {
         const cn_cbor *data = cn_cbor_mapget_int(td->cbor, 0);
         ((char*)data->v.str)[data->length-1] = '\0';  // TODO: cheating
         if (data && (data->type==CN_CBOR_TEXT || data->type==CN_CBOR_BYTES)) {
             LOGI("\r " ESC_7C " RX: %i  %s",
-                 config->numRcvdPkts,
+                 config.numRcvdPkts,
                  data->v.str);
         }
     }
@@ -152,14 +128,8 @@ static void running_cb(ls_event_data evt, void *arg)
     pthread_create(&sendDataThread, NULL, (void *)sendData, arg);
 }
 
-static void close_cb(ls_event_data evt, void *arg)
-{
-    UNUSED_PARAM(evt);
-    UNUSED_PARAM(arg);
-}
-
 void done() {
-    keepGoing = false;
+    mgr->keep_going = false;
     pthread_join(sendDataThread, NULL);
     LOGI("\nDONE!\n");
     exit(0);
@@ -167,8 +137,6 @@ void done() {
 
 int spudtest(int argc, char **argv)
 {
-    struct test_config config;
-    int sockfd;
     ls_err err;
     char buf[1024];
 
@@ -184,27 +152,28 @@ int spudtest(int argc, char **argv)
                                        argv[1],
                                        "1402",
                                        &err)) {
+        LS_LOG_ERR(err, "ls_sockaddr_get_remote_ip_addr");
         return 1;
     }
 
-    sockfd = socket(PF_INET6, SOCK_DGRAM, 0);
-    sockaddr_initAsIPv6Any((struct sockaddr_in6 *)&config.localAddr, 0);
-
-    if (bind(sockfd,
-             (struct sockaddr *)&config.localAddr,
-             ls_sockaddr_get_length((struct sockaddr*) &config.localAddr)) != 0) {
-        perror("bind");
+    if (!tube_manager_create(0, &mgr, &err)) {
+        LS_LOG_ERR(err, "tube_manager_create");
+        return 1;
+    }
+    if (!tube_manager_socket(mgr, 0, &err)) {
+        LS_LOG_ERR(err, "tube_manager_socket");
         return 1;
     }
 
-    if (!tube_create(sockfd, NULL, &config.t, &err)) {
+    if (!tube_create(mgr, &config.t, &err)) {
+        LS_LOG_ERR(err, "tube_create");
         return 1;
     }
     config.t->data = &config;
-    if (!tube_bind_events(config.t->dispatcher,
-                          running_cb, data_cb, close_cb,
-                          &config, &err)) {
-        LS_LOG_ERR(err, "ls_event_bind");
+
+    if (!tube_manager_bind_event(mgr, EV_RUNNING_NAME, running_cb, &err) ||
+        !tube_manager_bind_event(mgr, EV_DATA_NAME, data_cb, &err)) {
+        LS_LOG_ERR(err, "tube_manager_bind_event");
         return 1;
     }
 
@@ -215,7 +184,7 @@ int spudtest(int argc, char **argv)
     ls_log(LS_LOG_INFO, "-> %s\n", sockaddr_toString((struct sockaddr*)&config.remoteAddr, buf, sizeof(buf), true));
 
     //Start and listen to the sockets.
-    pthread_create(&listenThread, NULL, (void *)socketListen, &config);
+    pthread_create(&listenThread, NULL, (void *)socketListen, NULL);
 #ifndef ANDROID
     signal(SIGINT, done);
 #endif

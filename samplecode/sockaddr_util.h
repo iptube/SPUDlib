@@ -20,10 +20,6 @@ void sockaddr_reset(struct sockaddr_storage * sa);
  */
 void sockaddr_initAsIPv4Any(struct sockaddr_in * sa, int port);
 
-
-
-void sockaddr_initAsIPv6Any(struct sockaddr_in6 * sa, int port);
-
 /*
  *  Initialize a sockaddr from string.
  *  Remember to put aside enough memory. (sockaddr_storage)
