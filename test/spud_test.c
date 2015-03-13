@@ -69,7 +69,9 @@ START_TEST (createId)
     //should this be in init() instead?
     fail_unless(spud_init(&hdr, NULL, &err));
 
-    printf("ID: %s\n", spud_id_to_string(idStr, len, &hdr.tube_id, NULL));
+    memset(idStr, 0, len);
+    spud_id_to_string(idStr, len, &hdr.tube_id, NULL);
+    ck_assert_int_eq(strlen(idStr), SPUD_ID_STRING_SIZE);
 
     fail_if(spud_is_spud((const uint8_t *)&buf,len),
             "isSpud() failed");
@@ -180,26 +182,19 @@ START_TEST (tube_open_test)
     tube_manager *mgr;
     ls_err err;
     struct sockaddr_in6 remoteAddr;
-    printf("%s:%d\n", __func__, __LINE__);
     fail_unless( ls_sockaddr_get_remote_ip_addr(&remoteAddr,
                                                 "127.0.0.1",
                                                 "1402",
                                                 &err),
                  ls_err_message( err.code ) );
-    printf("%s:%d\n", __func__, __LINE__);
 
     fail_unless( tube_manager_create(0, &mgr, &err));
-    printf("%s:%d\n", __func__, __LINE__);
     fail_unless( tube_manager_socket(mgr, 0, &err));
-    printf("%s:%d\n", __func__, __LINE__);
 
     fail_unless( tube_create(mgr, &t, &err) );
-    printf("%s:%d\n", __func__, __LINE__);
     fail_unless( tube_open(t, (const struct sockaddr*)&remoteAddr, &err),
                  ls_err_message( err.code ) );
-    printf("%s:%d\n", __func__, __LINE__);
     tube_manager_destroy(mgr); // should also destroy tube
-    printf("%s:%d\n", __func__, __LINE__);
 }
 END_TEST
 
@@ -209,33 +204,23 @@ START_TEST (tube_ack_test)
     tube_manager *mgr;
     ls_err err;
     struct sockaddr_in6 remoteAddr;
-    printf("%s:%d\n", __func__, __LINE__);
     fail_unless( ls_sockaddr_get_remote_ip_addr(&remoteAddr,
                                                 "127.0.0.1",
                                                 "1402",
                                                 &err),
                  ls_err_message( err.code ) );
-    printf("%s:%d\n", __func__, __LINE__);
 
     fail_unless( tube_manager_create(0, &mgr, &err));
-    printf("%s:%d\n", __func__, __LINE__);
     fail_unless( tube_manager_socket(mgr, 0, &err));
-    printf("%s:%d\n", __func__, __LINE__);
 
     fail_unless( tube_create(mgr, &t, &err) );
-    printf("%s:%d\n", __func__, __LINE__);
     fail_unless( spud_create_id(&t->id, &err), ls_err_message( err.code ) );
-    printf("%s:%d\n", __func__, __LINE__);
     ls_sockaddr_copy((const struct sockaddr*)&remoteAddr, (struct sockaddr*)&t->peer);
-    printf("%s:%d\n", __func__, __LINE__);
 
     fail_unless( tube_ack(t, &err),
                  ls_err_message( err.code ) );
-    printf("%s:%d\n", __func__, __LINE__);
     tube_destroy(t);
-    printf("%s:%d\n", __func__, __LINE__);
     tube_manager_destroy(mgr);
-    printf("%s:%d\n", __func__, __LINE__);
 }
 END_TEST
 
@@ -283,32 +268,20 @@ START_TEST (tube_close_test)
     char data[] = "SPUD_makeUBES_FUN";
     struct sockaddr_in6 remoteAddr;
 
-    printf("%s:%d\n", __func__, __LINE__);
     fail_unless( ls_sockaddr_get_remote_ip_addr(&remoteAddr,
                                                 "127.0.0.1",
                                                 "1402",
                                                 &err),
                  ls_err_message( err.code ) );
-    printf("%s:%d\n", __func__, __LINE__);
 
     fail_unless( tube_manager_create(17, &mgr, &err));
-    printf("%s:%d\n", __func__, __LINE__);
     fail_unless( tube_manager_socket(mgr, 0, &err));
-    printf("%s:%d\n", __func__, __LINE__);
-
     fail_unless( tube_create(mgr, &t, &err) );
-    printf("%s:%d\n", __func__, __LINE__);
-
     fail_unless( tube_open(t, (const struct sockaddr*)&remoteAddr, &err),
                  ls_err_message( err.code ) );
-    printf("%s:%d\n", __func__, __LINE__);
-
     fail_unless( tube_close(t, &err),
                  ls_err_message( err.code ) );
-    printf("%s:%d\n", __func__, __LINE__);
-
     tube_manager_destroy(mgr);
-    printf("%s:%d\n", __func__, __LINE__);
 }
 END_TEST
 

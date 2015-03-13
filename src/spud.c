@@ -130,17 +130,20 @@ bool spud_is_id_equal(const spud_tube_id *a, const spud_tube_id *b)
 
 char* spud_id_to_string(char* buf, size_t len, const spud_tube_id *id, ls_err *err)
 {
-    size_t i;
-
     if(len < SPUD_ID_STRING_SIZE+1){
         LS_ERROR(err, LS_ERR_INVALID_ARG);
         return NULL;
     }
 
-    for(i=0;i<SPUD_TUBE_ID_SIZE;i++){
-        sprintf(buf+2*i,"%02x", id->octet[i]);
-    }
-    buf[i] = 0;
+    snprintf(buf, len, "%02x%02x%02x%02x%02x%02x%02x%02x",
+             id->octet[0],
+             id->octet[1],
+             id->octet[2],
+             id->octet[3],
+             id->octet[4],
+             id->octet[5],
+             id->octet[6],
+             id->octet[7]);
     return buf;
 }
 
