@@ -63,15 +63,23 @@ START_TEST (createId)
     int len = 1024;
     unsigned char buf[len];
     char idStr[len];
+    spud_tube_id id;
     ls_err err;
 
     spud_header hdr;
     //should this be in init() instead?
     fail_unless(spud_init(&hdr, NULL, &err));
 
+    ck_assert(spud_id_to_string(idStr, 15, &hdr.tube_id, NULL) == NULL);
+
     memset(idStr, 0, len);
     spud_id_to_string(idStr, len, &hdr.tube_id, NULL);
     ck_assert_int_eq(strlen(idStr), SPUD_ID_STRING_SIZE);
+
+    fail_if(spud_set_id(NULL, NULL, &err));
+    fail_if(spud_set_id(&hdr, NULL, &err));
+
+    fail_unless(spud_copy_id(&hdr.tube_id, &id, &err));
 
     fail_if(spud_is_spud((const uint8_t *)&buf,len),
             "isSpud() failed");
@@ -117,7 +125,10 @@ START_TEST (spud_parse_test)
     fail_if(spud_parse(buf, 0, NULL, &err));
     fail_if(spud_parse(buf, 0, &msg, &err));
     fail_unless(spud_parse(buf, 13, &msg, &err));
+    fail_if(spud_parse(buf, 14, &msg, &err));
+    fail_if(spud_parse(buf, 15, &msg, &err));
     fail_unless(spud_parse(buf, sizeof(buf), &msg, &err));
+    spud_unparse(&msg);
 }
 END_TEST
 
