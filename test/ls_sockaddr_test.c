@@ -53,6 +53,11 @@ START_TEST (ls_sockaddr_get_remote_ip)
                                                   &err),
                      ls_err_message( err.code ) );
 
+    fail_if ( ls_sockaddr_get_remote_ip_addr(&remoteAddr,
+                                             "foo.invalid",
+                                             "1402",
+                                             &err),
+                     ls_err_message( err.code ) );
 }
 END_TEST
 
