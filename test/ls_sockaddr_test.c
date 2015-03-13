@@ -56,6 +56,19 @@ START_TEST (ls_sockaddr_get_remote_ip)
 }
 END_TEST
 
+START_TEST (ls_sockaddr_v6_any_test)
+{
+    struct sockaddr_in6 addr;
+    struct sockaddr_storage addr2;
+    ls_sockaddr_v6_any(&addr, 443);
+    ck_assert_int_eq(ntohs(addr.sin6_port), 443);
+    ck_assert_int_eq(addr.sin6_family, AF_INET6);
+
+    ls_sockaddr_copy((const struct sockaddr*)&addr, (struct sockaddr*)&addr2);
+    ck_assert_int_eq(memcmp(&addr, &addr2,
+                            ls_sockaddr_get_length((struct sockaddr*)&addr2)), 0);
+}
+END_TEST
 
 Suite * ls_sockaddr_suite (void)
 {
@@ -65,6 +78,8 @@ Suite * ls_sockaddr_suite (void)
       tcase_add_test (tc_ls_sockaddr, ls_sockaddr_length_test);
       tcase_add_test_raise_signal(tc_ls_sockaddr, ls_sockaddr_test_length_assert, 6);
       tcase_add_test (tc_ls_sockaddr, ls_sockaddr_get_remote_ip);
+      tcase_add_test (tc_ls_sockaddr, ls_sockaddr_v6_any_test);
+
       suite_add_tcase (s, tc_ls_sockaddr);
   }
 
