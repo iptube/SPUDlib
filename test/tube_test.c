@@ -73,6 +73,8 @@ START_TEST (tube_utilities_test)
     fail_unless( tube_get_id(t, &id, &err) );
     fail_unless( tube_id_to_string(t, buf, sizeof(buf)) == buf);
 
+    tube_manager_stop(mgr);
+    fail_if(tube_manager_running(mgr));
     tube_destroy(t);
     tube_manager_destroy(mgr);
 }
