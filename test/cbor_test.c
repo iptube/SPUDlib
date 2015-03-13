@@ -98,6 +98,7 @@ START_TEST (cbor_parse_test)
         ck_assert_int_eq(enc_sz, b.sz);
         ck_assert_int_eq(memcmp(b.ptr, encoded, enc_sz), 0);
         free(b.ptr);
+        cn_cbor_free(cb);
     }
 }
 END_TEST
@@ -131,7 +132,73 @@ START_TEST (cbor_fail_test)
         ck_assert_int_eq(err.err,tests[i].err   );
 
         free(b.ptr);
+        cn_cbor_free(cb);
     }
+}
+END_TEST
+
+// Decoder loses float size information
+START_TEST (cbor_float_test)
+{
+    cn_cbor_errback err;
+    char *tests[] = {
+        "f9c400", // -4.0
+        "fa47c35000", // 100000.0
+    };
+    const cn_cbor *cb;
+    buffer b;
+    int i;
+
+    for (i=0; i<sizeof(tests)/sizeof(char*); i++) {
+        ck_assert(parse_hex(tests[i], &b));
+        cb = cn_cbor_decode(b.ptr, b.sz, &err);
+        ck_assert_msg(cb != NULL, tests[i]);
+
+        free(b.ptr);
+        cn_cbor_free(cb);
+    }
+}
+END_TEST
+
+START_TEST (cbor_getset_test)
+{
+    buffer b;
+    const cn_cbor *cb;
+    const cn_cbor *val;
+    cn_cbor_errback err;
+
+    ck_assert(parse_hex("a1616100", &b));
+    cb = cn_cbor_decode(b.ptr, b.sz, &err);
+    ck_assert(cb!=NULL);
+    val = cn_cbor_mapget_string(cb, "a");
+    ck_assert(val != NULL);
+    val = cn_cbor_mapget_string(cb, "b");
+    ck_assert(val == NULL);
+    free(b.ptr);
+    cn_cbor_free(cb);
+
+    ck_assert(parse_hex("a1006161", &b));
+    cb = cn_cbor_decode(b.ptr, b.sz, &err);
+    ck_assert(cb!=NULL);
+    val = cn_cbor_mapget_int(cb, 0);
+    ck_assert(val != NULL);
+    val = cn_cbor_mapget_int(cb, 1);
+    ck_assert(val == NULL);
+    free(b.ptr);
+    cn_cbor_free(cb);
+
+    ck_assert(parse_hex("8100", &b));
+    cb = cn_cbor_decode(b.ptr, b.sz, &err);
+    ck_assert(cb!=NULL);
+    val = cn_cbor_index(cb, 0);
+    ck_assert(val != NULL);
+    val = cn_cbor_index(cb, 1);
+    ck_assert(val == NULL);
+    val = cn_cbor_index(cb, -1);
+    ck_assert(val == NULL);
+    free(b.ptr);
+    cn_cbor_free(cb);
+
 }
 END_TEST
 
@@ -143,6 +210,8 @@ Suite * cbor_suite (void)
         tcase_add_test (tc_cbor_parse, cbor_error_test);
         tcase_add_test (tc_cbor_parse, cbor_parse_test);
         tcase_add_test (tc_cbor_parse, cbor_fail_test);
+        tcase_add_test (tc_cbor_parse, cbor_float_test);
+        tcase_add_test (tc_cbor_parse, cbor_getset_test);
 
         suite_add_tcase (s, tc_cbor_parse);
     }
