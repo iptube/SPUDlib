@@ -11,6 +11,7 @@
 
 #include "../config.h"
 #include "tube.h"
+#include "ls_eventing.h"
 #include "ls_htable.h"
 #include "ls_log.h"
 #include "ls_sockaddr.h"

@@ -10,7 +10,7 @@
 
 #include "spud.h"
 #include "ls_error.h"
-#include "ls_eventing.h"
+#include "ls_event.h"
 #include "cn-cbor/cn-cbor.h"
 
 typedef enum {
