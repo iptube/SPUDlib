@@ -2,6 +2,7 @@
  * Copyright (c) 2015 SPUDlib authors.  See LICENSE file.
  */
 #include <stdlib.h>
+#include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
 
