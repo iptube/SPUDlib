@@ -11,8 +11,6 @@
 #include "spud.h"
 #include "ls_error.h"
 #include "ls_eventing.h"
-#include "ls_mem.h"
-#include "ls_htable.h"
 #include "cn-cbor/cn-cbor.h"
 
 typedef enum {
@@ -34,26 +32,9 @@ typedef enum {
 #define EV_ADD_NAME     "add"
 #define EV_REMOVE_NAME  "remove"
 
-typedef struct _tube_manager {
-  int sock;
-  ls_htable *tubes;
-  ls_event_dispatcher *dispatcher;
-  ls_event *e_running;
-  ls_event *e_data;
-  ls_event *e_close;
-  ls_event *e_add;
-  ls_event *e_remove;
-  tube_policies policy;
-  bool keep_going;
-} tube_manager;
+typedef struct _tube_manager tube_manager;
 
-typedef struct _tube {
-  tube_states_t state;
-  struct sockaddr_storage peer;
-  spud_tube_id id;
-  void *data;
-  tube_manager *mgr;
-} tube;
+typedef struct _tube tube;
 
 typedef struct _tube_event_data {
     tube *t;
@@ -83,7 +64,9 @@ LS_API void tube_manager_remove(tube_manager *mgr,
                                 tube *t);
 
 LS_API bool tube_manager_loop(tube_manager *mgr, ls_err *err);
-
+LS_API bool tube_manager_running(tube_manager *mgr);
+LS_API void tube_manager_stop(tube_manager *mgr);
+LS_API size_t tube_manager_size(tube_manager *mgr);
 
 LS_API bool tube_create(tube_manager *mgr, tube **t, ls_err *err);
 LS_API void tube_destroy(tube *t);
@@ -91,7 +74,10 @@ LS_API void tube_destroy(tube *t);
 /* print [local address]:port to stdout */
 LS_API bool tube_print(const tube *t, ls_err *err);
 LS_API bool tube_open(tube *t, const struct sockaddr *dest, ls_err *err);
-LS_API bool tube_ack(tube *t, ls_err *err);
+LS_API bool tube_ack(tube *t,
+                     spud_tube_id *id,
+                     const struct sockaddr *peer,
+                     ls_err *err);
 LS_API bool tube_data(tube *t, uint8_t *data, size_t len, ls_err *err);
 LS_API bool tube_close(tube *t, ls_err *err);
 
@@ -101,3 +87,8 @@ LS_API bool tube_send(tube *t,
                       uint8_t **data, size_t *len,
                       int num,
                       ls_err *err);
+LS_API void tube_set_data(tube *t, void *data);
+LS_API void *tube_get_data(tube *t);
+LS_API char *tube_id_to_string(tube *t, char* buf, size_t len);
+LS_API tube_states_t tube_get_state(tube *t);
+LS_API bool tube_get_id(tube *t, spud_tube_id *id, ls_err *err);

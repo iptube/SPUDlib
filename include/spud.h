@@ -86,6 +86,6 @@ bool spud_is_id_equal(const spud_tube_id *a,
 
 bool spud_set_id(spud_header *hdr, const spud_tube_id *id, ls_err *err);
 
-char* spud_id_to_string(char* buf, size_t len, const spud_tube_id *id, ls_err *err);
+char* spud_id_to_string(char* buf, size_t len, const spud_tube_id *id);
 
 bool spud_copy_id(const spud_tube_id *src, spud_tube_id *dest, ls_err *err);

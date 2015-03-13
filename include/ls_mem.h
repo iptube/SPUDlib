@@ -82,12 +82,6 @@ typedef void * (*ls_data_realloc_func)(void *ptr, size_t size);
  */
 typedef void (*ls_data_free_func)(void *ptr);
 
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 /**
  * Replace memory allocators used by this library.
  *
