@@ -144,6 +144,9 @@ START_TEST (cbor_float_test)
     char *tests[] = {
         "f9c400", // -4.0
         "fa47c35000", // 100000.0
+        "f97e00", // Half NaN, half beast
+        "f9fc00", // -Inf
+        "f97c00", // Inf
     };
     const cn_cbor *cb;
     buffer b;
@@ -167,20 +170,26 @@ START_TEST (cbor_getset_test)
     const cn_cbor *val;
     cn_cbor_errback err;
 
-    ck_assert(parse_hex("a1616100", &b));
+    ck_assert(parse_hex("a3436363630262626201616100", &b));
     cb = cn_cbor_decode(b.ptr, b.sz, &err);
     ck_assert(cb!=NULL);
     val = cn_cbor_mapget_string(cb, "a");
+    ck_assert(val != NULL);
+    val = cn_cbor_mapget_string(cb, "bb");
+    ck_assert(val != NULL);
+    val = cn_cbor_mapget_string(cb, "ccc");
     ck_assert(val != NULL);
     val = cn_cbor_mapget_string(cb, "b");
     ck_assert(val == NULL);
     free(b.ptr);
     cn_cbor_free(cb);
 
-    ck_assert(parse_hex("a1006161", &b));
+    ck_assert(parse_hex("a2006161206162", &b));
     cb = cn_cbor_decode(b.ptr, b.sz, &err);
     ck_assert(cb!=NULL);
     val = cn_cbor_mapget_int(cb, 0);
+    ck_assert(val != NULL);
+    val = cn_cbor_mapget_int(cb, -1);
     ck_assert(val != NULL);
     val = cn_cbor_mapget_int(cb, 1);
     ck_assert(val == NULL);
