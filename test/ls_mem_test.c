@@ -4,7 +4,7 @@
 
 #include <check.h>
 
-#include "ls_eventing.h"
+#include "../src/ls_eventing.h"
 #include "ls_mem.h"
 #include "ls_htable.h"
 #include "test_utils.h"

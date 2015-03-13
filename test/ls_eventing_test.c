@@ -12,8 +12,8 @@
 
 #include "test_utils.h"
 #include "../src/ls_eventing_int.h"
+#include "../src/ls_eventing.h"
 #include "ls_mem.h"
-#include "ls_eventing.h"
 
 Suite * ls_eventing_suite (void);
 /* fake global source object */
