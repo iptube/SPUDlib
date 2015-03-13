@@ -128,10 +128,10 @@ bool spud_is_id_equal(const spud_tube_id *a, const spud_tube_id *b)
     return memcmp(a, b, SPUD_TUBE_ID_SIZE) == 0;
 }
 
-char* spud_id_to_string(char* buf, size_t len, const spud_tube_id *id, ls_err *err)
+char* spud_id_to_string(char* buf, size_t len, const spud_tube_id *id)
 {
-    if(len < SPUD_ID_STRING_SIZE+1){
-        LS_ERROR(err, LS_ERR_INVALID_ARG);
+    // almost an assert
+    if (len < SPUD_ID_STRING_SIZE+1){
         return NULL;
     }
 

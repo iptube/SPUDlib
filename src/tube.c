@@ -11,12 +11,36 @@
 
 #include "../config.h"
 #include "tube.h"
+#include "ls_htable.h"
 #include "ls_log.h"
 #include "ls_sockaddr.h"
 #include "cn-cbor/cn-encoder.h"
 
 #define DEFAULT_HASH_SIZE 65521
 #define MAXBUFLEN 1500
+
+struct _tube_manager
+{
+  int sock;
+  ls_htable *tubes;
+  ls_event_dispatcher *dispatcher;
+  ls_event *e_running;
+  ls_event *e_data;
+  ls_event *e_close;
+  ls_event *e_add;
+  ls_event *e_remove;
+  tube_policies policy;
+  bool keep_going;
+};
+
+struct _tube
+{
+  tube_states_t state;
+  struct sockaddr_storage peer;
+  spud_tube_id id;
+  void *data;
+  tube_manager *mgr;
+};
 
 LS_API bool tube_create(tube_manager *mgr, tube **t, ls_err *err)
 {
@@ -39,9 +63,6 @@ LS_API bool tube_create(tube_manager *mgr, tube **t, ls_err *err)
 
 LS_API void tube_destroy(tube *t)
 {
-    if (t->state == TS_RUNNING) {
-        tube_close(t, NULL); /* ignore error for now */
-    }
     ls_data_free(t);
 }
 
@@ -146,9 +167,19 @@ LS_API bool tube_open(tube *t, const struct sockaddr *dest, ls_err *err)
 }
 
 LS_API bool tube_ack(tube *t,
+                     spud_tube_id *id,
+                     const struct sockaddr *peer,
                      ls_err *err)
 {
     assert(t!=NULL);
+
+    if (!spud_copy_id(id, &t->id, err)) {
+        return false;
+    }
+    ls_sockaddr_copy(peer, (struct sockaddr *)&t->peer);
+    if (!tube_manager_add(t->mgr, t, err)) {
+        return false;
+    }
 
     t->state = TS_RUNNING;
     return tube_send(t, SPUD_ACK, false, false, NULL, 0, 0, err);
@@ -162,6 +193,7 @@ LS_API bool tube_data(tube *t, uint8_t *data, size_t len, ls_err *err)
     ssize_t sz = 0;
     ssize_t count = 0;
 
+    assert(t);
     if (len == 0) {
         return tube_send(t, SPUD_DATA, false, false, NULL, 0, 0, err);
     }
@@ -211,12 +243,41 @@ LS_API bool tube_data(tube *t, uint8_t *data, size_t len, ls_err *err)
 
 LS_API bool tube_close(tube *t, ls_err *err)
 {
+    assert(t);
     t->state = TS_UNKNOWN;
     if (!tube_send(t, SPUD_CLOSE, false, false, NULL, 0, 0, err)) {
-      return false;
+        return false;
     }
-    tube_manager_remove(t->mgr, t);
     return true;
+}
+
+LS_API void tube_set_data(tube *t, void *data)
+{
+    assert(t);
+    t->data = data;
+}
+
+LS_API void *tube_get_data(tube *t)
+{
+    assert(t);
+    return t->data;
+}
+
+LS_API char *tube_id_to_string(tube *t, char* buf, size_t len)
+{
+    assert(t);
+    return spud_id_to_string(buf, len, &t->id);
+}
+
+LS_API tube_states_t tube_get_state(tube *t)
+{
+    assert(t);
+    return t->state;
+}
+
+LS_API bool tube_get_id(tube *t, spud_tube_id *id, ls_err *err)
+{
+    return spud_copy_id(&t->id, id, err);
 }
 
 static unsigned int hash_id(const void *id) {
@@ -376,8 +437,15 @@ static void clean_tube(bool replace, bool destroy_key, void *key, void *data)
     UNUSED_PARAM(destroy_key);
     UNUSED_PARAM(key);
 
+    if (t->state == TS_RUNNING) {
+        if (!tube_close(t, &err)) {
+            LS_LOG_ERR(err, "tube_close");
+            // keep going!
+        }
+    }
     if (!ls_event_trigger(t->mgr->e_remove, t, NULL, NULL, &err)) {
         LS_LOG_ERR(err, "ls_event_trigger");
+        // keep going!
     }
     tube_destroy(t);
 }
@@ -453,7 +521,7 @@ LS_API bool tube_manager_loop(tube_manager *mgr, ls_err *err)
               // Even if we're a server, if we get anything but an open
               // for an unknown tube, ignore it.
               ls_log(LS_LOG_WARN, "Invalid tube ID: %s",
-                     spud_id_to_string(id_str, sizeof(id_str), &uid, NULL));
+                     spud_id_to_string(id_str, sizeof(id_str), &uid));
               goto cleanup;
             }
 
@@ -464,13 +532,7 @@ LS_API bool tube_manager_loop(tube_manager *mgr, ls_err *err)
                 goto error;
             }
 
-            spud_copy_id(&uid, &d.t->id, err);
-            ls_sockaddr_copy((const struct sockaddr *)&their_addr,
-                             (struct sockaddr *)&d.t->peer);
-            if (!tube_manager_add(mgr, d.t, err)) {
-                goto error;
-            }
-            if (!tube_ack(d.t, err)) {
+            if (!tube_ack(d.t, &uid, (const struct sockaddr *)&their_addr, err)) {
                 goto cleanup;
             }
         }
@@ -511,4 +573,23 @@ cleanup:
     return true;
 error:
     return false;
+}
+
+LS_API bool tube_manager_running(tube_manager *mgr)
+{
+    assert(mgr);
+    return mgr->keep_going;
+}
+
+LS_API void tube_manager_stop(tube_manager *mgr)
+{
+    assert(mgr);
+    mgr->keep_going = false;
+    // TODO: interrupt?  That would mean knowing about threads.
+}
+
+LS_API size_t tube_manager_size(tube_manager *mgr)
+{
+    assert(mgr);
+    return ls_htable_get_count(mgr->tubes);
 }

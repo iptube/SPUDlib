@@ -72,7 +72,7 @@ static void *sendData(void *arg)
     timer.tv_sec = 0;
     timer.tv_nsec = 50000000;
 
-    while (mgr->keep_going) {
+    while (tube_manager_running(mgr)) {
         nanosleep(&timer, &remaining);
         config.numSentPkts++;
 #ifndef ANDROID
@@ -106,7 +106,7 @@ static void data_cb(ls_event_data evt, void *arg)
 {
     tube_event_data *td = evt->data;
     UNUSED_PARAM(arg);
-    
+
     config.numRcvdPkts++;
     if (td->cbor) {
         const cn_cbor *data = cn_cbor_mapget_int(td->cbor, 0);
@@ -129,7 +129,7 @@ static void running_cb(ls_event_data evt, void *arg)
 }
 
 void done() {
-    mgr->keep_going = false;
+    tube_manager_stop(mgr);
     pthread_join(sendDataThread, NULL);
     LOGI("\nDONE!\n");
     exit(0);
@@ -169,7 +169,6 @@ int spudtest(int argc, char **argv)
         LS_LOG_ERR(err, "tube_create");
         return 1;
     }
-    config.t->data = &config;
 
     if (!tube_manager_bind_event(mgr, EV_RUNNING_NAME, running_cb, &err) ||
         !tube_manager_bind_event(mgr, EV_DATA_NAME, data_cb, &err)) {

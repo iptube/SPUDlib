@@ -38,20 +38,22 @@ context_t *new_context() {
 void teardown()
 {
     ls_log(LS_LOG_INFO, "Quitting...");
-    mgr->keep_going = false;
+    tube_manager_stop(mgr);
 }
 
 void print_stats()
 {
-    ls_log(LS_LOG_INFO, "Tube count: %d", ls_htable_get_count(mgr->tubes));
+    ls_log(LS_LOG_INFO, "Tube count: %zu", tube_manager_size(mgr));
 }
 
 static void read_cb(ls_event_data evt,
                     void *arg)
 {
-    UNUSED_PARAM(arg);
     tube_event_data *td = evt->data;
     ls_err err;
+    context_t *c = tube_get_data(td->t);
+
+    UNUSED_PARAM(arg);
 
     if (td->cbor) {
         const cn_cbor *cp = cn_cbor_mapget_int(td->cbor, 0);
@@ -66,7 +68,7 @@ static void read_cb(ls_event_data evt,
             }
         }
     }
-    ((context_t*)td->t->data)->count++;
+    c->count++;
 }
 
 static void close_cb(ls_event_data evt,
@@ -74,14 +76,12 @@ static void close_cb(ls_event_data evt,
 {
     UNUSED_PARAM(arg);
     tube_event_data *td = evt->data;
-    context_t *c = td->t->data;
+    context_t *c = tube_get_data(td->t);
     char idStr[SPUD_ID_STRING_SIZE+1];
 
     ls_log(LS_LOG_VERBOSE,
            "Spud ID: %s CLOSED: %zd data packets",
-           spud_id_to_string(idStr,
-                             sizeof(idStr),
-                             &td->t->id, NULL),
+           tube_id_to_string(td->t, idStr, sizeof(idStr)),
            c->count);
 }
 
@@ -90,14 +90,14 @@ static void add_cb(ls_event_data evt,
 {
     tube *t = evt->data;
     UNUSED_PARAM(arg);
-    t->data = new_context();
+    tube_set_data(t, new_context());
 }
 
 static void remove_cb(ls_event_data evt,
                       void *arg)
 {
     tube *t = evt->data;
-    context_t *c = t->data;
+    context_t *c = tube_get_data(t);
     UNUSED_PARAM(arg);
     ls_data_free(c);
 }

@@ -751,10 +751,10 @@ LS_API void ls_event_trigger_prepared(
 }
 
 LS_API bool ls_event_trigger(ls_event *event,
-                                     void *data,
-                                     ls_event_result_callback result_cb,
-                                     void *result_arg,
-                                     ls_err *err)
+                             void *data,
+                             ls_event_result_callback result_cb,
+                             void *result_arg,
+                             ls_err *err)
 {
     ls_event_dispatcher *dispatch;
     ls_event_trigger_data *trigger_data;

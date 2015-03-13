@@ -35,10 +35,11 @@ static int markov()
     tube *t;
     ls_err err;
     int i;
+    int *iptr;
 
     timer.tv_sec = 0;
 
-    while (mgr->keep_going) {
+    while (tube_manager_running(mgr)) {
         timer.tv_nsec = gauss(50000000, 10000000);
         nanosleep(&timer, &remaining);
         i = random() % NUM_TUBES;
@@ -49,8 +50,11 @@ static int markov()
                 return 1;
             }
             tubes[i] = t;
+            iptr = malloc(sizeof(*iptr));
+            *iptr = i;
+            tube_set_data(t, iptr);
         }
-        switch (t->state) {
+        switch (tube_get_state(t)) {
         case TS_START:
             ls_log(LS_LOG_ERROR, "invalid tube state");
             return 1;
@@ -100,15 +104,15 @@ static void *socketListen(void *ptr)
 static void remove_cb(ls_event_data evt, void *arg)
 {
     tube *t = evt->data;
-    int i = *((int*)t->data);
+    int *i = tube_get_data(t);
     UNUSED_PARAM(arg);
 
-    tubes[i] = NULL;
-    ls_data_free(t->data);
+    tubes[*i] = NULL;
+    ls_data_free(i);
 }
 
 void done() {
-    mgr->keep_going = false;
+    tube_manager_stop(mgr);
     pthread_cancel(listenThread);
     pthread_join(listenThread, NULL);
     ls_log(LS_LOG_INFO, "DONE!");

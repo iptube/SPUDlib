@@ -7,7 +7,8 @@
 #include <check.h>
 #include "ls_log.h"
 
-Suite * spudlib_suite (void);
+Suite * spud_suite (void);
+Suite * tube_suite (void);
 Suite * ls_str_suite (void);
 Suite * ls_sockaddr_suite (void);
 Suite * ls_error_suite (void);
@@ -20,11 +21,12 @@ Suite * cbor_suite (void);
 int main(void){
 
     int number_failed;
-    Suite *s = spudlib_suite ();
+    Suite *s = spud_suite ();
     SRunner *sr = srunner_create (s);
 
     ls_log_set_level(LS_LOG_ERROR);
-    srunner_add_suite (sr, ls_str_suite () );
+    srunner_add_suite (sr,  tube_suite () );
+    srunner_add_suite (sr,  ls_str_suite () );
     srunner_add_suite (sr,  ls_sockaddr_suite () );
     srunner_add_suite (sr,  ls_error_suite () );
     srunner_add_suite (sr,  ls_mem_suite () );
