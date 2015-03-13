@@ -169,7 +169,7 @@ static void mock_evt1_callback1(ls_event_data evt, void *arg)
 START_TEST (ls_data_calloc_test)
 {
     void* ptr = ls_data_calloc(1, 4);
-    ck_assert(ptr);
+    ck_assert(ptr != NULL);
     ck_assert_int_eq(0, memcmp("\0\0\0\0", ptr, 4));
     ls_data_free(ptr);
 }
@@ -247,7 +247,7 @@ START_TEST (ls_pool_create_destroy_test)
     _pool_cleaner_ctx cleaner;
     /* create with pages */
     ck_assert(ls_pool_create(1024, &pool, &err));
-    ck_assert(pool);
+    ck_assert(pool != NULL);
     ck_assert(pool->size == 1024);
     ck_assert(pool->page_size == 1024);
 
@@ -266,7 +266,7 @@ START_TEST (ls_pool_create_destroy_test)
 
     /* without pages */
     ck_assert(ls_pool_create(0, &pool, &err));
-    ck_assert(pool);
+    ck_assert(pool != NULL);
     ck_assert_int_eq(0, pool->size);
     ck_assert_int_eq(0, pool->page_size);
     /* should be 0 pages */
@@ -301,7 +301,7 @@ START_TEST (ls_pool_malloc_test)
     ck_assert_int_eq(2, page_count(pool));
 
     page = get_page(pool, 0);
-    ck_assert(page);
+    ck_assert(page != NULL);
     ck_assert(page->size == 1024);
     ck_assert_int_eq(page->used, 615);
 
@@ -354,7 +354,7 @@ START_TEST (ls_pool_malloc_overallocate_test)
     ck_assert_int_eq(1, page_count(pool));
 
     page1 = get_page(pool, 0);
-    ck_assert(page1);
+    ck_assert(page1 != NULL);
     ck_assert(page1->size == 1024);
     ck_assert_int_eq(page1->used, 512);
 
@@ -390,7 +390,7 @@ START_TEST (ls_pool_strdup_shorterpool_test)
     ck_assert_int_eq(pool->page_size, 8);
     ck_assert_int_eq(1, page_count(pool));
     page = get_page(pool, 0);
-    ck_assert(page);
+    ck_assert(page != NULL);
     ck_assert_int_eq(page->used, 0);
 
     ls_pool_destroy(pool);
@@ -637,7 +637,7 @@ Suite * ls_mem_suite (void)
   Suite *s = suite_create ("ls_mem");
   {/* Error test case */
         TCase *tc_ls_mem = tcase_create ("mem");
-        
+
         tcase_add_test (tc_ls_mem, ls_data_calloc_test);
         tcase_add_test (tc_ls_mem, ls_data_strdup_test);
         tcase_add_test (tc_ls_mem, ls_data_strndup_test);

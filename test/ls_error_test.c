@@ -40,8 +40,8 @@ START_TEST (ls_error_macro_test)
 {
     ls_err  *err_ctx;
 
-    err_ctx = (ls_err *)malloc(sizeof(ls_err));
-    ck_assert(err_ctx);
+    err_ctx = malloc(sizeof(ls_err));
+    ck_assert(err_ctx != NULL);
     LS_ERROR(err_ctx, LS_ERR_INVALID_ARG);
     ck_assert_int_eq(err_ctx->code, LS_ERR_INVALID_ARG);
     ck_assert_str_eq(err_ctx->message, "invalid argument");

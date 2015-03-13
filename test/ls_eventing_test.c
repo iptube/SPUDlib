@@ -755,8 +755,8 @@ START_TEST (ls_event_trigger_nested_test)
     ls_err      err;
     logitem_t   *item;
 
-    ck_assert(evt1 = ls_event_dispatcher_get_event(g_dispatcher, "mockEvent1"));
-    ck_assert(evt2 = ls_event_dispatcher_get_event(g_dispatcher, "mockEvent2"));
+    ck_assert((evt1 = ls_event_dispatcher_get_event(g_dispatcher, "mockEvent1")) != NULL);
+    ck_assert((evt2 = ls_event_dispatcher_get_event(g_dispatcher, "mockEvent2")) != NULL);
     /* bind evt2 to evt1 callbackA so it will  be triggered */
     ck_assert(ls_event_bind(evt1, nesting_callbackA, evt2, &err));
     ck_assert(ls_event_bind(evt1, nesting_callbackB, NULL, &err));
@@ -825,8 +825,8 @@ START_TEST (ls_event_trigger_double_nested_test)
     ls_err      err;
     logitem_t   *item;
 
-    ck_assert(evt1 = ls_event_dispatcher_get_event(g_dispatcher, "mockEvent1"));
-    ck_assert(evt2 = ls_event_dispatcher_get_event(g_dispatcher, "mockEvent2"));
+    ck_assert((evt1 = ls_event_dispatcher_get_event(g_dispatcher, "mockEvent1")) != NULL);
+    ck_assert((evt2 = ls_event_dispatcher_get_event(g_dispatcher, "mockEvent2")) != NULL);
     // trigger two evt2 events from evt1
     ck_assert(ls_event_bind(evt1, double_nesting_callback, evt2, &err));
     ck_assert(ls_event_bind(evt2, nesting_callbackB, NULL, &err));
@@ -1012,8 +1012,8 @@ START_TEST (ls_event_trigger_nested_unbind_test)
     logitem_t   *item;
     ls_event_binding_t  *b;
 
-    ck_assert(evt1 = ls_event_dispatcher_get_event(g_dispatcher, "mockEvent1"));
-    ck_assert(evt2 = ls_event_dispatcher_get_event(g_dispatcher, "mockEvent2"));
+    ck_assert((evt1 = ls_event_dispatcher_get_event(g_dispatcher, "mockEvent1")) != NULL);
+    ck_assert((evt2 = ls_event_dispatcher_get_event(g_dispatcher, "mockEvent2")) != NULL);
     /* bind evt2 to evt1 callbackA so it will  be triggered */
     ck_assert(ls_event_bind(evt1, nesting_callbackA, evt2, &err));
     ck_assert(ls_event_bind(evt1, nesting_callbackB, NULL, &err));
@@ -1529,7 +1529,7 @@ START_TEST (ls_event_trigger_deferred_destroy_test)
     ck_assert(ls_event_trigger(evt, evt, NULL, NULL, NULL));
 
     // can't use audit trail since the evt is destroyed during the callback
-    ck_assert(g_destroy_first_alloc);
+    ck_assert(g_destroy_first_alloc != NULL);
     ck_assert(g_destroy_correctly_deferred);
 
     ls_data_set_memory_funcs(NULL, NULL, NULL);

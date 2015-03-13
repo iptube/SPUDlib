@@ -141,7 +141,8 @@ START_TEST (tube_manager_bind_event_test)
     ls_err err;
     char arg[12];
     tube_manager *mgr;
-    fail_unless( tube_manager_create(0, &mgr, &err));
+    fail_unless( tube_manager_create(0, &mgr, &err),
+                 ls_err_message( err.code ));
 
     fail_unless( tube_manager_bind_event(mgr, EV_RUNNING_NAME, test_cb, &err),
                  ls_err_message( err.code ));
@@ -162,10 +163,13 @@ START_TEST (tube_print_test)
     tube *t;
     ls_err err;
     tube_manager *mgr;
-    fail_unless( tube_manager_create(0, &mgr, &err));
-    fail_unless( tube_manager_socket(mgr, 0, &err));
+    fail_unless( tube_manager_create(0, &mgr, &err),
+                 ls_err_message( err.code ));
+    fail_unless( tube_manager_socket(mgr, 0, &err),
+                 ls_err_message( err.code ));
 
-    fail_unless( tube_create(mgr, &t, &err) );
+    fail_unless( tube_create(mgr, &t, &err),
+                 ls_err_message( err.code ) );
     fail_unless( tube_print(t, &err),
                  ls_err_message( err.code ) );
     tube_manager_destroy(mgr);
