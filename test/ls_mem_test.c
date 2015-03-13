@@ -636,8 +636,27 @@ Suite * ls_mem_suite (void)
 {
   Suite *s = suite_create ("ls_mem");
   {/* Error test case */
-      TCase *tc_ls_mem = tcase_create ("mem");
-      //tcase_add_test (tc_ls_mem, ls_mem_test);
+        TCase *tc_ls_mem = tcase_create ("mem");
+        
+        tcase_add_test (tc_ls_mem, ls_data_calloc_test);
+        tcase_add_test (tc_ls_mem, ls_data_strdup_test);
+        tcase_add_test (tc_ls_mem, ls_data_strndup_test);
+        tcase_add_test (tc_ls_mem, ls_pool_create_destroy_test);
+        tcase_add_test (tc_ls_mem, ls_pool_malloc_test);
+        tcase_add_test (tc_ls_mem, ls_pool_malloc_overallocate_test);
+        tcase_add_test (tc_ls_mem, ls_pool_strdup_shorterpool_test);
+        tcase_add_test (tc_ls_mem, ls_pool_calloc_test);
+        tcase_add_test (tc_ls_mem, ls_pool_calloc_nobytes_test);
+        tcase_add_test (tc_ls_mem, ls_pool_strdup_test);
+        tcase_add_test (tc_ls_mem, ls_pool_add_cleaner_test);
+        tcase_add_test (tc_ls_mem, ls_pool_add_cleaner_nonpool_test);
+        tcase_add_test (tc_ls_mem, ls_data_memory_test);
+        tcase_add_test (tc_ls_mem, ls_htable_no_mem_test);
+        tcase_add_test (tc_ls_mem, ls_htable_put_no_mem_test);
+        tcase_add_test (tc_ls_mem, ls_event_dispatcher_create_no_mem_test);
+        tcase_add_test (tc_ls_mem, ls_event_create_no_mem_test);
+        tcase_add_test (tc_ls_mem, ls_event_bind_no_mem_test);
+        tcase_add_test (tc_ls_mem, ls_event_trigger_no_mem_test);
 
       suite_add_tcase (s, tc_ls_mem);
   }
