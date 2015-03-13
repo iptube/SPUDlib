@@ -79,6 +79,7 @@ START_TEST (cbor_parse_test)
         "fb3ff199999999999a", // 1.1
         "fb7ff8000000000000", // NaN
         "5f42010243030405ff", // (_ h'0102', h'030405')
+        "7f61616161ff", // (_ "a", "a")
         "9fff",     // [_ ]
         "bf61610161629f0203ffff", // {_ "a": 1, "b": [_ 2, 3]}
     };
@@ -101,6 +102,39 @@ START_TEST (cbor_parse_test)
 }
 END_TEST
 
+typedef struct _cbor_failure
+{
+    char *hex;
+    cn_cbor_error err;
+} cbor_failure;
+
+START_TEST (cbor_fail_test)
+{
+    cn_cbor_errback err;
+    cbor_failure tests[] = {
+        {"81", CN_CBOR_ERR_OUT_OF_DATA},
+        {"0000", CN_CBOR_ERR_NOT_ALL_DATA_CONSUMED},
+        {"bf00ff", CN_CBOR_ERR_ODD_SIZE_INDEF_MAP},
+        {"ff", CN_CBOR_ERR_BREAK_OUTSIDE_INDEF},
+        {"1f", CN_CBOR_ERR_MT_UNDEF_FOR_INDEF},
+        {"1c", CN_CBOR_ERR_RESERVED_AI},
+        {"7f4100", CN_CBOR_ERR_WRONG_NESTING_IN_INDEF_STRING},
+    };
+    const cn_cbor *cb;
+    buffer b;
+    int i;
+
+    for (i=0; i<sizeof(tests)/sizeof(cbor_failure); i++) {
+        ck_assert(parse_hex(tests[i].hex, &b));
+        cb = cn_cbor_decode(b.ptr, b.sz, &err);
+        ck_assert_msg(cb == NULL, tests[i].hex);
+        ck_assert_int_eq(err.err,tests[i].err   );
+
+        free(b.ptr);
+    }
+}
+END_TEST
+
 Suite * cbor_suite (void)
 {
     Suite *s = suite_create ("cbor");
@@ -108,6 +142,7 @@ Suite * cbor_suite (void)
         TCase *tc_cbor_parse = tcase_create ("parse");
         tcase_add_test (tc_cbor_parse, cbor_error_test);
         tcase_add_test (tc_cbor_parse, cbor_parse_test);
+        tcase_add_test (tc_cbor_parse, cbor_fail_test);
 
         suite_add_tcase (s, tc_cbor_parse);
     }
