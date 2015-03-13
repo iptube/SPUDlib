@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <check.h>
 #include <errno.h>
+#include <netdb.h>
 
 #include "ls_error.h"
 
@@ -138,6 +139,13 @@ START_TEST (ls_error_perror_test)
 }
 END_TEST
 
+START_TEST (ls_error_gai_test)
+{
+    ls_err  err;
+    const char *msg = ls_err_message(-1000-EAI_FAIL);
+    ck_assert_str_eq(msg, "non-recoverable failure in name resolution");
+}
+END_TEST
 Suite * ls_error_suite (void)
 {
   Suite *s = suite_create ("ls_error");

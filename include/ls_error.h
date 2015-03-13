@@ -33,6 +33,8 @@ typedef enum
     LS_ERR_PROTOCOL,
     /** timed out */
     LS_ERR_TIMEOUT,
+    /** can't find it */
+    LS_ERR_NOT_FOUND,
     /** user-defined errors */
     LS_ERR_USER
 } ls_errcode;

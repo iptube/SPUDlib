@@ -76,7 +76,7 @@ Suite * ls_sockaddr_suite (void)
   {/* Sockaddr test case */
       TCase *tc_ls_sockaddr = tcase_create ("Sockaddr");
       tcase_add_test (tc_ls_sockaddr, ls_sockaddr_length_test);
-      tcase_add_test_raise_signal(tc_ls_sockaddr, ls_sockaddr_test_length_assert, 6);
+      tcase_add_test (tc_ls_sockaddr, ls_sockaddr_test_length_assert);
       tcase_add_test (tc_ls_sockaddr, ls_sockaddr_get_remote_ip);
       tcase_add_test (tc_ls_sockaddr, ls_sockaddr_v6_any_test);
 

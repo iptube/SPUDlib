@@ -18,7 +18,7 @@ LS_API size_t ls_sockaddr_get_length(const struct sockaddr *addr)
     case AF_INET6:
         return sizeof(struct sockaddr_in6);
     default:
-        assert(false);
+        //assert(false);
         return -1;
     }
 }
@@ -32,18 +32,24 @@ LS_API bool ls_sockaddr_get_remote_ip_addr(struct sockaddr_in6 *remoteAddr,
     int status;
     bool found = false;
 
-printf("%s:%d\n", __func__, __LINE__);
     memset(&hints, 0, sizeof hints);
     hints.ai_flags = AI_V4MAPPED;
     hints.ai_family = AF_INET6; // use AI_V4MAPPED for v4 addresses
     hints.ai_protocol = IPPROTO_UDP;
     hints.ai_socktype = SOCK_DGRAM;
-printf("%s:%d\n", __func__, __LINE__);
+
     if ((status = getaddrinfo(fqdn, port, &hints, &res)) != 0) {
-        ls_log(LS_LOG_ERROR, "getaddrinfo: %s\n", gai_strerror(status));
+        if (err != NULL)
+        {
+            err->code = -1000 - status;
+            err->message = gai_strerror(status);
+            err->function = __func__;
+            err->file = __FILE__;
+            err->line = __LINE__;
+        }
         return false;
     }
-printf("%s:%d\n", __func__, __LINE__);
+
     for(p = res;p != NULL; p = p->ai_next) {
         // copy the first match
         if (p->ai_family == AF_INET6) { // Should always be v6 (mapped for v4)
@@ -52,9 +58,10 @@ printf("%s:%d\n", __func__, __LINE__);
             break;
         }
     }
-printf("%s:%d\n", __func__, __LINE__);
     freeaddrinfo(res); // free the linked list
-printf("%s:%d\n", __func__, __LINE__);
+    if (!found) {
+        LS_ERROR(err, LS_ERR_NOT_FOUND);
+    }
     return found;
 }
 

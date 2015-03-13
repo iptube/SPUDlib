@@ -3,6 +3,8 @@
  */
 
 #include <stdio.h>
+#include <netdb.h>
+
 #include "ls_error.h"
 
 /*****************************************************************************
@@ -19,6 +21,7 @@ static const char *_ERR_MSG_TABLE[] = {
     "bad data format",
     "protocol error",
     "timed out",
+    "not found",
     "user-defined error"
 };
 
@@ -28,8 +31,15 @@ static const char *_ERR_MSG_TABLE[] = {
 
 LS_API const char * ls_err_message(ls_errcode code)
 {
-    if ((int)code < 0) {
-        return sys_errlist[-(int)code];
+    int ic = (int)code;
+    if (ic < 0) {
+        if (ic < -1000) {
+            return gai_strerror(-(ic+1000));
+        }
+        return sys_errlist[-ic];
+    }
+    if (ic > LS_ERR_USER) {
+        return "Unknown code";
     }
     return _ERR_MSG_TABLE[code];
 }
