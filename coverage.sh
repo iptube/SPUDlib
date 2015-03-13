@@ -3,4 +3,4 @@
 make clean
 make check
 
-coveralls --include src --exclude-pattern "\w+\.h" --gcov-options '\-lp' -b src
+coveralls --include src -x '.c' --gcov-options '\-lp' -b src
