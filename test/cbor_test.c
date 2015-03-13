@@ -34,6 +34,20 @@ static bool parse_hex(char *inp, buffer *b)
     return true;
 }
 
+START_TEST (cbor_error_test)
+{
+    ck_assert_str_eq(cn_cbor_error_str[CN_CBOR_NO_ERROR], "CN_CBOR_NO_ERROR");
+    ck_assert_str_eq(cn_cbor_error_str[CN_CBOR_ERR_OUT_OF_DATA], "CN_CBOR_ERR_OUT_OF_DATA");
+    ck_assert_str_eq(cn_cbor_error_str[CN_CBOR_ERR_NOT_ALL_DATA_CONSUMED], "CN_CBOR_ERR_NOT_ALL_DATA_CONSUMED");
+    ck_assert_str_eq(cn_cbor_error_str[CN_CBOR_ERR_ODD_SIZE_INDEF_MAP], "CN_CBOR_ERR_ODD_SIZE_INDEF_MAP");
+    ck_assert_str_eq(cn_cbor_error_str[CN_CBOR_ERR_BREAK_OUTSIDE_INDEF], "CN_CBOR_ERR_BREAK_OUTSIDE_INDEF");
+    ck_assert_str_eq(cn_cbor_error_str[CN_CBOR_ERR_MT_UNDEF_FOR_INDEF], "CN_CBOR_ERR_MT_UNDEF_FOR_INDEF");
+    ck_assert_str_eq(cn_cbor_error_str[CN_CBOR_ERR_RESERVED_AI], "CN_CBOR_ERR_RESERVED_AI");
+    ck_assert_str_eq(cn_cbor_error_str[CN_CBOR_ERR_WRONG_NESTING_IN_INDEF_STRING], "CN_CBOR_ERR_WRONG_NESTING_IN_INDEF_STRING");
+    ck_assert_str_eq(cn_cbor_error_str[CN_CBOR_ERR_OUT_OF_MEMORY], "CN_CBOR_ERR_OUT_OF_MEMORY");
+}
+END_TEST
+
 START_TEST (cbor_parse_test)
 {
     cn_cbor_errback err;
@@ -69,6 +83,7 @@ Suite * cbor_suite (void)
     Suite *s = suite_create ("cbor");
     {
         TCase *tc_cbor_parse = tcase_create ("parse");
+        tcase_add_test (tc_cbor_parse, cbor_error_test);
         tcase_add_test (tc_cbor_parse, cbor_parse_test);
 
         suite_add_tcase (s, tc_cbor_parse);
