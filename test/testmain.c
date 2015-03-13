@@ -15,6 +15,7 @@ Suite * ls_mem_suite (void);
 Suite * ls_log_suite (void);
 Suite * ls_htable_suite (void);
 Suite * ls_eventing_suite (void);
+Suite * cbor_suite (void);
 
 int main(void){
 
@@ -30,6 +31,7 @@ int main(void){
     srunner_add_suite (sr,  ls_log_suite () );
     srunner_add_suite (sr,  ls_htable_suite () );
     srunner_add_suite (sr,  ls_eventing_suite () );
+    srunner_add_suite (sr,  cbor_suite () );
     srunner_run_all (sr, CK_NORMAL);
     number_failed = srunner_ntests_failed (sr);
     srunner_free (sr);
