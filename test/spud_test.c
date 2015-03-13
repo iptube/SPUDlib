@@ -137,9 +137,7 @@ static void test_cb(ls_event_data evt, void *arg){}
 
 START_TEST (tube_manager_bind_event_test)
 {
-    int sockfd;
     ls_err err;
-    char arg[12];
     tube_manager *mgr;
     fail_unless( tube_manager_create(0, &mgr, &err),
                  ls_err_message( err.code ));
@@ -205,7 +203,7 @@ START_TEST (tube_ack_test)
     ls_err err;
     struct sockaddr_in6 remoteAddr;
     fail_unless( ls_sockaddr_get_remote_ip_addr(&remoteAddr,
-                                                "::1",
+                                                "127.0.0.1",
                                                 "1402",
                                                 &err),
                  ls_err_message( err.code ) );
@@ -232,7 +230,7 @@ START_TEST (tube_data_test)
     uint8_t data[] = "SPUD_makeUBES_FUN";
     struct sockaddr_in6 remoteAddr;
     fail_unless( ls_sockaddr_get_remote_ip_addr(&remoteAddr,
-                                                "::1",
+                                                "127.0.0.1",
                                                 "1402",
                                                 &err),
                  ls_err_message( err.code ) );

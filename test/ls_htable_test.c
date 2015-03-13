@@ -164,7 +164,7 @@ START_TEST (ls_htable_create_destroy_test)
                              ls_int_compare,
                              &table,
                              &err));
-    ck_assert(table);
+    ck_assert(table != NULL);
 
     ls_htable_destroy(table);
     ck_assert(1); /* confirm we did not assert */

@@ -18,20 +18,6 @@
 #define DEFAULT_HASH_SIZE 65521
 #define MAXBUFLEN 1500
 
-static ls_event *_get_or_create_event(ls_event_dispatcher *dispatcher,
-                                      const char *name,
-                                      ls_err *err)
-{
-    ls_event *ev = ls_event_dispatcher_get_event(dispatcher, name);
-    if (ev) {
-        return ev;
-    }
-    if (!ls_event_dispatcher_create_event(dispatcher, name, &ev, err)) {
-        return NULL;
-    }
-    return ev;
-}
-
 LS_API bool tube_create(tube_manager *mgr, tube **t, ls_err *err)
 {
     tube *ret = NULL;
@@ -286,19 +272,26 @@ LS_API bool tube_manager_create(int buckets,
         goto cleanup;
     }
 
-    if ((ret->e_running = _get_or_create_event(ret->dispatcher, EV_RUNNING_NAME, err)) == NULL) {
-        goto cleanup;
-    }
-    if ((ret->e_data = _get_or_create_event(ret->dispatcher, EV_DATA_NAME, err)) == NULL) {
-        goto cleanup;
-    }
-    if ((ret->e_close = _get_or_create_event(ret->dispatcher, EV_CLOSE_NAME, err)) == NULL) {
-        goto cleanup;
-    }
-    if ((ret->e_add = _get_or_create_event(ret->dispatcher, EV_ADD_NAME, err)) == NULL) {
-        goto cleanup;
-    }
-    if ((ret->e_remove = _get_or_create_event(ret->dispatcher, EV_REMOVE_NAME, err)) == NULL) {
+    if (!ls_event_dispatcher_create_event(ret->dispatcher,
+                                          EV_RUNNING_NAME,
+                                          &ret->e_running,
+                                          err) ||
+        !ls_event_dispatcher_create_event(ret->dispatcher,
+                                          EV_DATA_NAME,
+                                          &ret->e_data,
+                                          err) ||
+        !ls_event_dispatcher_create_event(ret->dispatcher,
+                                          EV_CLOSE_NAME,
+                                          &ret->e_close,
+                                          err) ||
+        !ls_event_dispatcher_create_event(ret->dispatcher,
+                                          EV_ADD_NAME,
+                                          &ret->e_add,
+                                          err) ||
+        !ls_event_dispatcher_create_event(ret->dispatcher,
+                                          EV_REMOVE_NAME,
+                                          &ret->e_remove,
+                                          err)) {
         goto cleanup;
     }
 
