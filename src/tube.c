@@ -20,6 +20,9 @@
 #define DEFAULT_HASH_SIZE 65521
 #define MAXBUFLEN 1500
 
+static tube_sendmsg_func _sendmsg_func = sendmsg;
+static tube_recvmsg_func _recvmsg_func = recvmsg;
+
 struct _tube_manager
 {
   int sock;
@@ -143,7 +146,7 @@ LS_API bool tube_send(tube *t,
     msg.msg_iov = iov;
     msg.msg_iovlen = count;
 
-    if (sendmsg(t->mgr->sock, &msg, 0) <= 0) {
+    if (_sendmsg_func(t->mgr->sock, &msg, 0) <= 0) {
         LS_ERROR(err, -errno)
         free(iov);
         return false;
@@ -474,11 +477,12 @@ LS_API void tube_manager_remove(tube_manager *mgr,
 
 LS_API bool tube_manager_loop(tube_manager *mgr, ls_err *err)
 {
+    struct msghdr hdr;
     struct sockaddr_storage their_addr;
+    struct iovec iov[1];
+    ssize_t numbytes;
     uint8_t buf[MAXBUFLEN];
     char id_str[SPUD_ID_STRING_SIZE+1];
-    socklen_t addr_len = sizeof(their_addr);
-    int numbytes;
     spud_message msg = {NULL, NULL};
     spud_tube_id uid;
     spud_command cmd;
@@ -486,13 +490,18 @@ LS_API bool tube_manager_loop(tube_manager *mgr, ls_err *err)
 
     assert(mgr);
     assert(mgr->sock >= 0);
+    hdr.msg_name = &their_addr;
+    hdr.msg_iov = iov;
+    hdr.msg_iovlen = 1;
+    iov[0].iov_base = buf;
+    iov[0].iov_len = sizeof(buf);
 
     while (mgr->keep_going) {
-        addr_len = sizeof(their_addr);
-        if ((numbytes = recvfrom(mgr->sock, buf,
-                                 MAXBUFLEN , 0,
-                                 (struct sockaddr *)&their_addr,
-                                 &addr_len)) == -1) {
+        hdr.msg_namelen = sizeof(their_addr);
+        hdr.msg_control = NULL;
+        hdr.msg_controllen = 0;
+        hdr.msg_flags = 0;
+        if ((numbytes = _recvmsg_func(mgr->sock, &hdr, 0)) == -1) {
             if (errno == EINTR) {
                 continue;
             }
@@ -593,4 +602,11 @@ LS_API size_t tube_manager_size(tube_manager *mgr)
 {
     assert(mgr);
     return ls_htable_get_count(mgr->tubes);
+}
+
+LS_API void tube_set_socket_functions(tube_sendmsg_func send,
+                                      tube_recvmsg_func recv)
+{
+    _sendmsg_func = (send == NULL) ? sendmsg : send;
+    _recvmsg_func = (recv == NULL) ? recvmsg : recv;
 }

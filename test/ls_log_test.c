@@ -99,13 +99,13 @@ static void _test_log_generator_fn(
     }
 }
 
-void _setup(void)
+static void _setup(void)
 {
     _initlevel = ls_log_get_level();
     ls_log_set_function(_myvfprintf);
 }
 
-void _teardown(void)
+static void _teardown(void)
 {
     ls_log_set_function(NULL);
     ls_log_set_level(_initlevel);

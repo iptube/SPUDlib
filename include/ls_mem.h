@@ -1,7 +1,7 @@
 /**
  * \file
  * \brief
- * This file contains JabberWerxC allocation related functions
+ * This file contains SPUDlib allocation related functions
  * and ls_pool objects.
  *
  * Memory Pools
