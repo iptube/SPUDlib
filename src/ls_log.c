@@ -41,8 +41,6 @@ static const int level_colors[] = {
 
 static ls_loglevel _ls_loglevel = LS_LOG_INFO;
 static ls_log_vararg_function _ls_log_vararg_function = vfprintf;
-static ls_data_malloc_func _allocator = ls_data_malloc;
-static ls_data_free_func _deallocator = ls_data_free;
 
 typedef struct _ndc_node_int_t
 {
@@ -79,28 +77,6 @@ LS_API const char * ls_log_level_name(ls_loglevel level)
     assert(LS_LOG_MEMTRACE >= level);
 
     return _LOG_MSG_TABLE[level];
-}
-
-void _ls_log_set_memory_funcs(ls_data_malloc_func allocator,
-                              ls_data_free_func   deallocator)
-{
-    if (!allocator)
-    {
-        _allocator = ls_data_malloc;
-    }
-    else
-    {
-        _allocator = allocator;
-    }
-
-    if (!deallocator)
-    {
-        _deallocator = ls_data_free;
-    }
-    else
-    {
-        _deallocator = deallocator;
-    }
 }
 
 LS_API void ls_log_set_function(ls_log_vararg_function fn)
@@ -206,7 +182,7 @@ LS_API int ls_log_push_ndc(const char *fmt, ...)
     }
     va_end(ap);
 
-    newNode = _allocator(sizeof(struct _ndc_node_int_t));
+    newNode = ls_data_malloc(sizeof(struct _ndc_node_int_t));
     if (!newNode)
     {
         ls_log(LS_LOG_WARN, "could not push NDC: '%s' (out of memory)", fmt);
@@ -214,10 +190,10 @@ LS_API int ls_log_push_ndc(const char *fmt, ...)
     }
 
     memset(newNode, 0, sizeof(struct _ndc_node_int_t));
-    newNode->message = _allocator(messageLen+1);
+    newNode->message = ls_data_malloc(messageLen+1);
     if (!newNode->message)
     {
-        _deallocator(newNode);
+        ls_data_free(newNode);
         ls_log(LS_LOG_WARN, "could not push NDC: '%s' (out of memory)", fmt);
         return 0;
     }
@@ -256,8 +232,8 @@ LS_API void ls_log_pop_ndc(int ndc_depth)
         prevHead = _ndc_head;
         _ndc_head = prevHead->next;
 
-        _deallocator(prevHead->message);
-        _deallocator(prevHead);
+        ls_data_free(prevHead->message);
+        ls_data_free(prevHead);
     }
 }
 
