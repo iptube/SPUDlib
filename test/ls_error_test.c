@@ -143,7 +143,7 @@ START_TEST (ls_error_gai_test)
 {
     ls_err  err;
     const char *msg = ls_err_message(-1000-EAI_FAIL);
-    ck_assert_str_eq(msg, "non-recoverable failure in name resolution");
+    ck_assert_str_eq(msg, "Non-recoverable failure in name resolution");
 }
 END_TEST
 Suite * ls_error_suite (void)
@@ -154,6 +154,7 @@ Suite * ls_error_suite (void)
       tcase_add_test (tc_ls_error, ls_error_message_test);
       tcase_add_test (tc_ls_error, ls_error_macro_test);
       tcase_add_test (tc_ls_error, ls_error_perror_test);
+      tcase_add_test (tc_ls_error, ls_error_gai_test);
 
       suite_add_tcase (s, tc_ls_error);
   }
