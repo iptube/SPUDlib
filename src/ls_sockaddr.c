@@ -41,7 +41,8 @@ LS_API bool ls_sockaddr_get_remote_ip_addr(struct sockaddr_in6 *remoteAddr,
     if ((status = getaddrinfo(fqdn, port, &hints, &res)) != 0) {
         if (err != NULL)
         {
-            err->code = -1000 - status;
+            // HACK.  GAI errors on linux are negative, positive on OSX
+            err->code = (status<0) ? (-1100 + status) : (-1000 - status);
             err->message = gai_strerror(status);
             err->function = __func__;
             err->file = __FILE__;

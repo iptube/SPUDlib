@@ -33,7 +33,10 @@ LS_API const char * ls_err_message(ls_errcode code)
 {
     int ic = (int)code;
     if (ic < 0) {
-        if (ic < -1000) {
+        if (ic < -1100) {
+            return gai_strerror(ic+1100);
+        }
+        else if (ic < -1000) {
             return gai_strerror(-(ic+1000));
         }
         return sys_errlist[-ic];
