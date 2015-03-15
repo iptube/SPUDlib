@@ -25,19 +25,18 @@ static const char *_ERR_MSG_TABLE[] = {
     "user-defined error"
 };
 
-/*****************************************************************************
- * External functions
- */
+#define GAI_OFFSET_POS -1000
+#define GAI_OFFSET_NEG -1100
 
 LS_API const char * ls_err_message(ls_errcode code)
 {
     int ic = (int)code;
     if (ic < 0) {
-        if (ic < -1100) {
-            return gai_strerror(ic+1100);
+        if (ic < GAI_OFFSET_NEG) {
+            return gai_strerror(ic-GAI_OFFSET_NEG);
         }
-        else if (ic < -1000) {
-            return gai_strerror(-(ic+1000));
+        else if (ic < GAI_OFFSET_POS) {
+            return gai_strerror(-(ic-GAI_OFFSET_POS));
         }
         return sys_errlist[-ic];
     }
@@ -45,4 +44,11 @@ LS_API const char * ls_err_message(ls_errcode code)
         return "Unknown code";
     }
     return _ERR_MSG_TABLE[code];
+}
+
+LS_API ls_errcode ls_err_gai(int gai_error)
+{
+    return (gai_error<0) ?
+              (GAI_OFFSET_NEG + gai_error) :
+              (GAI_OFFSET_POS - gai_error);
 }

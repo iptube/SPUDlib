@@ -142,9 +142,11 @@ END_TEST
 START_TEST (ls_error_gai_test)
 {
     ls_err  err;
-    const char *msg = ls_err_message(-1000-EAI_FAIL);
-    //ck_assert_str_eq(msg, "Non-recoverable failure in name resolution");
-    printf("EAI_FAIL message: '%s'\n", msg);
+    ls_errcode c = ls_err_gai(EAI_FAIL);
+    const char *msg = ls_err_message(c);
+    ck_assert_str_eq(msg, "Non-recoverable failure in name resolution");
+    fail_if(strlen(ls_err_message(-1004)) == 0);
+    fail_if(strlen(ls_err_message(-1104)) == 0);
 }
 END_TEST
 Suite * ls_error_suite (void)

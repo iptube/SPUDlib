@@ -60,7 +60,6 @@ typedef struct
     unsigned long       line;
 } ls_err;
 
-
 /**
  * Retrieves the error message for the given error code.
  *
@@ -68,6 +67,12 @@ typedef struct
  * \retval const char * The message for {code}
  */
 LS_API const char * ls_err_message(ls_errcode code);
+
+/**
+ * Translate a getaddressinfo error into an ls_errcode, such that
+ * ls_err_message can return a string for it.
+ */
+LS_API ls_errcode ls_err_gai(int gai_error);
 
 /**
  * \def LS_ERROR(err, code)
