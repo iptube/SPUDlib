@@ -1,5 +1,8 @@
+#include <pthread.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <time.h>
+#include <sys/errno.h>
 
 #include <check.h>
 #include "tube.h"
@@ -7,6 +10,12 @@
 
 Suite * tube_suite (void);
 static tube_manager *_mgr;
+
+uint8_t spud[] = { 0xd8, 0x00, 0x00, 0xd8,
+                   0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+                   0x00,
+                   0xa1, 0x00,
+                   0x41, 0x61 };
 
 static ssize_t _mock_sendmsg(int socket,
                              const struct msghdr *hdr,
@@ -25,8 +34,20 @@ static ssize_t _mock_recvmsg(int socket,
                              struct msghdr *hdr,
                              int flags)
 {
+    struct timespec timer = {0, 1000000}; // 1ms
+
+    if (nanosleep(&timer, NULL) == -1) {
+        errno = EINTR;
+        return -1;
+    }
+
     // TODO: Do something cool.  Maybe a queue or something.
-    return 0;
+    if ((hdr->msg_iovlen < 1) || hdr->msg_iov[0].iov_len < sizeof(spud)) {
+        errno = EMSGSIZE;
+        return -1;
+    }
+    memcpy(hdr->msg_iov[0].iov_base, spud, sizeof(spud));
+    return sizeof(spud);
 }
 
 static void _setup(void)
@@ -182,6 +203,8 @@ START_TEST (tube_data_test)
                            0,
                            &err),
                  ls_err_message( err.code ) );
+    tube_manager_remove(_mgr, t);
+    ck_assert_int_eq(tube_manager_size(_mgr), 0);
 }
 END_TEST
 
@@ -206,6 +229,31 @@ START_TEST (tube_close_test)
 }
 END_TEST
 
+bool listen_return;
+
+void *listen_run(void *p)
+{
+    ls_err *err = p;
+    listen_return = tube_manager_loop(_mgr, err);
+    return &listen_return;
+}
+
+START_TEST (tube_manager_loop_test)
+{
+    ls_err listen_err;
+    void *ret;
+    struct timespec timer = {0, 5000000}; // 5ms
+
+    pthread_t listen_thread;
+    ck_assert_int_eq(pthread_create(&listen_thread, NULL, listen_run, &listen_err), 0);
+
+    nanosleep(&timer, NULL);
+    tube_manager_stop(_mgr);
+    ck_assert_int_eq(pthread_join(listen_thread, &ret), 0);
+    ck_assert_int_eq(*((int*)ret), (int)true);
+}
+END_TEST
+
 Suite * tube_suite (void)
 {
   Suite *s = suite_create ("tube");
@@ -220,6 +268,7 @@ Suite * tube_suite (void)
       tcase_add_test (tc_tube, tube_ack_test);
       tcase_add_test (tc_tube, tube_data_test);
       tcase_add_test (tc_tube, tube_close_test);
+      tcase_add_test (tc_tube, tube_manager_loop_test);
 
       suite_add_tcase (s, tc_tube);
   }
