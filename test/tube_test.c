@@ -17,6 +17,7 @@ uint8_t spud[] = { 0xd8, 0x00, 0x00, 0xd8,
                    0x00,
                    0xa1, 0x00,
                    0x41, 0x61 };
+bool first = true;
 
 static ssize_t _mock_sendmsg(int socket,
                              const struct msghdr *hdr,
@@ -47,7 +48,13 @@ static ssize_t _mock_recvmsg(int socket,
         errno = EMSGSIZE;
         return -1;
     }
-    memcpy(hdr->msg_iov[0].iov_base, spud, sizeof(spud));
+    if (first) {
+        memcpy(hdr->msg_iov[0].iov_base, spud, 1);
+        first = false;
+    } else {
+        memcpy(hdr->msg_iov[0].iov_base, spud, sizeof(spud));
+    }
+
     return sizeof(spud);
 }
 
