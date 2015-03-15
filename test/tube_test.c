@@ -3,6 +3,7 @@
 #include <netinet/in.h>
 #include <time.h>
 #include <sys/errno.h>
+#include <stdio.h>
 
 #include <check.h>
 #include "tube.h"
@@ -242,6 +243,7 @@ START_TEST (tube_manager_loop_test)
 {
     ls_err listen_err;
     void *ret;
+    int r;
     struct timespec timer = {0, 5000000}; // 5ms
 
     pthread_t listen_thread;
@@ -249,7 +251,11 @@ START_TEST (tube_manager_loop_test)
 
     nanosleep(&timer, NULL);
     tube_manager_stop(_mgr);
-    ck_assert_int_eq(pthread_join(listen_thread, &ret), 0);
+    r = pthread_join(listen_thread, &ret);
+    if (r != 0) {
+        printf("pthread_join (%d): '%s'\n", errno, sys_errlist[errno]);
+        ck_assert_int_eq(r, 0);
+    }
     ck_assert_int_eq(*((int*)ret), (int)true);
 }
 END_TEST
