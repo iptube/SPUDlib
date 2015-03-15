@@ -105,6 +105,7 @@ START_TEST (tube_utilities_test)
     int local_data = 1337;
     int *out;
     char buf[24];
+    char buf2[24];
 
     fail_unless(tube_manager_running(_mgr));
     ck_assert_int_eq(tube_manager_size(_mgr), 0);
@@ -116,8 +117,11 @@ START_TEST (tube_utilities_test)
     ck_assert_int_eq(*out, 1337);
     ck_assert_int_eq(tube_get_state(t), TS_UNKNOWN);
 
-    fail_unless( tube_get_id(t, &id, &err) );
-    fail_unless( tube_id_to_string(t, buf, sizeof(buf)) == buf);
+    tube_get_id(t, &id);
+    spud_id_to_string(buf, sizeof(buf), &id);
+
+    fail_unless( tube_id_to_string(t, buf2, sizeof(buf2)) == buf2);
+    ck_assert_str_eq(buf, buf2);
 
     tube_manager_stop(_mgr);
     fail_if(tube_manager_running(_mgr));

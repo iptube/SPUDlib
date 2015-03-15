@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <assert.h>
 
 #include "spud.h"
 #include "../config.h"
@@ -147,12 +148,9 @@ char* spud_id_to_string(char* buf, size_t len, const spud_tube_id *id)
     return buf;
 }
 
-bool spud_copy_id(const spud_tube_id *src, spud_tube_id *dest, ls_err *err) {
-    if (src == NULL || dest == NULL) {
-        LS_ERROR(err, LS_ERR_INVALID_ARG);
-        return false;
-    }
+void spud_copy_id(const spud_tube_id *src, spud_tube_id *dest) {
+    assert(src);
+    assert(dest);
 
     memcpy(dest, src, sizeof(spud_tube_id));
-    return true;
 }

@@ -177,9 +177,7 @@ LS_API bool tube_ack(tube *t,
 {
     assert(t!=NULL);
 
-    if (!spud_copy_id(id, &t->id, err)) {
-        return false;
-    }
+    spud_copy_id(id, &t->id);
     ls_sockaddr_copy(peer, (struct sockaddr *)&t->peer);
     if (!tube_manager_add(t->mgr, t, err)) {
         return false;
@@ -279,9 +277,9 @@ LS_API tube_states_t tube_get_state(tube *t)
     return t->state;
 }
 
-LS_API bool tube_get_id(tube *t, spud_tube_id *id, ls_err *err)
+LS_API void tube_get_id(tube *t, spud_tube_id *id)
 {
-    return spud_copy_id(&t->id, id, err);
+    spud_copy_id(&t->id, id);
 }
 
 static unsigned int hash_id(const void *id) {
@@ -516,10 +514,7 @@ LS_API bool tube_manager_loop(tube_manager *mgr, ls_err *err)
             goto cleanup;
         }
 
-        if (!spud_copy_id(&msg.header->tube_id, &uid, err)) {
-            LS_LOG_ERR(*err, "spud_copy_id");
-            goto cleanup;
-        }
+        spud_copy_id(&msg.header->tube_id, &uid);
 
         cmd    = msg.header->flags & SPUD_COMMAND;
         d.t    = ls_htable_get(mgr->tubes, &uid);

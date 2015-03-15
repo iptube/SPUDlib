@@ -98,7 +98,7 @@ LS_API void tube_set_data(tube *t, void *data);
 LS_API void *tube_get_data(tube *t);
 LS_API char *tube_id_to_string(tube *t, char* buf, size_t len);
 LS_API tube_states_t tube_get_state(tube *t);
-LS_API bool tube_get_id(tube *t, spud_tube_id *id, ls_err *err);
+LS_API void tube_get_id(tube *t, spud_tube_id *id);
 
 LS_API void tube_set_socket_functions(tube_sendmsg_func send,
                                       tube_recvmsg_func recv);
