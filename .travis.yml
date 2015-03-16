@@ -21,7 +21,7 @@ before_install:
 # Change this to your needs
 script:
   - ./bootstrap.sh
-  - ./configure --with-check && make && make check
+  - ./configure --enable-check && make && make check
 
 after_success:
 - if [[ $COVERAGE == 'true' ]];

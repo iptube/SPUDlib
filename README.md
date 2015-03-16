@@ -18,12 +18,12 @@ samplecode/spudtest [iface] [ipaddr] sends SPUD packets to the desired IP from t
 
 ### Unit Tests
 Turn on unit tests with:
-./configure --with-check
+  ./configure --enable-check
 
 This need the check library installed
 
 Build and run the checks with
-make check
+  make check
 
 If tests fail it can help to run
 test/check_spudlib to see where it fails.
