@@ -45,23 +45,23 @@ if [[ "$use_valgrind" = "true" ]]; then
 fi
 AM_CONDITIONAL(USE_VALGRIND, $use_valgrind)
 
-AM_CONDITIONAL(CHECK, "false")
-AC_ARG_WITH([check],
-  [AS_HELP_STRING([--with-check],
-  [use Check for unit testing @<:@default=no@:>@])],
-  [],
-  [with_check=no])
 
-  LIBCHECK=
-  AS_IF([test "x$with_check" != xno],
-    [AC_CHECK_LIB([check], [srunner_create],
-    [AC_SUBST([LIBCHECK], ["-lcheck"])
-     AM_CONDITIONAL(CHECK, "true")
-     AC_DEFINE([HAVE_CHECK], [1],
-               [Define if you have check])],
-    [AC_MSG_FAILURE(
-      [--with-check was given, but test for check failed])],
-      [])])
+use_check=false
+AC_ARG_WITH(check,
+  [  --with-check       Use check when running unit tests. ],
+  [ use_check=true ])
+
+if [[ "$use_check" = "true" ]]; then
+
+  PKG_CHECK_MODULES([CHECK], [check >= 0.9.14])
+  AC_SUBST(CHECK_CFLAGS)
+  AC_SUBST(CHECK_LIBS)
+  if [[ "$HAVE_CHECK" = "no" ]]; then
+          AC_MSG_ERROR([check not found])
+  fi
+fi
+AM_CONDITIONAL(CHECK, test -n "$CHECK_LIBS")
+AM_CONDITIONAL(USE_CHECK, $use_check)
 
 
 # Checks for header files.
