@@ -64,3 +64,4 @@ samplecode/spudload
 cscope.files
 build
 *.make
+*.pc

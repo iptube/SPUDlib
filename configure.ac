@@ -53,7 +53,7 @@ AC_ARG_ENABLE(check,
 
 if [[ "$use_check" = "true" ]]; then
 
-  PKG_CHECK_MODULES([CHECK], [check >= 0.9.10])
+  PKG_CHECK_MODULES([CHECK], [check >= 0.9.8])
   AC_SUBST(CHECK_CFLAGS)
   AC_SUBST(CHECK_LIBS)
   if [[ "$HAVE_CHECK" = "no" ]]; then
@@ -91,5 +91,6 @@ AC_CONFIG_FILES([Makefile
                  src/Makefile
                  test/Makefile
                  samplecode/Makefile])
+AC_CONFIG_FILES([spudlib.pc])
 
 AC_OUTPUT
