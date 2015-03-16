@@ -9,23 +9,22 @@ env:
 
 matrix:
   exclude:
-    - compiler: clang 
+    - compiler: clang
       env: COVERAGE=true
     - compiler: gcc
       env: COVERAGE=false
 
 before_install:
- - sudo apt-get install check
+ - sudo apt-get install pkg-config check
  - sudo pip install cpp-coveralls
- 
+
 # Change this to your needs
-script: 
+script:
   - ./bootstrap.sh
   - ./configure --with-check && make && make check
 
 after_success:
-- if [[ $COVERAGE == 'true' ]]; 
-  then 
+- if [[ $COVERAGE == 'true' ]];
+  then
   ./coverage.sh;
   fi
- 

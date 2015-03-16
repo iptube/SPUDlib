@@ -53,7 +53,7 @@ AC_ARG_ENABLE(check,
 
 if [[ "$use_check" = "true" ]]; then
 
-  PKG_CHECK_MODULES([CHECK], [check >= 0.9.14])
+  PKG_CHECK_MODULES([CHECK], [check >= 0.9.10])
   AC_SUBST(CHECK_CFLAGS)
   AC_SUBST(CHECK_LIBS)
   if [[ "$HAVE_CHECK" = "no" ]]; then
