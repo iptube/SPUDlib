@@ -47,8 +47,8 @@ AM_CONDITIONAL(USE_VALGRIND, $use_valgrind)
 
 
 use_check=false
-AC_ARG_WITH(check,
-  [  --with-check       Use check when running unit tests. ],
+AC_ARG_ENABLE(check,
+  [  --enable-check       Use check when running unit tests. ],
   [ use_check=true ])
 
 if [[ "$use_check" = "true" ]]; then
