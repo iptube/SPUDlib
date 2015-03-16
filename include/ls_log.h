@@ -12,6 +12,8 @@
 #include <stdio.h>
 #include <sys/errno.h>
 
+#include "ls_mem.h"
+
 /** Convenience macro for tracing a function entry where no arguments need to be
  *  logged */
 #define LS_LOG_TRACE_FUNCTION_NO_ARGS \

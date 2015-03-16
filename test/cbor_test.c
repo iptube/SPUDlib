@@ -20,7 +20,7 @@ typedef struct _buffer {
 static bool parse_hex(char *inp, buffer *b)
 {
     int len = strlen(inp);
-    int i;
+    size_t i;
     if (len%2 != 0) {
         b->sz = -1;
         b->ptr = NULL;
@@ -85,7 +85,7 @@ START_TEST (cbor_parse_test)
     };
     const cn_cbor *cb;
     buffer b;
-    int i;
+    size_t i;
     unsigned char encoded[1024];
     ssize_t enc_sz;
 
@@ -123,7 +123,7 @@ START_TEST (cbor_fail_test)
     };
     const cn_cbor *cb;
     buffer b;
-    int i;
+    size_t i;
 
     for (i=0; i<sizeof(tests)/sizeof(cbor_failure); i++) {
         ck_assert(parse_hex(tests[i].hex, &b));
@@ -150,7 +150,7 @@ START_TEST (cbor_float_test)
     };
     const cn_cbor *cb;
     buffer b;
-    int i;
+    size_t i;
 
     for (i=0; i<sizeof(tests)/sizeof(char*); i++) {
         ck_assert(parse_hex(tests[i], &b));

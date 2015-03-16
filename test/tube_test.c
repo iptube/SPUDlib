@@ -25,6 +25,8 @@ static ssize_t _mock_sendmsg(int socket,
 {
     int i;
     ssize_t count = 0;
+    UNUSED_PARAM(socket);
+    UNUSED_PARAM(flags);
     for (i=0; i<hdr->msg_iovlen; i++) {
         count += hdr->msg_iov[i].iov_len;
     }
@@ -37,6 +39,8 @@ static ssize_t _mock_recvmsg(int socket,
                              int flags)
 {
     struct timespec timer = {0, 1000000}; // 1ms
+    UNUSED_PARAM(socket);
+    UNUSED_PARAM(flags);
 
     if (nanosleep(&timer, NULL) == -1) {
         errno = EINTR;
@@ -78,14 +82,16 @@ static void _teardown(void)
 START_TEST (tube_create_test)
 {
     tube *t;
-    int sockfd;
     ls_err err;
     fail_unless( tube_create(_mgr, &t, &err) );
     tube_destroy(t);
 }
 END_TEST
 
-static void test_cb(ls_event_data evt, void *arg){}
+static void test_cb(ls_event_data evt, void *arg){
+    UNUSED_PARAM(evt);
+    UNUSED_PARAM(arg);
+}
 
 START_TEST (tube_manager_bind_event_test)
 {
@@ -224,7 +230,6 @@ START_TEST (tube_close_test)
 {
     tube *t;
     ls_err err;
-    char data[] = "SPUD_makeUBES_FUN";
     struct sockaddr_in6 remoteAddr;
 
     fail_unless( ls_sockaddr_get_remote_ip_addr(&remoteAddr,

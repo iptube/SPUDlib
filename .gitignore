@@ -62,3 +62,5 @@ samplecode/spudtest
 samplecode/spudecho
 samplecode/spudload
 cscope.files
+build
+*.make

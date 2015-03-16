@@ -133,7 +133,6 @@ END_TEST
 
 START_TEST (ls_error_perror_test)
 {
-    ls_err  err;
     const char *msg = ls_err_message(-EINTR);
     ck_assert_str_eq(msg, "Interrupted system call");
 }
@@ -141,7 +140,6 @@ END_TEST
 
 START_TEST (ls_error_gai_test)
 {
-    ls_err  err;
     ls_errcode c = ls_err_gai(EAI_FAIL);
     const char *msg = ls_err_message(c);
     ck_assert_str_eq(msg, "Non-recoverable failure in name resolution");

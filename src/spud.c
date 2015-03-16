@@ -34,6 +34,7 @@ bool spud_init(spud_header *hdr, spud_tube_id *id, ls_err *err)
 static bool get_rand_buf(void *buf, size_t sz, ls_err *err)
 {
 #ifdef HAVE_ARC4RANDOM
+    UNUSED_PARAM(err);
     arc4random_buf(buf, sz);
     return true;
 #elif defined(HAVE__DEV_URANDOM)

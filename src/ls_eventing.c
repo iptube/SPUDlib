@@ -281,6 +281,7 @@ static bool _prepare_trigger(ls_event_dispatcher *dispatch,
         ls_event_moment_t *moment;
         void              *momentPtr;
     } momentUnion;
+    UNUSED_PARAM(dispatch);
 
     LS_LOG_TRACE_FUNCTION_NO_ARGS;
     assert(trigger_data);
