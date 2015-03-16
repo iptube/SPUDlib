@@ -8,11 +8,10 @@
 #include <netinet/ip.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdlib.h>
 
 #include "spud.h"
 #include "tube.h"
-#include "iphelper.h"
-#include "sockethelper.h"
 #include "ls_error.h"
 #include "ls_log.h"
 #include "ls_sockaddr.h"
@@ -180,7 +179,7 @@ int spudtest(int argc, char **argv)
         LS_LOG_ERR(err, "tube_print");
         return 1;
     }
-    ls_log(LS_LOG_INFO, "-> %s\n", sockaddr_toString((struct sockaddr*)&config.remoteAddr, buf, sizeof(buf), true));
+    ls_log(LS_LOG_INFO, "-> %s\n", ls_sockaddr_to_string((struct sockaddr*)&config.remoteAddr, buf, sizeof(buf), true));
 
     //Start and listen to the sockets.
     pthread_create(&listenThread, NULL, (void *)socketListen, NULL);

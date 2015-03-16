@@ -4,6 +4,7 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <arpa/inet.h>
 #include <netdb.h>
 #include <string.h>
 
@@ -77,4 +78,67 @@ LS_API void ls_sockaddr_v6_any(struct sockaddr_in6 * sa, int port)
 
 LS_API void ls_sockaddr_copy(const struct sockaddr *src, struct sockaddr *dest) {
     memcpy(dest, src, ls_sockaddr_get_length(src));
+}
+
+LS_API const char *ls_sockaddr_to_string(const struct sockaddr *sa,
+                                         char *dest,
+                                         size_t destlen,
+                                         bool addport)
+{
+    const char *iret = NULL;
+    size_t r = 0;
+    assert(dest);
+    assert(destlen > 0);
+
+    if (sa->sa_family == AF_INET)
+    {
+        if (destlen < INET_ADDRSTRLEN + 8)
+        {
+             /* 8 is enough for :port and termination addr:65535\n\0 */
+             dest[0] = '\0';
+             return dest;
+        }
+        else
+        {
+            const struct sockaddr_in *sa4 = (const struct sockaddr_in *)sa;
+            iret = inet_ntop(AF_INET, &(sa4->sin_addr), dest, destlen);
+            if (iret == NULL) {
+                return NULL; // TODO: should we take an ls_err*?
+            }
+            if(addport){
+                r = strnlen(dest, INET_ADDRSTRLEN+1);
+                snprintf(dest + r, destlen-r, ":%d", ntohs(sa4->sin_port));
+            }
+            return dest;
+        }
+    }
+    else if (sa->sa_family == AF_INET6)
+    {
+        if (destlen < INET6_ADDRSTRLEN + 10)
+        {
+            /* 10 is enough for brackets, :port and termination [addr]:65535\n\0 */
+            dest[0] = '\0';
+            return dest;
+        }
+        else
+        {
+            const struct sockaddr_in6 *sa6 = (const struct sockaddr_in6 *)sa;
+            if (addport){
+                dest[r++] = '[';
+            }
+            iret = inet_ntop(AF_INET6, &(sa6->sin6_addr), dest+r, destlen);
+            if (iret == NULL) {
+                return NULL;
+            }
+            r = strnlen(dest, INET6_ADDRSTRLEN+2);
+
+            if (addport) {
+                dest[r++] = ']';
+                snprintf(dest + r, destlen-r, ":%d", ntohs(sa6->sin6_port));
+            }
+            return dest;
+        }
+    }
+
+    return NULL;
 }

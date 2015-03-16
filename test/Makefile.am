@@ -1,7 +1,7 @@
 AUTOMAKE_OPTIONS = subdir-objects
 
 if USE_CHECK
-  MY_CFLAGS_1 = -I../include -g
+  MY_CFLAGS_1 = -I$(top_srcdir)/include -g
   MY_LDFLAGS_1 = -g
   TESTS = check_spudlib
   check_PROGRAMS = check_spudlib

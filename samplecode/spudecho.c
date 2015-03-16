@@ -9,11 +9,10 @@
 #include <sys/socket.h>
 #include <signal.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "spud.h"
 #include "tube.h"
-#include "iphelper.h"
-#include "sockethelper.h"
 #include "ls_htable.h"
 #include "ls_log.h"
 #include "ls_sockaddr.h"
