@@ -5,9 +5,9 @@ Substrate Protocol for User Datagrams (SPUD) Prototype
 
 ## Compiling
 
-./bootstrap.sh   (To create the ./configure script)
-./configure   (To create the Makefiles)
-make          (To build the code)
+    ./bootstrap.sh   (To create the ./configure script)
+    ./configure   (To create the Makefiles)
+    make          (To build the code)
 
 You will end up with two test binaries in samplecode and a library you can link against in src.
 
@@ -18,12 +18,14 @@ samplecode/spudtest [iface] [ipaddr] sends SPUD packets to the desired IP from t
 
 ### Unit Tests
 Turn on unit tests with:
-  ./configure --enable-check
+
+    ./configure --enable-check
 
 This need the check library installed
 
 Build and run the checks with
-  make check
+
+    make check
 
 If tests fail it can help to run
 test/check_spudlib to see where it fails.
