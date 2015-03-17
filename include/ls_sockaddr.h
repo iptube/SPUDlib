@@ -10,6 +10,8 @@
 #include "ls_basics.h"
 #include "ls_error.h"
 
+#define  MAX_SOCKADDR_STR_LEN INET6_ADDRSTRLEN + 10
+
 LS_API size_t ls_sockaddr_get_length(const struct sockaddr *addr);
 
 LS_API bool ls_sockaddr_get_remote_ip_addr(struct sockaddr_in6 *remoteAddr,
