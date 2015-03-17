@@ -1,6 +1,6 @@
 #!/bin/bash
 #./configure --with-check --enable-gcov --disable-shared
-./configure --with-check --enable-gcov
+./configure --enable-check --enable-gcov
 make clean
 make check
 
