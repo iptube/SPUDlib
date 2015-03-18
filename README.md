@@ -69,7 +69,7 @@ first patch.
 
 BSD 2-clause:
 
-Copyright (c) 2015, IPTube AUTHORS
+Copyright (c) 2015, SPUDlib AUTHORS
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
