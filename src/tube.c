@@ -189,7 +189,9 @@ LS_API bool tube_ack(tube *t,
 
 LS_API bool tube_data(tube *t, uint8_t *data, size_t len, ls_err *err)
 {
-    uint8_t preamble[13];
+    // max size for CBOR preamble 19 bytes:
+    // 1(map|27) 8(length) 1(key:0) 1(bstr|27) 8(length)
+    uint8_t preamble[19];
     uint8_t *d[2];
     size_t l[2];
     ssize_t sz = 0;
