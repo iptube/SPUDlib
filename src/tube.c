@@ -189,7 +189,9 @@ LS_API bool tube_ack(tube *t,
 
 LS_API bool tube_data(tube *t, uint8_t *data, size_t len, ls_err *err)
 {
-    uint8_t preamble[13];
+    // max size for CBOR preamble 19 bytes:
+    // 1(map|27) 8(length) 1(key:0) 1(bstr|27) 8(length)
+    uint8_t preamble[19];
     uint8_t *d[2];
     size_t l[2];
     ssize_t sz = 0;
@@ -391,9 +393,7 @@ LS_API bool tube_manager_socket(tube_manager *m,
     assert(port>=0);
     assert(port<=0xffff);
 
-    if (port != 0) {
-        m->policy |= TP_SERVER;
-    }
+    tube_manager_set_policy_responder(m, port != 0);
 
     m->sock = socket(PF_INET6, SOCK_DGRAM, 0);
     if (m->sock < 0) {
@@ -521,9 +521,9 @@ LS_API bool tube_manager_loop(tube_manager *mgr, ls_err *err)
         d.cbor = msg.cbor;
         d.addr = (const struct sockaddr *)&their_addr;
         if (!d.t) {
-            if (!(mgr->policy & TP_SERVER) || (cmd != SPUD_OPEN)) {
-              // Not for one of our tubes, and we're not a server, so punt.
-              // Even if we're a server, if we get anything but an open
+            if (!tube_manager_is_responder(mgr) || (cmd != SPUD_OPEN)) {
+              // Not for one of our tubes, and we're not a responder, so punt.
+              // Even if we're a responder, if we get anything but an open
               // for an unknown tube, ignore it.
               ls_log(LS_LOG_WARN, "Invalid tube ID: %s",
                      spud_id_to_string(id_str, sizeof(id_str), &uid));
@@ -597,6 +597,21 @@ LS_API size_t tube_manager_size(tube_manager *mgr)
 {
     assert(mgr);
     return ls_htable_get_count(mgr->tubes);
+}
+
+LS_API void tube_manager_set_policy_responder(tube_manager *mgr, bool will_respond)
+{
+    assert(mgr);
+    if (will_respond) {
+        mgr->policy |= TP_WILL_RESPOND;
+    } else {
+        mgr->policy &= ~TP_WILL_RESPOND;
+    }
+}
+
+LS_API bool tube_manager_is_responder(tube_manager *mgr)
+{
+    return (mgr->policy & TP_WILL_RESPOND) == TP_WILL_RESPOND;
 }
 
 LS_API void tube_set_socket_functions(tube_sendmsg_func send,

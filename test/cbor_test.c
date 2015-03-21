@@ -91,7 +91,7 @@ START_TEST (cbor_parse_test)
 
     for (i=0; i<sizeof(tests)/sizeof(char*); i++) {
         ck_assert(parse_hex(tests[i], &b));
-        cb = cn_cbor_decode(b.ptr, b.sz, &err);
+        cb = cn_cbor_decode(b.ptr, b.sz, NULL, NULL, &err);
         ck_assert_msg(cb != NULL, tests[i]);
 
         enc_sz = cbor_encoder_write(encoded, 0, sizeof(encoded), cb);
@@ -127,7 +127,7 @@ START_TEST (cbor_fail_test)
 
     for (i=0; i<sizeof(tests)/sizeof(cbor_failure); i++) {
         ck_assert(parse_hex(tests[i].hex, &b));
-        cb = cn_cbor_decode(b.ptr, b.sz, &err);
+        cb = cn_cbor_decode(b.ptr, b.sz, NULL, NULL, &err);
         ck_assert_msg(cb == NULL, tests[i].hex);
         ck_assert_int_eq(err.err,tests[i].err   );
 
@@ -154,7 +154,7 @@ START_TEST (cbor_float_test)
 
     for (i=0; i<sizeof(tests)/sizeof(char*); i++) {
         ck_assert(parse_hex(tests[i], &b));
-        cb = cn_cbor_decode(b.ptr, b.sz, &err);
+        cb = cn_cbor_decode(b.ptr, b.sz, NULL, NULL, &err);
         ck_assert_msg(cb != NULL, tests[i]);
 
         free(b.ptr);
@@ -171,7 +171,7 @@ START_TEST (cbor_getset_test)
     cn_cbor_errback err;
 
     ck_assert(parse_hex("a3436363630262626201616100", &b));
-    cb = cn_cbor_decode(b.ptr, b.sz, &err);
+    cb = cn_cbor_decode(b.ptr, b.sz, NULL, NULL, &err);
     ck_assert(cb!=NULL);
     val = cn_cbor_mapget_string(cb, "a");
     ck_assert(val != NULL);
@@ -185,7 +185,7 @@ START_TEST (cbor_getset_test)
     cn_cbor_free(cb);
 
     ck_assert(parse_hex("a2006161206162", &b));
-    cb = cn_cbor_decode(b.ptr, b.sz, &err);
+    cb = cn_cbor_decode(b.ptr, b.sz, NULL, NULL, &err);
     ck_assert(cb!=NULL);
     val = cn_cbor_mapget_int(cb, 0);
     ck_assert(val != NULL);
@@ -197,7 +197,7 @@ START_TEST (cbor_getset_test)
     cn_cbor_free(cb);
 
     ck_assert(parse_hex("8100", &b));
-    cb = cn_cbor_decode(b.ptr, b.sz, &err);
+    cb = cn_cbor_decode(b.ptr, b.sz, NULL, NULL, &err);
     ck_assert(cb!=NULL);
     val = cn_cbor_index(cb, 0);
     ck_assert(val != NULL);

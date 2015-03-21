@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.61])
-AC_INIT([spudlib], [0.1], [palmarti@cisco.com])
+AC_INIT([spudlib], [0.2], [palmarti@cisco.com])
 AC_CONFIG_SRCDIR([include/spud.h])
 AC_CONFIG_HEADERS([config.h])
 
@@ -46,22 +46,31 @@ fi
 AM_CONDITIONAL(USE_VALGRIND, $use_valgrind)
 
 
-use_check=false
-AC_ARG_ENABLE(check,
-  [  --enable-check       Use check when running unit tests. ],
-  [ use_check=true ])
+dnl Check for check
+AC_ARG_ENABLE([check],
+  AS_HELP_STRING([--disable-check], [Do not build unit tests]),,
+  [use_check=yes]
+)
 
-if [[ "$use_check" = "true" ]]; then
-
+if test "$enable_check" = "yes" ; then
   PKG_CHECK_MODULES([CHECK], [check >= 0.9.8])
-  AC_SUBST(CHECK_CFLAGS)
-  AC_SUBST(CHECK_LIBS)
-  if [[ "$HAVE_CHECK" = "no" ]]; then
-          AC_MSG_ERROR([check not found])
-  fi
+
+  dnl As of version 0.9.10, check does not include -pthread in its Cflags or
+  dnl Libs even though it does depend on it. Assuming that check.pc may one day
+  dnl be fixed for that, only add it here if it's not there already.  It really
+  dnl belongs in LDFLAGS here (since check is a static lib and doesn't expose
+  dnl pthread functions in its header), but it can't be added to CHECK_LIBS,
+  dnl since automake 1.13 will barf about adding -pthread to *_LDADD rather
+  dnl than *_LDFLAGS.  However libtool does also include CFLAGS when linking.
+  case $CHECK_CFLAGS in
+    *-pthread*)
+      ;;
+    *)
+      CHECK_CFLAGS="-pthread $CHECK_CFLAGS"
+      ;;
+  esac
 fi
-AM_CONDITIONAL(CHECK, test -n "$CHECK_LIBS")
-AM_CONDITIONAL(USE_CHECK, $use_check)
+AM_CONDITIONAL(USE_CHECK, [test $enable_check = "yes"])
 
 
 # Checks for header files.
