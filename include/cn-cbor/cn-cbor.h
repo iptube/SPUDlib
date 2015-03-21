@@ -37,7 +37,7 @@ typedef struct cn_cbor {
     unsigned long count;        /* for use during filling */
   } v;                          /* TBD: optimize immediate */
   int length;
-  struct cn_cbor* first_child;
+  struct cn_cbor* first_child;  /* first_child and last_child are NULL except for MAP, ARRAY and TAG */
   struct cn_cbor* last_child;
   struct cn_cbor* next;
   struct cn_cbor* parent;
@@ -52,6 +52,7 @@ typedef enum cn_cbor_error {
   CN_CBOR_ERR_MT_UNDEF_FOR_INDEF,
   CN_CBOR_ERR_RESERVED_AI,
   CN_CBOR_ERR_WRONG_NESTING_IN_INDEF_STRING,
+  CN_CBOR_ERR_INVALID_PARAMETER,
   CN_CBOR_ERR_OUT_OF_MEMORY
 } cn_cbor_error;
 
@@ -62,7 +63,9 @@ typedef struct cn_cbor_errback {
   cn_cbor_error err;
 } cn_cbor_errback;
 
-const cn_cbor* cn_cbor_decode(const char* buf, size_t len, cn_cbor_errback *errp);
+typedef void* (*cn_alloc_func)(size_t count, size_t size, void *context);
+
+const cn_cbor* cn_cbor_decode(const char* buf, size_t len, cn_alloc_func calloc_func, void *context, cn_cbor_errback *errp);
 const cn_cbor* cn_cbor_mapget_string(const cn_cbor* cb, const char* key);
 const cn_cbor* cn_cbor_mapget_int(const cn_cbor* cb, int key);
 const cn_cbor* cn_cbor_index(const cn_cbor* cb, int idx);
