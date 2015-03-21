@@ -9,6 +9,7 @@
 #include <check.h>
 #include "cn-cbor/cn-cbor.h"
 #include "../src/cn-cbor/cn-encoder.h"
+#include "cn-cbor/cn-create.h"
 
 Suite * cbor_suite (void);
 
@@ -44,6 +45,7 @@ START_TEST (cbor_error_test)
     ck_assert_str_eq(cn_cbor_error_str[CN_CBOR_ERR_MT_UNDEF_FOR_INDEF], "CN_CBOR_ERR_MT_UNDEF_FOR_INDEF");
     ck_assert_str_eq(cn_cbor_error_str[CN_CBOR_ERR_RESERVED_AI], "CN_CBOR_ERR_RESERVED_AI");
     ck_assert_str_eq(cn_cbor_error_str[CN_CBOR_ERR_WRONG_NESTING_IN_INDEF_STRING], "CN_CBOR_ERR_WRONG_NESTING_IN_INDEF_STRING");
+    ck_assert_str_eq(cn_cbor_error_str[CN_CBOR_ERR_INVALID_PARAMETER], "CN_CBOR_ERR_INVALID_PARAMETER");    
     ck_assert_str_eq(cn_cbor_error_str[CN_CBOR_ERR_OUT_OF_MEMORY], "CN_CBOR_ERR_OUT_OF_MEMORY");
 }
 END_TEST
@@ -137,6 +139,7 @@ START_TEST (cbor_fail_test)
 }
 END_TEST
 
+
 // Decoder loses float size information
 START_TEST (cbor_float_test)
 {
@@ -211,6 +214,43 @@ START_TEST (cbor_getset_test)
 }
 END_TEST
 
+START_TEST (cbor_create_test)
+{
+    cn_cbor_errback err;
+    const cn_cbor* val;
+    const char* data = "abc";
+    
+    cn_cbor *cb_map = cn_cbor_create_map(NULL, NULL, &err);
+    ck_assert(cb_map != NULL);
+    ck_assert(err.err == CN_CBOR_NO_ERROR);
+    
+    cn_cbor *cb_int = cn_cbor_create_int(NULL, NULL, 256, &err);
+    ck_assert(cb_int != NULL);
+	ck_assert(err.err == CN_CBOR_NO_ERROR);
+	
+	cn_cbor *cb_data = cn_cbor_create_data(NULL, NULL, data, 4, &err);
+	ck_assert(cb_data != NULL);
+	ck_assert(err.err == CN_CBOR_NO_ERROR);
+	    
+    cn_cbor_mapput_int(cb_map, NULL, NULL, 5, cb_int, &err);
+    ck_assert(err.err == CN_CBOR_NO_ERROR);
+    ck_assert(cb_map->length == 1);
+    
+    cn_cbor_mapput_int(cb_map, NULL, NULL, 7, cb_data, &err);
+    ck_assert(err.err == CN_CBOR_NO_ERROR);
+    ck_assert(cb_map->length == 2);
+    
+    val = cn_cbor_mapget_int(cb_map, 5);
+    ck_assert(val != NULL);
+	ck_assert(val->v.sint == 256);
+
+    val = cn_cbor_mapget_int(cb_map, 7);
+    ck_assert(val != NULL);
+	ck_assert(val->v.str == "abc");    
+    //cn_cbor_free(cb_map);
+}
+END_TEST
+
 Suite * cbor_suite (void)
 {
     Suite *s = suite_create ("cbor");
@@ -221,6 +261,7 @@ Suite * cbor_suite (void)
         tcase_add_test (tc_cbor_parse, cbor_fail_test);
         tcase_add_test (tc_cbor_parse, cbor_float_test);
         tcase_add_test (tc_cbor_parse, cbor_getset_test);
+        tcase_add_test (tc_cbor_parse, cbor_create_test);
 
         suite_add_tcase (s, tc_cbor_parse);
     }
