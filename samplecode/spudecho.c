@@ -60,6 +60,10 @@ static void read_cb(ls_event_data evt,
             if (!tube_data(td->t, (uint8_t*)cp->v.str, cp->length, &err)) {
                 LS_LOG_ERR(err, "tube_data");
             }
+            else 
+            {
+                ls_log(LS_LOG_VERBOSE, "Received %s", (uint8_t*)cp->v.str);
+            }
         } else {
             if (!tube_data(td->t, NULL, 0, &err)) {
                 LS_LOG_ERR(err, "tube_data");
@@ -100,8 +104,13 @@ static void remove_cb(ls_event_data evt,
     ls_data_free(c);
 }
 
-int main(void)
+int main(int argc, char** argv)
 {
+    if (argc > 1 && !strcmp(argv[1], "-v"))
+    {
+        ls_log_set_level(LS_LOG_VERBOSE);
+    } 
+ 
     ls_err err;
 
     signal(SIGUSR1, print_stats);
