@@ -1,30 +1,24 @@
 language: c
 compiler:
-  - clang
-  - gcc
-
+- clang
+- gcc
 env:
-  - COVERAGE=true
-  - COVERAGE=false;
-
+- COVERAGE=true
+- COVERAGE=false;
 matrix:
   exclude:
-    - compiler: clang
-      env: COVERAGE=true
-    - compiler: gcc
-      env: COVERAGE=false
-
+  - compiler: clang
+    env: COVERAGE=true
+  - compiler: gcc
+    env: COVERAGE=false
 before_install:
- - sudo apt-get install pkg-config check
- - sudo pip install cpp-coveralls
-
-# Change this to your needs
+- sudo apt-get install pkg-config check
+- sudo pip install cpp-coveralls
 script:
-  - ./bootstrap.sh
-  - ./configure --enable-check && make && make check
-
+- "./bootstrap.sh"
+- "./configure --enable-check && make && make check"
 after_success:
-- if [[ $COVERAGE == 'true' ]];
-  then
-  ./coverage.sh;
-  fi
+- if [[ $COVERAGE == 'true' ]]; then ./coverage.sh; fi
+notifications:
+  slack:
+    secure: 4VG8/5JgqQadvwm2MnTzOxq8z0iCzKZOr08xD3Q5TG02Yec07bPlAJendMkK1xZgS0zAlwrhdbPfTdYm7D720Gi0iX+95y1tNpFtYlkxRGp4JmjXI2/t0066yBtB03+ZPZkku/2OCM1c248YJ8ls1wOfFQfHkTAQfdy8KOlZjv0=
