@@ -16,6 +16,8 @@ samplecode/spudtest [iface] [ipaddr] sends SPUD packets to the desired IP from t
 
 ## Development
 
+You need to have autoconf, libtool and pkg-config installed to build the ./configure script.
+
 ### Unit Tests
 Turn on unit tests with:
 
