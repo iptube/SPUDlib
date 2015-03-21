@@ -113,8 +113,8 @@ void ls_pool_enable_paging(bool enable)
 
 /* exported functions */
 LS_API void ls_data_set_memory_funcs(ls_data_malloc_func malloc_func,
-                                             ls_data_realloc_func realloc_func,
-                                             ls_data_free_func free_func)
+                                     ls_data_realloc_func realloc_func,
+                                     ls_data_free_func free_func)
 {
     _malloc_func = (malloc_func) ? malloc_func : malloc;
     _realloc_func = (realloc_func) ? realloc_func : realloc;
@@ -209,7 +209,7 @@ LS_API char *ls_data_strdup(const char  *src)
 }
 
 LS_API char *ls_data_strndup(const char  *src,
-                                    size_t len)
+                             size_t len)
 {
     char *ret = NULL;
     if (src)
@@ -281,9 +281,9 @@ LS_API void ls_pool_destroy(ls_pool *pool)
 }
 
 LS_API bool ls_pool_add_cleaner(ls_pool *pool,
-                                        ls_pool_cleaner callback,
-                                        void   *arg,
-                                        ls_err *err)
+                                ls_pool_cleaner callback,
+                                void   *arg,
+                                ls_err *err)
 {
     _pool_cleaner_ctx ctx;
 
@@ -308,9 +308,9 @@ LS_API bool ls_pool_add_cleaner(ls_pool *pool,
 }
 
 LS_API bool ls_pool_malloc(ls_pool *pool,
-                                   size_t  size,
-                                   void    **ptr,
-                                   ls_err  *err)
+                           size_t  size,
+                           void    **ptr,
+                           ls_err  *err)
 {
     void *ret = NULL;
 
@@ -346,10 +346,10 @@ LS_API bool ls_pool_malloc(ls_pool *pool,
 }
 
 LS_API bool ls_pool_calloc(ls_pool *pool,
-                                   size_t        num,
-                                   size_t        size,
-                                   void        **ptr,
-                                   ls_err       *err)
+                           size_t   num,
+                           size_t   size,
+                           void   **ptr,
+                           ls_err  *err)
 {
     size_t block_size = num * size;
     bool ret = ls_pool_malloc(pool, num * size, ptr, err);
@@ -363,9 +363,9 @@ LS_API bool ls_pool_calloc(ls_pool *pool,
 }
 
 LS_API bool ls_pool_strdup(ls_pool *pool,
-                                   const char  *src,
-                                   char  **cpy,
-                                   ls_err *err)
+                           const char  *src,
+                           char  **cpy,
+                           ls_err *err)
 {
     char   *ret = NULL;
     assert(cpy);

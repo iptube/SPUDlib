@@ -276,6 +276,14 @@ START_TEST (tube_manager_loop_test)
 }
 END_TEST
 
+START_TEST (tube_manager_policy_test)
+{
+    fail_if(tube_manager_is_responder(_mgr));
+    tube_manager_set_policy_responder(_mgr, true);
+    fail_unless(tube_manager_is_responder(_mgr));
+}
+END_TEST
+
 Suite * tube_suite (void)
 {
   Suite *s = suite_create ("tube");
@@ -291,6 +299,7 @@ Suite * tube_suite (void)
       tcase_add_test (tc_tube, tube_data_test);
       tcase_add_test (tc_tube, tube_close_test);
       tcase_add_test (tc_tube, tube_manager_loop_test);
+      tcase_add_test (tc_tube, tube_manager_policy_test);
 
       suite_add_tcase (s, tc_tube);
   }

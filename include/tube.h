@@ -23,7 +23,8 @@ typedef enum {
 
 typedef enum {
   TP_IGNORE_SOURCE = 1 << 0,
-  TP_SERVER        = 1 << 1
+  TP_WILL_RESPOND  = 1 << 1  // If set, act as a responder, creating tubes
+                             // when an OPEN command is received
 } tube_policies;
 
 #define EV_RUNNING_NAME "running"
@@ -74,6 +75,8 @@ LS_API bool tube_manager_loop(tube_manager *mgr, ls_err *err);
 LS_API bool tube_manager_running(tube_manager *mgr);
 LS_API void tube_manager_stop(tube_manager *mgr);
 LS_API size_t tube_manager_size(tube_manager *mgr);
+LS_API void tube_manager_set_policy_responder(tube_manager *mgr, bool will_respond);
+LS_API bool tube_manager_is_responder(tube_manager *mgr);
 
 LS_API bool tube_create(tube_manager *mgr, tube **t, ls_err *err);
 LS_API void tube_destroy(tube *t);
