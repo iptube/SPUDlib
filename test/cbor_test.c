@@ -243,8 +243,8 @@ START_TEST (cbor_alloc_test)
         ck_assert_msg(cb != NULL, tests[i]);
 
         free(b.ptr);
-        cn_cbor_free(cb);
     }
+    ls_pool_destroy(pool);
 }
 END_TEST
 
@@ -258,6 +258,7 @@ Suite * cbor_suite (void)
         tcase_add_test (tc_cbor_parse, cbor_fail_test);
         tcase_add_test (tc_cbor_parse, cbor_float_test);
         tcase_add_test (tc_cbor_parse, cbor_getset_test);
+        tcase_add_test (tc_cbor_parse, cbor_alloc_test);
 
         suite_add_tcase (s, tc_cbor_parse);
     }

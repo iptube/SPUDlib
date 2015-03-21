@@ -47,7 +47,7 @@ typedef ssize_t (*tube_recvmsg_func)(int socket,
 typedef struct _tube_event_data {
     tube *t;
     const cn_cbor *cbor;
-    const struct sockaddr* addr;
+    const struct sockaddr* peer;
 } tube_event_data;
 
 LS_API bool tube_manager_create(int buckets,
