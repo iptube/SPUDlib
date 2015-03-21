@@ -284,6 +284,17 @@ START_TEST (tube_manager_policy_test)
 }
 END_TEST
 
+START_TEST (tube_manager_set_socket_test)
+{
+    tube_manager *m;
+    ls_err err;
+    fail_unless( tube_manager_create(0, &m, &err),
+                 ls_err_message( err.code ));
+    tube_manager_set_socket(m, 27);
+    tube_manager_destroy(m);
+}
+END_TEST
+
 Suite * tube_suite (void)
 {
   Suite *s = suite_create ("tube");
@@ -300,6 +311,7 @@ Suite * tube_suite (void)
       tcase_add_test (tc_tube, tube_close_test);
       tcase_add_test (tc_tube, tube_manager_loop_test);
       tcase_add_test (tc_tube, tube_manager_policy_test);
+      tcase_add_test (tc_tube, tube_manager_set_socket_test);
 
       suite_add_tcase (s, tc_tube);
   }

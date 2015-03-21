@@ -411,6 +411,13 @@ LS_API bool tube_manager_socket(tube_manager *m,
     return true;
 }
 
+LS_API void tube_manager_set_socket(tube_manager *m, int sock)
+{
+    assert(m);
+    assert(m->sock < 0);
+    m->sock = sock;
+}
+
 LS_API bool tube_manager_bind_event(tube_manager *mgr,
                                     const char *name,
                                     ls_event_notify_callback cb,
