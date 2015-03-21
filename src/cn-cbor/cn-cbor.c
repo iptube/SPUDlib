@@ -83,7 +83,7 @@ struct parse_buf {
   stmt;                                         \
   pos += n;
 
-static cn_cbor *decode_item (struct parse_buf *pb, cn_cbor* top_parent) {
+static cn_cbor *decode_item (struct parse_buf *pb, cn_alloc_func calloc_func, void *context, cn_cbor* top_parent) {
   unsigned char *pos = pb->buf;
   unsigned char *ebuf = pb->ebuf;
   cn_cbor* parent = top_parent;
@@ -121,7 +121,7 @@ again:
   ai = ib & 0x1f;
   val = ai;
 
-  cb = CN_CBOR_CALLOC();
+  cb = calloc_func(1, sizeof(cn_cbor), context);
   if (!cb)
     CN_CBOR_FAIL(CN_CBOR_ERR_OUT_OF_MEMORY);
 
@@ -225,15 +225,22 @@ fail:
   return 0;
 }
 
-const cn_cbor* cn_cbor_decode(const char* buf, size_t len, cn_cbor_errback *errp) {
+static void *_cbor_calloc(size_t count, size_t size, void *context) {
+    return calloc(count, size);
+}
+
+const cn_cbor* cn_cbor_decode(const char* buf, size_t len, cn_alloc_func calloc_func, void *context, cn_cbor_errback *errp) {
   cn_cbor catcher = {CN_CBOR_INVALID, 0, {0}, 0, NULL, NULL, NULL, NULL};
   struct parse_buf pb;
   cn_cbor* ret;
 
+  if (calloc_func == NULL) {
+      calloc_func = _cbor_calloc;
+  }
   pb.buf  = (unsigned char *)buf;
   pb.ebuf = (unsigned char *)buf+len;
   pb.err  = CN_CBOR_NO_ERROR;
-  ret = decode_item(&pb, &catcher);
+  ret = decode_item(&pb, calloc_func, context, &catcher);
   if (ret != NULL) {
     /* mark as top node */
     ret->parent = NULL;

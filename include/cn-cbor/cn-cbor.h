@@ -62,7 +62,9 @@ typedef struct cn_cbor_errback {
   cn_cbor_error err;
 } cn_cbor_errback;
 
-const cn_cbor* cn_cbor_decode(const char* buf, size_t len, cn_cbor_errback *errp);
+typedef void* (*cn_alloc_func)(size_t count, size_t size, void *context);
+
+const cn_cbor* cn_cbor_decode(const char* buf, size_t len, cn_alloc_func calloc_func, void *context, cn_cbor_errback *errp);
 const cn_cbor* cn_cbor_mapget_string(const cn_cbor* cb, const char* key);
 const cn_cbor* cn_cbor_mapget_int(const cn_cbor* cb, int key);
 const cn_cbor* cn_cbor_index(const cn_cbor* cb, int idx);
