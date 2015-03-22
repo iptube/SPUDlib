@@ -1,2 +1,4 @@
-mkdir build
-cd build && cmake .. && make all
+if [ ! -d "build" ]; then
+    mkdir build
+fi
+cd build && cmake .. && make $*
