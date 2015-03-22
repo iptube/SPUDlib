@@ -10,6 +10,7 @@
 #include "cn-cbor/cn-cbor.h"
 #include "../src/cn-cbor/cn-encoder.h"
 #include "cn-cbor/cn-create.h"
+#include "ls_mem.h"
 
 Suite * cbor_suite (void);
 
@@ -210,7 +211,43 @@ START_TEST (cbor_getset_test)
     ck_assert(val == NULL);
     free(b.ptr);
     cn_cbor_free(cb);
+}
+END_TEST
 
+static void* cn_test_alloc(size_t count, size_t size, void *context) {
+    ls_pool *pool = context;
+    void *ret;
+    ls_err err;
+    fail_unless(ls_pool_calloc(pool, count, size, &ret, &err));
+    return ret;
+}
+
+START_TEST (cbor_alloc_test)
+{
+    cn_cbor_errback err;
+    char *tests[] = {
+        "f9c400", // -4.0
+        "fa47c35000", // 100000.0
+        "f97e00", // Half NaN, half beast
+        "f9fc00", // -Inf
+        "f97c00", // Inf
+    };
+    const cn_cbor *cb;
+    buffer b;
+    size_t i;
+    ls_pool *pool;
+    ls_err lerr;
+
+    fail_unless(ls_pool_create(2048, &pool, &lerr));
+
+    for (i=0; i<sizeof(tests)/sizeof(char*); i++) {
+        ck_assert(parse_hex(tests[i], &b));
+        cb = cn_cbor_decode(b.ptr, b.sz, cn_test_alloc, pool, &err);
+        ck_assert_msg(cb != NULL, tests[i]);
+
+        free(b.ptr);
+    }
+    ls_pool_destroy(pool);
 }
 END_TEST
 
@@ -262,6 +299,7 @@ Suite * cbor_suite (void)
         tcase_add_test (tc_cbor_parse, cbor_float_test);
         tcase_add_test (tc_cbor_parse, cbor_getset_test);
         tcase_add_test (tc_cbor_parse, cbor_create_test);
+        tcase_add_test (tc_cbor_parse, cbor_alloc_test);
 
         suite_add_tcase (s, tc_cbor_parse);
     }

@@ -100,8 +100,8 @@ typedef void (*ls_data_free_func)(void *ptr);
  * \param[in] free_func Function to replace free
  */
 LS_API void ls_data_set_memory_funcs(ls_data_malloc_func  malloc_func,
-                                             ls_data_realloc_func realloc_func,
-                                             ls_data_free_func    free_func);
+                                     ls_data_realloc_func realloc_func,
+                                     ls_data_free_func    free_func);
 
 /**
  * Release memory allocated by the JabberWerxC library.
@@ -183,7 +183,7 @@ LS_API char * ls_data_strdup(const char *src);
  *                Allocated with ls_data_malloc(), NULL if src is NULL
  */
 LS_API char * ls_data_strndup(const char *src,
-                                      size_t      len);
+                              size_t      len);
 
 /**
  * Create a new memory pool using the given block size.
@@ -199,8 +199,8 @@ LS_API char * ls_data_strndup(const char *src,
  *              false otherwise.
  */
 LS_API bool ls_pool_create(size_t    size,
-                                   ls_pool **pool,
-                                   ls_err   *err);
+                           ls_pool **pool,
+                           ls_err   *err);
 /**
  * Free any memory allocated by the given pool, including the pool itself.
  *
@@ -227,9 +227,9 @@ LS_API void ls_pool_destroy(ls_pool *pool);
  * \retval bool Returns true if cleaner was successfully added, false otherwise.
  */
 LS_API bool ls_pool_add_cleaner(ls_pool        *pool,
-                                        ls_pool_cleaner callback,
-                                        void           *arg,
-                                        ls_err         *err);
+                                ls_pool_cleaner callback,
+                                void           *arg,
+                                ls_err         *err);
 
 /**
  * Allocate memory from the given pool.
@@ -246,9 +246,9 @@ LS_API bool ls_pool_add_cleaner(ls_pool        *pool,
  * \retval bool Returns true if pool was successfully created, false otherwise.
  */
 LS_API bool ls_pool_malloc(ls_pool *pool,
-                                   size_t   size,
-                                   void   **ptr,
-                                   ls_err  *err);
+                           size_t   size,
+                           void   **ptr,
+                           ls_err  *err);
 
 /**
  * Calculate memory needed and allocate in given pool.
@@ -267,10 +267,10 @@ LS_API bool ls_pool_malloc(ls_pool *pool,
  * \retval bool Returns true if ptr was successfully allocated, false otherwise.
  */
 LS_API bool ls_pool_calloc(ls_pool *pool,
-                                   size_t   num,
-                                   size_t   size,
-                                   void   **ptr,
-                                   ls_err  *err);
+                           size_t   num,
+                           size_t   size,
+                           void   **ptr,
+                           ls_err  *err);
 
 /**
  * Duplicate a string by allocating memory in the given pool.
@@ -287,6 +287,6 @@ LS_API bool ls_pool_calloc(ls_pool *pool,
  * \retval bool Returns true if cpy was successfully created, false otherwise.
  */
 LS_API bool ls_pool_strdup(ls_pool    *pool,
-                                   const char *src,
-                                   char      **cpy,
-                                   ls_err     *err);
+                           const char *src,
+                           char      **cpy,
+                           ls_err     *err);
