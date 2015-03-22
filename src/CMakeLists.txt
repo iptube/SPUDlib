@@ -6,6 +6,7 @@ set ( spud_srcs
       cn-cbor/cn-cbor.c
       cn-cbor/cbor.h
       cn-cbor/cn-cbor.c
+      cn-cbor/cn-create.c
       cn-cbor/cn-encoder.c
       cn-cbor/cn-encoder.h
       cn-cbor/cn-error.c
