@@ -44,6 +44,9 @@ stamp-h1
 autom4te.cache/*
 .libs
 
+#coverage report files
+*.gcno
+
 #tmp files
 *~
 *#
@@ -61,6 +64,7 @@ test/check_spudlib
 samplecode/spudtest
 samplecode/spudecho
 samplecode/spudload
+samplecode/adectest
 cscope.files
 build
 *.make
