@@ -9,7 +9,9 @@ extern "C" {
 #endif
 
 #include <stdlib.h>
+#include <stdint.h>
 #include <sys/types.h>
+
 
 #include "cn-cbor/cn-cbor.h"
 

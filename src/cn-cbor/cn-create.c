@@ -19,7 +19,7 @@ static void *_cbor_calloc(size_t count, size_t size, void *context) {
 
 cn_cbor* cn_cbor_create_map(cn_alloc_func calloc_func, void *context, cn_cbor_errback *errp) {
 	uint8_t* cb_buf;
-	
+	cn_cbor* ret;
 	errp->err = CN_CBOR_NO_ERROR;
 	
 	if (calloc_func == NULL) {
@@ -31,7 +31,7 @@ cn_cbor* cn_cbor_create_map(cn_alloc_func calloc_func, void *context, cn_cbor_er
 	if (!cb_buf)
     	CN_CBOR_FAIL(CN_CBOR_ERR_OUT_OF_MEMORY);
 	
-	cn_cbor* ret = (cn_cbor*)cb_buf;
+	ret = (cn_cbor*)cb_buf;
 	ret->type = CN_CBOR_MAP;
 	ret->length = 0;
 	ret->parent = NULL;  
@@ -46,7 +46,7 @@ cn_cbor* cn_cbor_create_data(cn_alloc_func calloc_func, void *context, const cha
 	int len, cn_cbor_errback *errp) {
 	
 	uint8_t* cb_buf;
-	
+	cn_cbor* ret;
 	errp->err = CN_CBOR_NO_ERROR;
 	
 	if (calloc_func == NULL) {
@@ -58,7 +58,7 @@ cn_cbor* cn_cbor_create_data(cn_alloc_func calloc_func, void *context, const cha
 	if (!cb_buf)
     	CN_CBOR_FAIL(CN_CBOR_ERR_OUT_OF_MEMORY);
 	
-	cn_cbor* ret = (cn_cbor*)cb_buf;
+	ret = (cn_cbor*)cb_buf;
 	ret->type = CN_CBOR_BYTES;
 	ret->length = len;
 	ret->parent = NULL;
@@ -74,11 +74,12 @@ cn_cbor* cn_cbor_create_int(cn_alloc_func calloc_func, void *context,
 	int value, cn_cbor_errback *errp){
 	
 	uint8_t* cb_buf;
-	
+	cn_cbor* ret;
+
 	errp->err = CN_CBOR_NO_ERROR;
 	
 	if (calloc_func == NULL) {
-      calloc_func = _cbor_calloc;
+      		calloc_func = _cbor_calloc;
   	}
 
 	cb_buf = calloc_func(1, sizeof(cn_cbor), context);
@@ -86,7 +87,7 @@ cn_cbor* cn_cbor_create_int(cn_alloc_func calloc_func, void *context,
 	if (!cb_buf)
     	CN_CBOR_FAIL(CN_CBOR_ERR_OUT_OF_MEMORY);
 	
-	cn_cbor* ret = (cn_cbor*)cb_buf;
+	ret = (cn_cbor*)cb_buf;
 	ret->type = CN_CBOR_INT;
 	ret->parent = NULL;
 	ret->v.sint = value;
