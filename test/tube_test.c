@@ -299,7 +299,11 @@ START_TEST (tube_send_pdec_test)
 {
     tube *t;
     ls_err err;
+    uint8_t ip[]   = {192, 168, 0, 0};   
+    uint8_t token[] = {42, 42, 42, 42, 42}; 
+    char url[]= "http://example.com";
     struct sockaddr_in6 remoteAddr;
+
     fail_unless( ls_sockaddr_get_remote_ip_addr(&remoteAddr,
                                                 "127.0.0.1",
                                                 "1402",
@@ -313,9 +317,6 @@ START_TEST (tube_send_pdec_test)
 
     cn_cbor **cbor=ls_data_malloc(sizeof(cn_cbor*));
     
-    uint8_t ip[]   = {192, 168, 0, 0};   
-    uint8_t token[] = {42, 42, 42, 42, 42}; 
-    char url[]= "http://example.com";
     
     path_create_mandatory_keys(cbor, ip, 4, token, 5, url); //TODO error checking
 
