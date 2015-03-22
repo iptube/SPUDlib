@@ -64,7 +64,8 @@ int adectest(int argc, char **argv)
     }    
     printf("\n");        
 
-    
+    ls_data_free(*cbor);
+    ls_data_free(cbor);
     
     
     return 0;

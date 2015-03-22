@@ -187,6 +187,125 @@ LS_API bool tube_ack(tube *t,
     return tube_send(t, SPUD_ACK, false, false, NULL, 0, 0, err);
 }
 
+LS_API void path_create_mandatory_keys(cn_cbor **cbor, uint8_t *ipadress, size_t iplen, uint8_t *token, size_t tokenlen, char* url)
+{
+    //Szilveszter
+    cn_cbor *ret =NULL;
+    const char * SPUD_IPADDR = "ipaddr";
+    const char * SPUD_TOKEN = "token";
+    const char * SPUD_URL = "url";
+    
+    
+    ret=ls_data_malloc(sizeof(cn_cbor)*20); //TODO: free
+    ret[0].type = CN_CBOR_MAP;
+    ret[0].flags = CN_CBOR_FL_COUNT;
+    ret[0].length = 6;
+    ret[0].first_child=&(ret[1]);
+
+   /*"ipaddr" (byte string, major type 2)  the IPv4 address or IPv6
+      address of the sender, as a string of 4 or 16 bytes in network
+      order.  This is necessary as the source IP address of the packet
+      is spoofed    */
+    
+      
+    ret[1].type = CN_CBOR_TEXT;
+    ret[1].flags = CN_CBOR_FL_COUNT;
+    ret[1].v.str = SPUD_IPADDR;
+    ret[1].length = strlen(SPUD_IPADDR);
+    ret[1].next=&(ret[2]);
+
+    ret[2].type=CN_CBOR_BYTES;
+    ret[2].flags = CN_CBOR_FL_COUNT;
+    ret[2].v.str=(char*)ipadress;
+    ret[2].length = iplen;
+    ret[2].next=&(ret[3]);
+    
+    ret[3].type = CN_CBOR_TEXT;
+    ret[3].flags = CN_CBOR_FL_COUNT;
+    ret[3].v.str = SPUD_TOKEN;
+    ret[3].length = strlen(SPUD_TOKEN);
+    ret[3].next=&(ret[4]);
+
+    ret[4].type=CN_CBOR_BYTES;
+    ret[4].flags = CN_CBOR_FL_COUNT;
+    ret[4].v.str=(char*)token;
+    ret[4].length = tokenlen;
+    ret[4].next=&(ret[5]);
+    
+    ret[5].type = CN_CBOR_TEXT;
+    ret[5].flags = CN_CBOR_FL_COUNT;
+    ret[5].v.str = SPUD_URL;
+    ret[5].length = strlen(SPUD_URL);
+    ret[5].next=&(ret[6]);
+
+    ret[6].type=CN_CBOR_TEXT;
+    ret[6].flags = CN_CBOR_FL_COUNT;
+    ret[6].v.str= url;
+    ret[6].length = strlen(url);
+    ret[6].next=NULL;
+    
+    
+    
+    *cbor= ret;
+
+    //TODO fill the rest
+
+    //TODO any print function for CBOR?  --> create CBOR print
+    //TODO test this by creating the CBOR, decoding and printing it.
+/*
+  for (child=cb->first_child; child; child = child->next) {
+     ADVANCE(cbor_encoder_write(buf, buf_offset+count, buf_size, child));
+   }
+
+    tube *ret = NULL;
+    assert(t != NULL);
+    assert(mgr != NULL);
+
+    ret = ls_data_malloc(sizeof(tube));
+
+
+   "ipaddr" (byte string, major type 2)  the IPv4 address or IPv6
+      address of the sender, as a string of 4 or 16 bytes in network
+      order.  This is necessary as the source IP address of the packet
+      is spoofed
+
+   "token" (byte string, major type 2)  data that identifies the sending
+      path element unambiguously
+
+   "url" (text string, major type 3)  a URL identifying some information
+      about the path or its relationship with the tube.  The URL
+      represents some path condition, and retrieval of content at the
+      URL should include a human-readable description.
+
+   "warning" (map, major type 5)  a map from text string (major type 3)
+      to text string.  The keys are [RFC5646] language tags, and the
+*/
+    
+}
+
+LS_API bool tube_send_pdec(tube *t, cn_cbor *cbor, bool reflect, ls_err *err)
+{
+    
+    assert(t);
+    return tube_send(t, SPUD_DATA, reflect, true, NULL, 0, 0, err); //TODO: replace it to tube_send_cbor when ready
+
+/*
+    d[0] = preamble;
+    l[0] = count;
+    d[1] = data;
+    l[1] = len;
+    return tube_send(t, SPUD_DATA, false, false, d, l, 2, err);
+
+LS_API bool tube_send(tube *t,
+                      spud_command cmd,
+                      bool adec, bool pdec,
+                      uint8_t **data, size_t *len,
+                      int num,
+                      ls_err *err)
+*/
+
+}
+
 LS_API bool tube_data(tube *t, uint8_t *data, size_t len, ls_err *err)
 {
     // max size for CBOR preamble 19 bytes:
