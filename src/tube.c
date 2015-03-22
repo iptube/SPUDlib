@@ -300,15 +300,14 @@ LS_API bool tube_send_pdec(tube *t, cn_cbor *cbor, bool reflect, ls_err *err)
 
 LS_API bool tube_send_cbor(tube *t, spud_command cmd, bool adec, bool pdec, cn_cbor *cbor, ls_err *err)
 {
-    const int buffSize=1500; //TODO constant instead of 1500 - ??better memory management
-    uint8_t buf[buffSize]; 
+    uint8_t buf[MAXBUFLEN]; 
     ssize_t sz = 0;
     uint8_t *d[1];
     size_t l[1];    
     
     assert(t);
 
-    sz=cbor_encoder_write(buf, 0, buffSize, cbor);    
+    sz=cbor_encoder_write(buf, 0, MAXBUFLEN, cbor);    
     if (sz < 0) {
       LS_ERROR(err, LS_ERR_OVERFLOW);
       return false;
