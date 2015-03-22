@@ -47,7 +47,7 @@ typedef ssize_t (*tube_recvmsg_func)(int socket,
 typedef struct _tube_event_data {
     tube *t;
     const cn_cbor *cbor;
-    const struct sockaddr* addr;
+    const struct sockaddr* peer;
 } tube_event_data;
 
 LS_API bool tube_manager_create(int buckets,
@@ -76,6 +76,7 @@ LS_API bool tube_manager_running(tube_manager *mgr);
 LS_API void tube_manager_stop(tube_manager *mgr);
 LS_API size_t tube_manager_size(tube_manager *mgr);
 LS_API void tube_manager_set_policy_responder(tube_manager *mgr, bool will_respond);
+LS_API void tube_manager_set_socket(tube_manager *m, int sock);
 LS_API bool tube_manager_is_responder(tube_manager *mgr);
 
 LS_API bool tube_create(tube_manager *mgr, tube **t, ls_err *err);

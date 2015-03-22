@@ -109,7 +109,7 @@ static void _teardown(void)
 {
     ls_log_set_function(NULL);
     ls_log_set_level(_initlevel);
-};
+}
 
 START_TEST (ls_log_message_test)
 {

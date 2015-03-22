@@ -2,14 +2,24 @@
  * Copyright (c) 2015 SPUDlib authors.  See LICENSE file.
  */
 
+#ifdef __APPLE__
+#define __APPLE_USE_RFC_3542
+#endif
+
+#ifdef linux
+/* needed for netinet/in.h */
+#define _GNU_SOURCE 1
+#endif
+
 #include <assert.h>
 #include <errno.h>
 #include <netdb.h>
 #include <stdio.h>
 #include <string.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 
-#include "../config.h"
+#include "config.h"
 #include "tube.h"
 #include "ls_eventing.h"
 #include "ls_htable.h"
@@ -41,6 +51,7 @@ struct _tube
 {
   tube_states_t state;
   struct sockaddr_storage peer;
+  struct in6_addr local;
   spud_tube_id id;
   void *data;
   tube_manager *mgr;
@@ -112,7 +123,7 @@ LS_API bool tube_send(tube *t,
     struct iovec *iov;
 
     assert(t!=NULL);
-    iov = calloc(num+1, sizeof(struct iovec));
+    iov = ls_data_calloc(num+1, sizeof(struct iovec));
     if (!iov) {
       LS_ERROR(err, LS_ERR_NO_MEMORY);
       return false;
@@ -148,10 +159,10 @@ LS_API bool tube_send(tube *t,
 
     if (_sendmsg_func(t->mgr->sock, &msg, 0) <= 0) {
         LS_ERROR(err, -errno)
-        free(iov);
+        ls_data_free(iov);
         return false;
     }
-    free(iov);
+    ls_data_free(iov);
     return true;
 }
 
@@ -530,8 +541,28 @@ LS_API bool tube_manager_socket(tube_manager *m,
         LS_ERROR(err, -errno);
         return false;
     }
+
+#ifdef IPV6_RECVPKTINFO
+    {
+        const int on = 1;
+        if (setsockopt(m->sock, IPPROTO_IPV6, IPV6_RECVPKTINFO, &on, sizeof(on)) != 0) {
+            LS_ERROR(err, -errno);
+            return false;
+        }
+    }
+#else
+    #pragma message "No IPV6_RECVPKTINFO.  Destination addresses won't work."
+#endif
+
     m->keep_going = true;
     return true;
+}
+
+LS_API void tube_manager_set_socket(tube_manager *m, int sock)
+{
+    assert(m);
+    assert(m->sock < 0);
+    m->sock = sock;
 }
 
 LS_API bool tube_manager_bind_event(tube_manager *mgr,
@@ -608,19 +639,24 @@ LS_API bool tube_manager_loop(tube_manager *mgr, ls_err *err)
     spud_tube_id uid;
     spud_command cmd;
     tube_event_data d;
+    struct cmsghdr* cmsg;
+    uint8_t mctl[1024];
+    struct in6_pktinfo *in6_pktinfo;
 
     assert(mgr);
     assert(mgr->sock >= 0);
     hdr.msg_name = &their_addr;
     hdr.msg_iov = iov;
     hdr.msg_iovlen = 1;
+    hdr.msg_control = mctl;
+
     iov[0].iov_base = buf;
     iov[0].iov_len = sizeof(buf);
+    d.peer = (const struct sockaddr *)&their_addr;
 
     while (mgr->keep_going) {
         hdr.msg_namelen = sizeof(their_addr);
-        hdr.msg_control = NULL;
-        hdr.msg_controllen = 0;
+        hdr.msg_controllen = sizeof(mctl);
         hdr.msg_flags = 0;
         if ((numbytes = _recvmsg_func(mgr->sock, &hdr, 0)) == -1) {
             if (errno == EINTR) {
@@ -642,7 +678,6 @@ LS_API bool tube_manager_loop(tube_manager *mgr, ls_err *err)
         cmd    = msg.header->flags & SPUD_COMMAND;
         d.t    = ls_htable_get(mgr->tubes, &uid);
         d.cbor = msg.cbor;
-        d.addr = (const struct sockaddr *)&their_addr;
         if (!d.t) {
             if (!tube_manager_is_responder(mgr) || (cmd != SPUD_OPEN)) {
               // Not for one of our tubes, and we're not a responder, so punt.
@@ -658,6 +693,13 @@ LS_API bool tube_manager_loop(tube_manager *mgr, ls_err *err)
                 // probably out of memory
                 // TODO: replace with an unused queue
                 goto error;
+            }
+
+            for (cmsg=CMSG_FIRSTHDR(&hdr); cmsg; cmsg=CMSG_NXTHDR(&hdr, cmsg)) {
+                if ((cmsg->cmsg_level == IPPROTO_IPV6) && (cmsg->cmsg_type == IPV6_PKTINFO)) {
+                    in6_pktinfo = (struct in6_pktinfo *)CMSG_DATA(cmsg);
+                    memcpy(&d.t->local, &in6_pktinfo->ipi6_addr, sizeof(struct in6_addr));
+                }
             }
 
             if (!tube_ack(d.t, &uid, (const struct sockaddr *)&their_addr, err)) {

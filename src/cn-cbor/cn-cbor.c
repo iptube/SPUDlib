@@ -226,6 +226,7 @@ fail:
 }
 
 static void *_cbor_calloc(size_t count, size_t size, void *context) {
+    ((void)&(context));     // use enough to clear the "unused argument" warning
     return calloc(count, size);
 }
 

@@ -68,7 +68,7 @@ END_TEST
 #include <stdio.h>
 START_TEST (ls_sockaddr_to_string_test)
 {
-    ls_err err;
+    // ls_err err;  /* TODO: determine if used */
     struct sockaddr_in in4;
     struct sockaddr_in6 in6;
     char buf[MAX_SOCKADDR_STR_LEN];
