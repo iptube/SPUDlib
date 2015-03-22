@@ -17,6 +17,8 @@ set ( test_srcs
       testmain.c
       tube_test.c )
       
+link_directories ( ${CHECK_LIBRARY_DIRS} )
+
 add_executable ( spud-test ${test_srcs} )
 target_link_libraries ( spud-test PRIVATE spud )
 target_link_libraries ( spud-test PRIVATE ${CHECK_LIBRARIES} )
