@@ -232,21 +232,21 @@ START_TEST (cbor_create_test)
 	ck_assert(cb_data != NULL);
 	ck_assert(err.err == CN_CBOR_NO_ERROR);
 	    
-    cn_cbor_mapput_int(cb_map, NULL, NULL, 5, cb_int, &err);
+    cn_cbor_mapput_string(cb_map, NULL, NULL, "myKey", cb_int, &err);
     ck_assert(err.err == CN_CBOR_NO_ERROR);
     ck_assert(cb_map->length == 1);
     
     cn_cbor_mapput_int(cb_map, NULL, NULL, 7, cb_data, &err);
     ck_assert(err.err == CN_CBOR_NO_ERROR);
     ck_assert(cb_map->length == 2);
-    
-    val = cn_cbor_mapget_int(cb_map, 5);
-    ck_assert(val != NULL);
-	ck_assert(val->v.sint == 256);
 
     val = cn_cbor_mapget_int(cb_map, 7);
     ck_assert(val != NULL);
-	ck_assert(val->v.str == "abc");    
+	ck_assert(val->v.str == "abc");
+	
+	val = cn_cbor_mapget_string(cb_map, "myKey");
+    ck_assert(val != NULL);
+	ck_assert(val->v.sint == 256);
     //cn_cbor_free(cb_map);
 }
 END_TEST

@@ -14,9 +14,12 @@ cn_cbor* cn_cbor_create_data(cn_alloc_func calloc_func, void *context,
 cn_cbor* cn_cbor_create_int(cn_alloc_func calloc_func, void *context, 
 	int value, cn_cbor_errback *errp);
 
+//Put a cn_cbor value with an int key into the map.
 void cn_cbor_mapput_int(cn_cbor* cb_map, cn_alloc_func calloc_func, void *context,
 	int key, cn_cbor* cb_value, cn_cbor_errback *errp);
-//void cn_cbor_mapput_string(const cn_cbor* cb_map,  const char* key, const cn_cbor* value, cn_cbor_errback *errp);
+//Put a cn_cbor value with a string key into the map.
+void cn_cbor_mapput_string(cn_cbor* cb_map, cn_alloc_func calloc_func, void *context,
+	char* key, cn_cbor* cb_value, cn_cbor_errback *errp);
 
 
 #ifdef  __cplusplus
