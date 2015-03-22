@@ -10,7 +10,7 @@
 #include <assert.h>
 
 #include "spud.h"
-#include "../config.h"
+#include "config.h"
 
 bool spud_is_spud(const uint8_t *payload, size_t length)
 {

@@ -9,7 +9,7 @@
 #include <string.h>
 #include <netinet/in.h>
 
-#include "../config.h"
+#include "config.h"
 #include "tube.h"
 #include "ls_eventing.h"
 #include "ls_htable.h"
