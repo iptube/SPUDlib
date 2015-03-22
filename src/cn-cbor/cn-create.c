@@ -13,6 +13,7 @@ extern "C" {
 #define CN_CBOR_FAIL(code) do { errp->err = code; errp->pos = 0;  goto fail; } while(0)
 
 static void *_cbor_calloc(size_t count, size_t size, void *context) {
+    ((void)&(context));
     return calloc(count, size);
 }
 
