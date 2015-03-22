@@ -46,9 +46,9 @@ int adectest(int argc, char **argv)
     if (argv==NULL) fprintf(stderr,"2");
     cn_cbor **cbor=ls_data_malloc(sizeof(cn_cbor*));
     
-    static uint8_t ip[]   = {192, 168, 0, 0};   
-    static uint8_t token[] = {42, 42, 42, 42, 42}; 
-    static char * url= "http://example.com";
+    uint8_t ip[]   = {192, 168, 0, 0};   
+    uint8_t token[] = {42, 42, 42, 42, 42}; 
+    char * url= "http://example.com";
     
     path_create_mandatory_keys(cbor, ip, 4, token, 5, url);
     

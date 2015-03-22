@@ -189,7 +189,8 @@ LS_API bool tube_ack(tube *t,
 
 LS_API void path_create_mandatory_keys(cn_cbor **cbor, uint8_t *ipadress, size_t iplen, uint8_t *token, size_t tokenlen, char* url)
 {
-    //Szilveszter
+    //TODO: no error checking, use functions which fill these propoerly and do error checking
+    // it works at the moment though
     cn_cbor *ret =NULL;
     const char * SPUD_IPADDR = "ipaddr";
     const char * SPUD_TOKEN = "token";
@@ -262,28 +263,52 @@ LS_API void path_create_mandatory_keys(cn_cbor **cbor, uint8_t *ipadress, size_t
     //TODO test this by creating the CBOR, decoding and printing it.
 }
 
+LS_API bool tube_send_pdec_example(tube* t, ls_err *err)
+{
+    bool retVal=false;
+    cn_cbor **cbor=ls_data_malloc(sizeof(cn_cbor*));
+    
+    uint8_t ip[]   = {192, 168, 0, 0};   
+    uint8_t token[] = {42, 42, 42, 42, 42}; 
+    char url[]= "http://example.com";
+    
+    path_create_mandatory_keys(cbor, ip, 4, token, 5, url); //TODO error checking
+
+    retVal=tube_send_pdec(t,*cbor,true, err);
+
+    ls_data_free(*cbor);
+    ls_data_free(cbor);
+    
+    return retVal;
+}
+
 LS_API bool tube_send_pdec(tube *t, cn_cbor *cbor, bool reflect, ls_err *err)
 {
+    return tube_send_cbor(t, SPUD_DATA, reflect, true, cbor, err);
+}
+
+LS_API bool tube_send_cbor(tube *t, spud_command cmd, bool adec, bool pdec, cn_cbor *cbor, ls_err *err)
+{
+    const int buffSize=1500; //TODO constant instead of 1500 - ??better memory management
+    uint8_t buf[buffSize]; 
+    ssize_t sz = 0;
+    uint8_t *d[1];
+    size_t l[1];    
     
     assert(t);
-    return tube_send(t, SPUD_DATA, reflect, true, NULL, 0, 0, err); //TODO: replace it to tube_send_cbor when ready
 
-/*
-    d[0] = preamble;
-    l[0] = count;
-    d[1] = data;
-    l[1] = len;
-    return tube_send(t, SPUD_DATA, false, false, d, l, 2, err);
-
-LS_API bool tube_send(tube *t,
-                      spud_command cmd,
-                      bool adec, bool pdec,
-                      uint8_t **data, size_t *len,
-                      int num,
-                      ls_err *err)
-*/
-
+    sz=cbor_encoder_write(buf, 0, buffSize, cbor);    
+    if (sz < 0) {
+      LS_ERROR(err, LS_ERR_OVERFLOW);
+      return false;
+    }
+    
+    d[0] = buf;
+    l[0] = sz;
+    return tube_send(t, cmd, adec, pdec, d, l, 2, err);    
 }
+
+
 
 LS_API bool tube_data(tube *t, uint8_t *data, size_t len, ls_err *err)
 {
