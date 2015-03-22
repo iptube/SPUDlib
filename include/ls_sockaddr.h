@@ -27,3 +27,12 @@ LS_API const char *ls_sockaddr_to_string(const struct sockaddr *sa,
                                          char *dest,
                                          size_t destlen,
                                          bool addport);
+
+LS_API bool ls_addr_parse(const char *src,
+                          struct in6_addr *addr,
+                          ls_err *err);
+
+LS_API int ls_addr_cmp(const struct in6_addr *a, const struct in6_addr *b);
+
+LS_API int ls_sockaddr_cmp(const struct sockaddr * sa,
+                           const struct sockaddr * sb);

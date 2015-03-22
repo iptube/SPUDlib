@@ -65,6 +65,18 @@ START_TEST (ls_sockaddr_v6_any_test)
 }
 END_TEST
 
+START_TEST (ls_addr_parse_test)
+{
+    struct in6_addr addr;
+    ls_err err;
+    fail_unless(ls_addr_parse("::1", &addr, &err));
+    fail_unless(ls_addr_cmp(&addr, &in6addr_loopback) == 0);
+    fail_unless(ls_addr_parse("127.0.0.1", &addr, &err));
+    fail_unless(IN6_IS_ADDR_V4MAPPED(&addr));
+    fail_if(ls_addr_parse("fooobaaar", &addr, &err));
+}
+END_TEST
+
 #include <stdio.h>
 START_TEST (ls_sockaddr_to_string_test)
 {
@@ -122,6 +134,7 @@ Suite * ls_sockaddr_suite (void)
       tcase_add_test (tc_ls_sockaddr, ls_sockaddr_length_test);
       tcase_add_test (tc_ls_sockaddr, ls_sockaddr_get_remote_ip);
       tcase_add_test (tc_ls_sockaddr, ls_sockaddr_v6_any_test);
+      tcase_add_test (tc_ls_sockaddr, ls_addr_parse_test);
       tcase_add_test (tc_ls_sockaddr, ls_sockaddr_to_string_test);
 
       suite_add_tcase (s, tc_ls_sockaddr);

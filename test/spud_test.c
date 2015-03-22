@@ -60,7 +60,7 @@ START_TEST (createId)
 
     spud_copy_id(&hdr.tube_id, &id);
     fail_unless(spud_is_id_equal(&hdr.tube_id, &id));
-    
+
     fail_if(spud_is_spud((const uint8_t *)&buf,len),
             "isSpud() failed");
 

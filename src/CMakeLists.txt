@@ -9,6 +9,7 @@ set ( spud_srcs
       cn-cbor/cn-encoder.c
       cn-cbor/cn-encoder.h
       cn-cbor/cn-error.c
+      cn-cbor/cn-manip.c
       ls_error.c
       ls_eventing.c
       ls_eventing.h
@@ -26,6 +27,6 @@ target_include_directories ( spud PUBLIC ../include )
 target_include_directories ( spud PRIVATE ../src )
 
 install ( TARGETS spud
-          LIBRARY DESTINATION lib 
+          LIBRARY DESTINATION lib
           ARCHIVE DESTINATION lib
           RUNTIME DESTINATION bin)

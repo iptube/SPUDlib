@@ -51,10 +51,11 @@ struct _tube
 {
   tube_states_t state;
   struct sockaddr_storage peer;
-  struct in6_addr local;
+  struct in6_pktinfo local;
   spud_tube_id id;
   void *data;
   tube_manager *mgr;
+  bool has_local;
 };
 
 LS_API bool tube_create(tube_manager *mgr, tube **t, ls_err *err)
@@ -110,6 +111,24 @@ LS_API bool tube_print(const tube *t, ls_err *err)
     return true;
 }
 
+LS_API void tube_set_local(tube *t, struct in6_addr *addr)
+{
+    assert(t);
+    if (addr)
+    {
+        t->has_local = true;
+        t->local.ipi6_ifindex = -1; // TODO: how do we find this??
+        t->local.ipi6_addr = *addr;
+    }
+    else
+    {
+        t->has_local = false;
+        t->local.ipi6_ifindex = -1;
+        t->local.ipi6_addr = in6addr_any;
+    }
+
+}
+
 LS_API bool tube_send(tube *t,
                       spud_command cmd,
                       bool adec, bool pdec,
@@ -121,6 +140,7 @@ LS_API bool tube_send(tube *t,
     struct msghdr msg;
     int i, count;
     struct iovec *iov;
+    char msg_control[1024];
 
     assert(t!=NULL);
     iov = calloc(num+1, sizeof(struct iovec));
@@ -156,6 +176,18 @@ LS_API bool tube_send(tube *t,
     msg.msg_namelen = ls_sockaddr_get_length((struct sockaddr *)&t->peer);
     msg.msg_iov = iov;
     msg.msg_iovlen = count;
+
+    if (t->has_local) {
+        struct cmsghdr* cmsg;
+        msg.msg_control = msg_control;
+
+        cmsg = CMSG_FIRSTHDR(&msg);
+        cmsg->cmsg_level = IPPROTO_IPV6;
+        cmsg->cmsg_type = IPV6_PKTINFO;
+        cmsg->cmsg_len = CMSG_LEN(sizeof(struct in6_pktinfo));
+        *(struct in6_pktinfo*)CMSG_DATA(cmsg) = t->local;
+        msg.msg_controllen = CMSG_SPACE(sizeof(struct in6_pktinfo));
+    }
 
     if (_sendmsg_func(t->mgr->sock, &msg, 0) <= 0) {
         LS_ERROR(err, -errno)
@@ -575,7 +607,8 @@ LS_API bool tube_manager_loop(tube_manager *mgr, ls_err *err)
             for (cmsg=CMSG_FIRSTHDR(&hdr); cmsg; cmsg=CMSG_NXTHDR(&hdr, cmsg)) {
                 if ((cmsg->cmsg_level == IPPROTO_IPV6) && (cmsg->cmsg_type == IPV6_PKTINFO)) {
                     in6_pktinfo = (struct in6_pktinfo *)CMSG_DATA(cmsg);
-                    memcpy(&d.t->local, &in6_pktinfo->ipi6_addr, sizeof(struct in6_addr));
+                    d.t->local = *in6_pktinfo;
+                    d.t->has_local = true;
                 }
             }
 

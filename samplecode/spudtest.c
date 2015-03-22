@@ -9,6 +9,8 @@
 #include <pthread.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <arpa/inet.h>
 
 #include "spud.h"
 #include "tube.h"
@@ -16,25 +18,11 @@
 #include "ls_log.h"
 #include "ls_sockaddr.h"
 
-#ifdef ANDROID
-#include <jni.h>
-#include <android/log.h>
-#include "stdio.h"
-#define TAG "hiut"
-#define LOGV(...) __android_log_print(ANDROID_LOG_VERBOSE, TAG, __VA_ARGS__)
-#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, TAG, __VA_ARGS__)
-#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, TAG, __VA_ARGS__)
-
-#define ESC_7C 	""
-
-#else
 #define LOGI(...) printf(__VA_ARGS__)
 #define LOGV(...) ls_log(LS_LOG_VERBOSE, __VA_ARGS__)
 #define LOGE(...) ls_log(LS_LOG_ERROR, __VA_ARGS__)
 
 #define ESC_7C 	"\033[7C"
-
-#endif
 
 #define MAXBUFLEN 2048
 
@@ -74,10 +62,6 @@ static void *sendData(void *arg)
     while (tube_manager_running(mgr)) {
         nanosleep(&timer, &remaining);
         config.numSentPkts++;
-#ifndef ANDROID
-        LOGI("\rTX: %i", config.numSentPkts);
-        fflush(stdout);
-#endif
 
         for (i=0; i<1; i++) {
             int len = (numChar*i);
@@ -134,21 +118,56 @@ void done() {
     exit(0);
 }
 
+static void usage(void)
+{
+    fprintf(stderr,
+        "spudtest [-h] [-v] [-s <source>] <destination>\n"
+        "  -h          Print this help message\n"
+        "  -v          Increase verbosity\n"
+        "  -s <source> Use the given source IP address\n");
+
+    exit(64);
+}
+
 int spudtest(int argc, char **argv)
 {
     ls_err err;
+    int ch;
     char buf[1024];
+    struct in6_addr addr;
+    bool has_addr = false;;
 
-    if (argc < 2) {
-        fprintf(stderr, "spudtest <destination>\n");
-        exit(64);
+    while ((ch = getopt(argc, argv, "?hvs:")) != -1) {
+        switch (ch) {
+        case 'v':
+            ls_log_set_level(LS_LOG_VERBOSE);
+            break;
+        case 's':
+            if (!ls_addr_parse(optarg, &addr, &err)) {
+                LS_LOG_ERR(err, "Invalid address");
+                return 1;
+            }
+            has_addr = true;
+            break;
+        case 'h':
+        case '?':
+        default:
+            usage();
+            break;
+        }
+    }
+    argc -= optind;
+    argv += optind;
+
+    if (argc < 1) {
+        usage();
     }
 
     LOGI("entering spudtest\n");
     memset(&config, 0, sizeof(config));
 
     if(!ls_sockaddr_get_remote_ip_addr((struct sockaddr_in6*)&config.remoteAddr,
-                                       argv[1],
+                                       argv[0],
                                        "1402",
                                        &err)) {
         LS_LOG_ERR(err, "ls_sockaddr_get_remote_ip_addr");
@@ -169,6 +188,10 @@ int spudtest(int argc, char **argv)
         return 1;
     }
 
+    if (has_addr) {
+        LOGI("source address: %s\n", inet_ntop(AF_INET6, &addr, buf, sizeof(buf)));
+    }
+
     if (!tube_manager_bind_event(mgr, EV_RUNNING_NAME, running_cb, &err) ||
         !tube_manager_bind_event(mgr, EV_DATA_NAME, data_cb, &err)) {
         LS_LOG_ERR(err, "tube_manager_bind_event");
@@ -183,9 +206,7 @@ int spudtest(int argc, char **argv)
 
     //Start and listen to the sockets.
     pthread_create(&listenThread, NULL, (void *)socketListen, NULL);
-#ifndef ANDROID
     signal(SIGINT, done);
-#endif
 
     if (!tube_open(config.t, (const struct sockaddr*)&config.remoteAddr, &err)) {
         LS_LOG_ERR(err, "tube_open");
@@ -199,24 +220,7 @@ int spudtest(int argc, char **argv)
     return 0;
 }
 
-#ifdef ANDROID
-int traceroute(const char* hostname, int port)
-{
-    char *argv[2];
-    int argc = 2;
-
-    argv[1] = (char*)malloc(1024);
-    strcpy(argv[1], hostname);
-
-    spudtest(argc, argv);
-
-    free(argv[1]);
-    return 0;
-}
-
-#else
 int main(int argc, char **argv)
 {
     return spudtest(argc, argv);
 }
-#endif
