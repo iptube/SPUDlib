@@ -573,14 +573,9 @@ LS_API bool tube_manager_loop(tube_manager *mgr, ls_err *err)
             }
 
             for (cmsg=CMSG_FIRSTHDR(&hdr); cmsg; cmsg=CMSG_NXTHDR(&hdr, cmsg)) {
-                if (cmsg->cmsg_level == IPPROTO_IPV6 && cmsg->cmsg_type == IPV6_PKTINFO) {
-                    char addrbuf[1024];
+                if ((cmsg->cmsg_level == IPPROTO_IPV6) && (cmsg->cmsg_type == IPV6_PKTINFO)) {
                     in6_pktinfo = (struct in6_pktinfo *)CMSG_DATA(cmsg);
-                    assert(in6_pktinfo);
                     memcpy(&d.t->local, &in6_pktinfo->ipi6_addr, sizeof(struct in6_addr));
-                    inet_ntop(AF_INET6, &d.t->local, addrbuf, sizeof(addrbuf));
-                    printf("%d: %s\n", in6_pktinfo->ipi6_ifindex, addrbuf);
-
                 }
             }
 
