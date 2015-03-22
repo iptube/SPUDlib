@@ -179,13 +179,15 @@ LS_API bool tube_send(tube *t,
 
     if (t->has_local) {
         struct cmsghdr* cmsg;
+        struct in6_pktinfo* ipi;
         msg.msg_control = msg_control;
 
         cmsg = CMSG_FIRSTHDR(&msg);
         cmsg->cmsg_level = IPPROTO_IPV6;
         cmsg->cmsg_type = IPV6_PKTINFO;
         cmsg->cmsg_len = CMSG_LEN(sizeof(struct in6_pktinfo));
-        *(struct in6_pktinfo*)CMSG_DATA(cmsg) = t->local;
+        ipi = (struct in6_pktinfo*)CMSG_DATA(cmsg);
+        *ipi = t->local;
         msg.msg_controllen = CMSG_SPACE(sizeof(struct in6_pktinfo));
     }
 
@@ -239,8 +241,8 @@ LS_API void path_create_mandatory_keys(cn_cbor **cbor, uint8_t *ipadress, size_t
     const char * SPUD_IPADDR = "ipaddr";
     const char * SPUD_TOKEN = "token";
     const char * SPUD_URL = "url";
-    
-    
+
+
     ret=ls_data_malloc(sizeof(cn_cbor)*20); //TODO: free
     ret[0].type = CN_CBOR_MAP;
     ret[0].flags = CN_CBOR_FL_COUNT;
@@ -251,8 +253,8 @@ LS_API void path_create_mandatory_keys(cn_cbor **cbor, uint8_t *ipadress, size_t
       address of the sender, as a string of 4 or 16 bytes in network
       order.  This is necessary as the source IP address of the packet
       is spoofed    */
-    
-      
+
+
     ret[1].type = CN_CBOR_TEXT;
     ret[1].flags = CN_CBOR_FL_COUNT;
     ret[1].v.str = SPUD_IPADDR;
@@ -264,7 +266,7 @@ LS_API void path_create_mandatory_keys(cn_cbor **cbor, uint8_t *ipadress, size_t
     ret[2].v.str=(char*)ipadress;
     ret[2].length = iplen;
     ret[2].next=&(ret[3]);
-    
+
     /*
        "token" (byte string, major type 2)  data that identifies the sending
       path element unambiguously
@@ -285,7 +287,7 @@ LS_API void path_create_mandatory_keys(cn_cbor **cbor, uint8_t *ipadress, size_t
    "url" (text string, major type 3)  a URL identifying some information
       about the path or its relationship with the tube.  The URL
       represents some path condition, and retrieval of content at the
-      URL should include a human-readable description.   
+      URL should include a human-readable description.
     */
     ret[5].type = CN_CBOR_TEXT;
     ret[5].flags = CN_CBOR_FL_COUNT;
@@ -298,8 +300,8 @@ LS_API void path_create_mandatory_keys(cn_cbor **cbor, uint8_t *ipadress, size_t
     ret[6].v.str= url;
     ret[6].length = strlen(url);
     ret[6].next=NULL;
-    
-    
+
+
     *cbor= ret;
 }
 
@@ -310,22 +312,22 @@ LS_API bool tube_send_pdec(tube *t, cn_cbor *cbor, bool reflect, ls_err *err)
 
 LS_API bool tube_send_cbor(tube *t, spud_command cmd, bool adec, bool pdec, cn_cbor *cbor, ls_err *err)
 {
-    uint8_t buf[MAXBUFLEN]; 
+    uint8_t buf[MAXBUFLEN];
     ssize_t sz = 0;
     uint8_t *d[1];
-    size_t l[1];    
-    
+    size_t l[1];
+
     assert(t);
 
-    sz=cbor_encoder_write(buf, 0, MAXBUFLEN, cbor);    
+    sz=cbor_encoder_write(buf, 0, MAXBUFLEN, cbor);
     if (sz < 0) {
       LS_ERROR(err, LS_ERR_OVERFLOW);
       return false;
     }
-    
+
     d[0] = buf;
     l[0] = sz;
-    return tube_send(t, cmd, adec, pdec, d, l, 2, err);    
+    return tube_send(t, cmd, adec, pdec, d, l, 2, err);
 }
 
 
