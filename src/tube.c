@@ -202,6 +202,7 @@ LS_API void path_create_mandatory_keys(cn_cbor **cbor, uint8_t *ipadress, size_t
 {
     //TODO: no error checking, use functions which fill these propoerly and do error checking
     // it works at the moment though
+    //TODO: rewrite using newly imlemented CBOR functions
     cn_cbor *ret =NULL;
     const char * SPUD_IPADDR = "ipaddr";
     const char * SPUD_TOKEN = "token";
