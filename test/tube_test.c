@@ -77,7 +77,7 @@ static void _teardown(void)
 {
     tube_manager_destroy(_mgr);
     tube_set_socket_functions(NULL, NULL);
-};
+}
 
 START_TEST (tube_create_test)
 {
