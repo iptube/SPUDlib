@@ -295,6 +295,32 @@ START_TEST (tube_manager_set_socket_test)
 }
 END_TEST
 
+START_TEST (tube_send_pdec_test)
+{
+    tube *t;
+    ls_err err;
+    struct sockaddr_in6 remoteAddr;
+    fail_unless( ls_sockaddr_get_remote_ip_addr(&remoteAddr,
+                                                "127.0.0.1",
+                                                "1402",
+                                                &err),
+                 ls_err_message( err.code ) );
+
+    fail_unless( tube_create(_mgr, &t, &err) );
+
+    fail_unless( tube_open(t, (const struct sockaddr*)&remoteAddr, &err),
+                 ls_err_message( err.code ) );
+
+    fail_unless( tube_send_pdec_example(t,
+                                        &err),
+                 ls_err_message( err.code ) );
+
+    tube_manager_remove(_mgr, t);
+    ck_assert_int_eq(tube_manager_size(_mgr), 0);
+}
+END_TEST
+
+
 Suite * tube_suite (void)
 {
   Suite *s = suite_create ("tube");
