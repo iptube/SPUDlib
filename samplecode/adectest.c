@@ -1,5 +1,8 @@
 /*
  * Copyright (c) 2015 SPUDlib authors.  See LICENSE file.
+ *
+ * adectest used to debog cbor creation, adectest.sh can be used to 
+ * decode the created binary.
  */
 
 #include <string.h>
@@ -17,33 +20,11 @@
 #include "ls_sockaddr.h"
 #include "../src/cn-cbor/cn-encoder.h"
 
-#ifdef ANDROID
-#include <jni.h>
-#include <android/log.h>
-#include "stdio.h"
-#define TAG "hiut"
-#define LOGV(...) __android_log_print(ANDROID_LOG_VERBOSE, TAG, __VA_ARGS__)
-#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, TAG, __VA_ARGS__)
-#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, TAG, __VA_ARGS__)
-
-#define ESC_7C 	""
-
-#else
-#define LOGI(...) printf(__VA_ARGS__)
-#define LOGV(...) ls_log(LS_LOG_VERBOSE, __VA_ARGS__)
-#define LOGE(...) ls_log(LS_LOG_ERROR, __VA_ARGS__)
-
-#define ESC_7C 	"\033[7C"
-
-#endif
-
 #define MAXBUFLEN 2048
 
 
-int adectest(int argc, char **argv)
+int adectest()
 {
-    if (argc==0) fprintf(stderr,"1");
-    if (argv==NULL) fprintf(stderr,"2");
     cn_cbor **cbor=ls_data_malloc(sizeof(cn_cbor*));
     
     uint8_t ip[]   = {192, 168, 0, 0};   
@@ -71,24 +52,9 @@ int adectest(int argc, char **argv)
     return 0;
 }
 
-#ifdef ANDROID
-int traceroute(const char* hostname, int port)
+
+int main(void)
 {
-    char *argv[2];
-    int argc = 2;
-
-    argv[1] = (char*)malloc(1024);
-    strcpy(argv[1], hostname);
-
-    adectest(argc, argv);
-
-    free(argv[1]);
-    return 0;
+    return adectest();
 }
 
-#else
-int main(int argc, char **argv)
-{
-    return adectest(argc, argv);
-}
-#endif
