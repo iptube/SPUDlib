@@ -220,6 +220,11 @@ LS_API void path_create_mandatory_keys(cn_cbor **cbor, uint8_t *ipadress, size_t
     ret[2].length = iplen;
     ret[2].next=&(ret[3]);
     
+    /*
+       "token" (byte string, major type 2)  data that identifies the sending
+      path element unambiguously
+
+    */
     ret[3].type = CN_CBOR_TEXT;
     ret[3].flags = CN_CBOR_FL_COUNT;
     ret[3].v.str = SPUD_TOKEN;
@@ -231,7 +236,12 @@ LS_API void path_create_mandatory_keys(cn_cbor **cbor, uint8_t *ipadress, size_t
     ret[4].v.str=(char*)token;
     ret[4].length = tokenlen;
     ret[4].next=&(ret[5]);
-    
+    /*
+   "url" (text string, major type 3)  a URL identifying some information
+      about the path or its relationship with the tube.  The URL
+      represents some path condition, and retrieval of content at the
+      URL should include a human-readable description.   
+    */
     ret[5].type = CN_CBOR_TEXT;
     ret[5].flags = CN_CBOR_FL_COUNT;
     ret[5].v.str = SPUD_URL;
@@ -245,42 +255,11 @@ LS_API void path_create_mandatory_keys(cn_cbor **cbor, uint8_t *ipadress, size_t
     ret[6].next=NULL;
     
     
-    
     *cbor= ret;
 
-    //TODO fill the rest
 
     //TODO any print function for CBOR?  --> create CBOR print
     //TODO test this by creating the CBOR, decoding and printing it.
-/*
-  for (child=cb->first_child; child; child = child->next) {
-     ADVANCE(cbor_encoder_write(buf, buf_offset+count, buf_size, child));
-   }
-
-    tube *ret = NULL;
-    assert(t != NULL);
-    assert(mgr != NULL);
-
-    ret = ls_data_malloc(sizeof(tube));
-
-
-   "ipaddr" (byte string, major type 2)  the IPv4 address or IPv6
-      address of the sender, as a string of 4 or 16 bytes in network
-      order.  This is necessary as the source IP address of the packet
-      is spoofed
-
-   "token" (byte string, major type 2)  data that identifies the sending
-      path element unambiguously
-
-   "url" (text string, major type 3)  a URL identifying some information
-      about the path or its relationship with the tube.  The URL
-      represents some path condition, and retrieval of content at the
-      URL should include a human-readable description.
-
-   "warning" (map, major type 5)  a map from text string (major type 3)
-      to text string.  The keys are [RFC5646] language tags, and the
-*/
-    
 }
 
 LS_API bool tube_send_pdec(tube *t, cn_cbor *cbor, bool reflect, ls_err *err)
