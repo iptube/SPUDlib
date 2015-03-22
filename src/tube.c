@@ -327,15 +327,17 @@ static int compare_id(const void *key1, const void *key2) {
 }*/
 
 int tube_compare_tuple(const void *key1, const void *key2) {
-    int ret = 0;
-    uint64_t k1 = *(uint64_t *)key1;
-    uint64_t k2 = *(uint64_t *)key2;
-    if (k1<k2) {
-        ret = -1;
-    } else {
-        ret = (k1==k2) ? 0 : 1;
+    //compares two tuple key1 and key2, returns 0 if they are the same and 1 if not.
+    tuple k1 = *(tuple *)key1;
+    tuple k2 = *(tuple *)key2;
+
+    if (k1.id == k2.id) {
+        if (k1.peer.sa_family == k2.peer.sa_family && strcmp(k1.peer.sa_data, k2.peer.sa_data) == 0) {
+            return 0;
+        }
     }
-    return ret;
+
+    return 1;
 }
 
 LS_API bool tube_manager_create(int buckets,

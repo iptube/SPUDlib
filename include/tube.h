@@ -36,6 +36,7 @@ typedef struct _tube_manager tube_manager;
 
 typedef struct _tube tube;
 
+//id and remote peer addr used to distinguish tubes
 typedef struct _tuple
 {
     uint64_t id;

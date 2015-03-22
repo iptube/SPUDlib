@@ -19,6 +19,22 @@ uint8_t spud[] = { 0xd8, 0x00, 0x00, 0xd8,
                    0x41, 0x61 };
 bool first = true;
 
+//manmade different ID/peer tuples used to test tubemanager hash function
+tuple t1 = {
+              0x01020304FAFBFCFD,
+              {
+                  AF_INET,
+                  {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D}
+              }
+           };
+tuple t2 = {
+              0x01020304FAFBFCFD,
+              {
+                  AF_INET,
+                  {0x10, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D}
+              }
+           };
+
 static ssize_t _mock_sendmsg(int socket,
                              const struct msghdr *hdr,
                              int flags)
@@ -276,6 +292,16 @@ START_TEST (tube_manager_loop_test)
 }
 END_TEST
 
+
+START_TEST (tube_manager_hash_test)
+{
+    unsigned int key1 = tube_hash_tuple(&t1);
+    unsigned int key2 = tube_hash_tuple(&t2);
+    ck_assert_int_ne(key1-key2, 0);
+    ck_assert_int_ne(tube_compare_tuple(&t1, &t2), 0);
+}
+END_TEST
+
 Suite * tube_suite (void)
 {
   Suite *s = suite_create ("tube");
@@ -291,6 +317,8 @@ Suite * tube_suite (void)
       tcase_add_test (tc_tube, tube_data_test);
       tcase_add_test (tc_tube, tube_close_test);
       tcase_add_test (tc_tube, tube_manager_loop_test);
+      tcase_add_test (tc_tube, tube_manager_hash_test);
+
 
       suite_add_tcase (s, tc_tube);
   }
