@@ -94,7 +94,6 @@ LS_API bool tube_data(tube *t, uint8_t *data, size_t len, ls_err *err);
 LS_API void path_create_mandatory_keys(cn_cbor **cbor, uint8_t *ipadress, 
 								size_t iplen, uint8_t *token, size_t tokenlen, char* url);
 LS_API bool tube_send_pdec(tube *t, cn_cbor *cbor, bool reflect, ls_err *err);
-LS_API bool tube_send_pdec_example(tube* t, ls_err *err);
 
 LS_API bool tube_close(tube *t, ls_err *err);
 

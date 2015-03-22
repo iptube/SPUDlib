@@ -268,29 +268,6 @@ LS_API void path_create_mandatory_keys(cn_cbor **cbor, uint8_t *ipadress, size_t
     
     
     *cbor= ret;
-
-
-    //TODO any print function for CBOR?  --> create CBOR print
-    //TODO test this by creating the CBOR, decoding and printing it.
-}
-
-LS_API bool tube_send_pdec_example(tube* t, ls_err *err)
-{
-    bool retVal=false;
-    cn_cbor **cbor=ls_data_malloc(sizeof(cn_cbor*));
-    
-    uint8_t ip[]   = {192, 168, 0, 0};   
-    uint8_t token[] = {42, 42, 42, 42, 42}; 
-    char url[]= "http://example.com";
-    
-    path_create_mandatory_keys(cbor, ip, 4, token, 5, url); //TODO error checking
-
-    retVal=tube_send_pdec(t,*cbor,true, err);
-
-    ls_data_free(*cbor);
-    ls_data_free(cbor);
-    
-    return retVal;
 }
 
 LS_API bool tube_send_pdec(tube *t, cn_cbor *cbor, bool reflect, ls_err *err)

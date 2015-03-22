@@ -311,9 +311,19 @@ START_TEST (tube_send_pdec_test)
     fail_unless( tube_open(t, (const struct sockaddr*)&remoteAddr, &err),
                  ls_err_message( err.code ) );
 
-    fail_unless( tube_send_pdec_example(t,
-                                        &err),
+    cn_cbor **cbor=ls_data_malloc(sizeof(cn_cbor*));
+    
+    uint8_t ip[]   = {192, 168, 0, 0};   
+    uint8_t token[] = {42, 42, 42, 42, 42}; 
+    char url[]= "http://example.com";
+    
+    path_create_mandatory_keys(cbor, ip, 4, token, 5, url); //TODO error checking
+
+    fail_unless( tube_send_pdec(t,*cbor,true, &err),
                  ls_err_message( err.code ) );
+
+    ls_data_free(*cbor);
+    ls_data_free(cbor);
 
     tube_manager_remove(_mgr, t);
     ck_assert_int_eq(tube_manager_size(_mgr), 0);
