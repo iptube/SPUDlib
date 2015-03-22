@@ -123,7 +123,7 @@ LS_API bool tube_send(tube *t,
     struct iovec *iov;
 
     assert(t!=NULL);
-    iov = calloc(num+1, sizeof(struct iovec));
+    iov = ls_data_calloc(num+1, sizeof(struct iovec));
     if (!iov) {
       LS_ERROR(err, LS_ERR_NO_MEMORY);
       return false;
@@ -159,10 +159,10 @@ LS_API bool tube_send(tube *t,
 
     if (_sendmsg_func(t->mgr->sock, &msg, 0) <= 0) {
         LS_ERROR(err, -errno)
-        free(iov);
+        ls_data_free(iov);
         return false;
     }
-    free(iov);
+    ls_data_free(iov);
     return true;
 }
 
