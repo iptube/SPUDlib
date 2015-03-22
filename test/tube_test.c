@@ -338,6 +338,7 @@ Suite * tube_suite (void)
       tcase_add_test (tc_tube, tube_manager_loop_test);
       tcase_add_test (tc_tube, tube_manager_policy_test);
       tcase_add_test (tc_tube, tube_manager_set_socket_test);
+      tcase_add_test (tc_tube, tube_send_pdec_test);
 
       suite_add_tcase (s, tc_tube);
   }
