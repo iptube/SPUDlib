@@ -61,6 +61,7 @@ test/check_spudlib
 samplecode/spudtest
 samplecode/spudecho
 samplecode/spudload
+samplecode/adectest
 cscope.files
 build
 *.make
