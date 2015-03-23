@@ -7,15 +7,19 @@ extern "C" {
 
 #include "cn-cbor/cn-cbor.h"
 
-cn_cbor* cn_cbor_create_map(cn_alloc_func calloc_func, void *context,
-	cn_cbor_errback *errp);
-cn_cbor* cn_cbor_create_data(cn_alloc_func calloc_func, void *context, 
-	const char* data, int len, cn_cbor_errback *errp);
-cn_cbor* cn_cbor_create_int(cn_alloc_func calloc_func, void *context, 
-	int value, cn_cbor_errback *errp);
+cn_cbor* cn_cbor_map_create(CBOR_CONTEXT_COMMA cn_cbor_errback *errp);
 
-void cn_cbor_mapput_int(cn_cbor* cb_map, cn_alloc_func calloc_func, void *context,
-	int key, cn_cbor* cb_value, cn_cbor_errback *errp);
+cn_cbor* cn_cbor_data_create(const char* data, int len
+							 CBOR_CONTEXT,
+							 cn_cbor_errback *errp);
+cn_cbor* cn_cbor_int_create(int value
+							CBOR_CONTEXT,
+	                        cn_cbor_errback *errp);
+
+void cn_cbor_mapput_int(cn_cbor* cb_map,
+	                    int key, cn_cbor* cb_value
+						CBOR_CONTEXT,
+						cn_cbor_errback *errp);
 //void cn_cbor_mapput_string(const cn_cbor* cb_map,  const char* key, const cn_cbor* value, cn_cbor_errback *errp);
 
 

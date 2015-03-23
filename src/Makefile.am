@@ -5,7 +5,7 @@ if GCOV
 endif
 
 AUTOMAKE_OPTIONS = subdir-objects
-AM_CPPFLAGS = $(MY_AM_CPPFLAGS) $(MY_CFLAGS_GCOV) -I$(top_srcdir)/include -O2 -g -pedantic -Wall -Wextra -Wno-unknown-pragmas -Werror-implicit-function-declaration -Werror -Wno-unused-parameter -Wdeclaration-after-statement -Wwrite-strings -Wstrict-prototypes -Wmissing-prototypes
+AM_CPPFLAGS = -DUSE_CBOR_CONTEXT $(MY_AM_CPPFLAGS) $(MY_CFLAGS_GCOV) -I$(top_srcdir)/include -O2 -g -pedantic -Wall -Wextra -Wno-unknown-pragmas -Werror-implicit-function-declaration -Werror -Wno-unused-parameter -Wdeclaration-after-statement -Wwrite-strings -Wstrict-prototypes -Wmissing-prototypes
 
 include_HEADERS = ../include/ls_basics.h ../include/ls_error.h ../include/ls_event.h ../include/ls_htable.h ../include/ls_log.h ../include/ls_mem.h ../include/ls_sockaddr.h ../include/spud.h ../include/tube.h
 cncbordir = $(includedir)/cn-cbor

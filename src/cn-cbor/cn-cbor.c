@@ -19,15 +19,19 @@ extern "C" {
 #include "cn-cbor/cn-cbor.h"
 #include "cbor.h"
 
-/* can be redefined, e.g. for pool allocation */
-#ifndef CN_CBOR_CALLOC
-#define CN_CBOR_CALLOC() calloc(1, sizeof(cn_cbor))
-#define CN_CBOR_FREE(cb) free((void*)(cb))
-#endif
-
 #define CN_CBOR_FAIL(code) do { pb->err = code;  goto fail; } while(0)
 
-void cn_cbor_free(const cn_cbor* cb) {
+#ifdef USE_CBOR_CONTEXT
+#define CBOR_CONTEXT_PARAM , context
+#define CN_CALLOC_CONTEXT() CN_CALLOC(context)
+#define CN_CBOR_FREE_CONTEXT(p) CN_FREE(p, context)
+#else
+#define CBOR_CONTEXT_PARAM
+#define CN_CALLOC_CONTEXT() CN_CALLOC
+#define CN_CBOR_FREE_CONTEXT(p) CN_FREE(p)
+#endif
+
+void cn_cbor_free(const cn_cbor* cb CBOR_CONTEXT) {
   cn_cbor* p = (cn_cbor*) cb;
   while (p) {
     cn_cbor* p1;
@@ -38,7 +42,7 @@ void cn_cbor_free(const cn_cbor* cb) {
       if ((p1 = p->parent))
         p1->first_child = 0;
     }
-    CN_CBOR_FREE(p);
+    CN_CBOR_FREE_CONTEXT(p);
     p = p1;
   }
 }
@@ -83,7 +87,7 @@ struct parse_buf {
   stmt;                                         \
   pos += n;
 
-static cn_cbor *decode_item (struct parse_buf *pb, cn_alloc_func calloc_func, void *context, cn_cbor* top_parent) {
+static cn_cbor *decode_item (struct parse_buf *pb CBOR_CONTEXT, cn_cbor* top_parent) {
   unsigned char *pos = pb->buf;
   unsigned char *ebuf = pb->ebuf;
   cn_cbor* parent = top_parent;
@@ -121,7 +125,7 @@ again:
   ai = ib & 0x1f;
   val = ai;
 
-  cb = calloc_func(1, sizeof(cn_cbor), context);
+  cb = CN_CALLOC_CONTEXT();
   if (!cb)
     CN_CBOR_FAIL(CN_CBOR_ERR_OUT_OF_MEMORY);
 
@@ -225,30 +229,22 @@ fail:
   return 0;
 }
 
-static void *_cbor_calloc(size_t count, size_t size, void *context) {
-    ((void)&(context));     // use enough to clear the "unused argument" warning
-    return calloc(count, size);
-}
-
-const cn_cbor* cn_cbor_decode(const char* buf, size_t len, cn_alloc_func calloc_func, void *context, cn_cbor_errback *errp) {
+const cn_cbor* cn_cbor_decode(const char* buf, size_t len CBOR_CONTEXT, cn_cbor_errback *errp) {
   cn_cbor catcher = {CN_CBOR_INVALID, 0, {0}, 0, NULL, NULL, NULL, NULL};
   struct parse_buf pb;
   cn_cbor* ret;
 
-  if (calloc_func == NULL) {
-      calloc_func = _cbor_calloc;
-  }
   pb.buf  = (unsigned char *)buf;
   pb.ebuf = (unsigned char *)buf+len;
   pb.err  = CN_CBOR_NO_ERROR;
-  ret = decode_item(&pb, calloc_func, context, &catcher);
+  ret = decode_item(&pb CBOR_CONTEXT_PARAM, &catcher);
   if (ret != NULL) {
     /* mark as top node */
     ret->parent = NULL;
   } else {
     if (catcher.first_child) {
       catcher.first_child->parent = 0;
-      cn_cbor_free(catcher.first_child);
+      cn_cbor_free(catcher.first_child CBOR_CONTEXT_PARAM);
     }
     if (errp) {
       errp->err = pb.err;

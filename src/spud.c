@@ -85,7 +85,7 @@ bool spud_parse(const uint8_t *payload, size_t length, spud_message *msg, ls_err
     if (length > sizeof(spud_header)) {
         msg->cbor = cn_cbor_decode((const char*)payload+sizeof(spud_header),
                                    length - sizeof(spud_header),
-                                   NULL, NULL,
+                                   NULL,
                                    &cbor_err);
         if (!msg->cbor) {
             if (err != NULL) {
@@ -107,7 +107,7 @@ void spud_unparse(spud_message *msg)
 {
     msg->header = NULL;
     if (msg->cbor) {
-        cn_cbor_free(msg->cbor);
+        cn_cbor_free(msg->cbor, NULL);
     }
     msg->cbor = NULL;
 }
