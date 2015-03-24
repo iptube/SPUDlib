@@ -234,6 +234,10 @@ static void* cn_test_calloc(size_t count, size_t size, void *context) {
     return ret;
 }
 
+static void dummy_free(void *ptr, void *context) {
+
+}
+
 START_TEST (cbor_alloc_test)
 {
     cn_cbor_errback err;
@@ -249,9 +253,12 @@ START_TEST (cbor_alloc_test)
     size_t i;
     ls_pool *pool;
     ls_err lerr;
-    cn_cbor_context ctx = {cn_test_calloc, NULL, pool};
+    cn_cbor_context ctx;
 
     fail_unless(ls_pool_create(2048, &pool, &lerr));
+    ctx.calloc_func = cn_test_calloc;
+    ctx.free_func = dummy_free;
+    ctx.context = pool;
 
     for (i=0; i<sizeof(tests)/sizeof(char*); i++) {
         ck_assert(parse_hex(tests[i], &b));
