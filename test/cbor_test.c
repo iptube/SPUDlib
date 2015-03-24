@@ -214,7 +214,7 @@ START_TEST (cbor_getset_test)
 }
 END_TEST
 
-static void* cn_test_alloc(size_t count, size_t size, void *context) {
+static void* cn_test_calloc(size_t count, size_t size, void *context)
     ls_pool *pool = context;
     void *ret;
     ls_err err;
@@ -237,7 +237,7 @@ START_TEST (cbor_alloc_test)
     size_t i;
     ls_pool *pool;
     ls_err lerr;
-    cn_cbor_context ctx = {cn_test_alloc, NULL, pool};
+    cn_cbor_context ctx = {cn_test_calloc, NULL, pool};
 
     fail_unless(ls_pool_create(2048, &pool, &lerr));
 
