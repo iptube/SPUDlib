@@ -218,6 +218,10 @@ static void* cn_test_calloc(size_t count, size_t size, void *context)
     ls_pool *pool = context;
     void *ret;
     ls_err err;
+    
+    assert(pool);
+    assert(count > 0);
+    assert(size > 0)
     fail_unless(ls_pool_calloc(pool, count, size, &ret, &err));
     return ret;
 }
