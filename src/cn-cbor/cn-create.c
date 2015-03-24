@@ -12,22 +12,22 @@ extern "C" {
 
 #define CN_CBOR_FAIL(code) do { errp->err = code; errp->pos = 0;  goto fail; } while(0)
 
-static void *_cbor_calloc(size_t count, size_t size, void *context) {
-    ((void)&(context));
-    return calloc(count, size);
-}
+#ifdef USE_CBOR_CONTEXT
+#define CBOR_CONTEXT_PARAM , context
+#define CN_CALLOC_CONTEXT() CN_CALLOC(context)
+#define CN_CBOR_FREE_CONTEXT(p) CN_FREE(p, context)
+#else
+#define CBOR_CONTEXT_PARAM
+#define CN_CALLOC_CONTEXT() CN_CALLOC
+#define CN_CBOR_FREE_CONTEXT(p) CN_FREE(p)
+#endif
 
-cn_cbor* cn_cbor_create_map(cn_alloc_func calloc_func, void *context, cn_cbor_errback *errp) {
+cn_cbor* cn_cbor_map_create(CBOR_CONTEXT_COMMA cn_cbor_errback *errp) {
 	uint8_t* cb_buf;
 	cn_cbor* ret;
 	errp->err = CN_CBOR_NO_ERROR;
 
-	if (calloc_func == NULL) {
-      calloc_func = _cbor_calloc;
-  	}
-
-	cb_buf = calloc_func(1, sizeof(cn_cbor), context);
-
+	cb_buf = CN_CALLOC_CONTEXT();
 	if (!cb_buf)
     	CN_CBOR_FAIL(CN_CBOR_ERR_OUT_OF_MEMORY);
 
@@ -42,19 +42,15 @@ cn_cbor* cn_cbor_create_map(cn_alloc_func calloc_func, void *context, cn_cbor_er
 		return NULL;
 }
 
-cn_cbor* cn_cbor_create_data(cn_alloc_func calloc_func, void *context, const char* data,
-	int len, cn_cbor_errback *errp) {
+cn_cbor* cn_cbor_data_create(const char* data, int len
+							 CBOR_CONTEXT,
+							 cn_cbor_errback *errp) {
 
 	uint8_t* cb_buf;
 	cn_cbor* ret;
 	errp->err = CN_CBOR_NO_ERROR;
 
-	if (calloc_func == NULL) {
-      calloc_func = _cbor_calloc;
-  	}
-
-	cb_buf = calloc_func(1, sizeof(cn_cbor), context);
-
+	cb_buf = CN_CALLOC_CONTEXT();
 	if (!cb_buf)
     	CN_CBOR_FAIL(CN_CBOR_ERR_OUT_OF_MEMORY);
 
@@ -70,20 +66,16 @@ cn_cbor* cn_cbor_create_data(cn_alloc_func calloc_func, void *context, const cha
 		return NULL;
 }
 
-cn_cbor* cn_cbor_create_int(cn_alloc_func calloc_func, void *context,
-	int value, cn_cbor_errback *errp){
+cn_cbor* cn_cbor_int_create(int value
+							CBOR_CONTEXT,
+	                        cn_cbor_errback *errp) {
 
 	uint8_t* cb_buf;
 	cn_cbor* ret;
 
 	errp->err = CN_CBOR_NO_ERROR;
 
-	if (calloc_func == NULL) {
-      		calloc_func = _cbor_calloc;
-  	}
-
-	cb_buf = calloc_func(1, sizeof(cn_cbor), context);
-
+	cb_buf = CN_CALLOC_CONTEXT();
 	if (!cb_buf)
     	CN_CBOR_FAIL(CN_CBOR_ERR_OUT_OF_MEMORY);
 
@@ -98,8 +90,10 @@ cn_cbor* cn_cbor_create_int(cn_alloc_func calloc_func, void *context,
 		return NULL;
 }
 
-void cn_cbor_mapput_int(cn_cbor* cb_map, cn_alloc_func calloc_func, void *context,
- int key, cn_cbor* cb_value, cn_cbor_errback *errp) {
+void cn_cbor_mapput_int(cn_cbor* cb_map,
+	                    int key, cn_cbor* cb_value
+						CBOR_CONTEXT,
+						cn_cbor_errback *errp) {
 	uint8_t* cb_buf_key;
 	cn_cbor* cb_key;
 
@@ -107,15 +101,11 @@ void cn_cbor_mapput_int(cn_cbor* cb_map, cn_alloc_func calloc_func, void *contex
 	if(!cb_map || cb_map->type != CN_CBOR_MAP)
 		CN_CBOR_FAIL(CN_CBOR_ERR_INVALID_PARAMETER);
 
-	if (calloc_func == NULL) {
-      calloc_func = _cbor_calloc;
-  	}
-
 	errp->err = CN_CBOR_NO_ERROR;
 	errp->pos = 0;
 
 	//Create key element
-	cb_buf_key = calloc_func(1, sizeof(cn_cbor), context);
+	cb_buf_key = CN_CALLOC_CONTEXT();
 	if (!cb_buf_key)
     	CN_CBOR_FAIL(CN_CBOR_ERR_OUT_OF_MEMORY);
 
