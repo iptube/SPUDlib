@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <assert.h>
 
 #include <check.h>
 #include "cn-cbor/cn-cbor.h"
@@ -214,15 +215,22 @@ START_TEST (cbor_getset_test)
 }
 END_TEST
 
-static void* cn_test_calloc(size_t count, size_t size, void *context)
+static void* cn_test_calloc(size_t count, size_t size, void *context) {
     ls_pool *pool = context;
     void *ret;
     ls_err err;
-    
+
     assert(pool);
     assert(count > 0);
-    assert(size > 0)
-    fail_unless(ls_pool_calloc(pool, count, size, &ret, &err));
+    assert(size > 0);
+    if (!ls_pool_calloc(pool,
+                       count,
+                       size,
+                       &ret,
+                       &err)) {
+       return NULL;
+   }
+
     return ret;
 }
 
