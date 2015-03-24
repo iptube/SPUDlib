@@ -23,12 +23,13 @@ set ( package_prefix "${CMAKE_PACKAGE_NAME}-${CMAKE_SYSTEM_NAME}" )
 set ( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${dist_dir}/bin )
 set ( CMAKE_LIBRARY_OUTPUT_DIRECTORY ${dist_dir}/lib )
 set ( CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${dist_dir}/lib )
+set ( CMAKE_BUILD_TYPE Debug )
 
 ## check and generate configuration
 
 include ( CheckIncludeFiles )
 include ( CheckLibraryExists )
-include ( CheckFunctionExists ) 
+include ( CheckFunctionExists )
 include ( CheckTypeSize )
 
 pkg_check_modules ( CHECK check>=0.9.8 )
@@ -56,7 +57,7 @@ if ( CMAKE_C_COMPILER_ID STREQUAL "GNU" OR
      CMAKE_C_COMPILER_ID MATCHES "Clang" )
   message ( STATUS "adding GCC/Clang options ")
   add_definitions ( -g -std=gnu99 -Wall -Wextra -pedantic )
-  ## disable VLA "is a GNU extension" warning 
+  ## disable VLA "is a GNU extension" warning
   add_definitions ( -Wno-gnu-zero-variadic-macro-arguments )
   if ( fatal_warnings )
     add_definitions ( -Werror )

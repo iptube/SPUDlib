@@ -235,7 +235,8 @@ static void* cn_test_calloc(size_t count, size_t size, void *context) {
 }
 
 static void dummy_free(void *ptr, void *context) {
-
+    UNUSED_PARAM(ptr);
+    UNUSED_PARAM(context);
 }
 
 START_TEST (cbor_alloc_test)

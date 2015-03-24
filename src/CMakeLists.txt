@@ -23,6 +23,7 @@ set ( spud_srcs
       tube.c
 )
 
+add_definitions(-DUSE_CBOR_CONTEXT)
 add_library ( spud SHARED ${spud_srcs} )
 target_include_directories ( spud PUBLIC ../include )
 target_include_directories ( spud PRIVATE ../src )

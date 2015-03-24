@@ -16,17 +16,18 @@ set ( test_srcs
       test_utils.h
       testmain.c
       tube_test.c )
-      
+
 link_directories ( ${CHECK_LIBRARY_DIRS} )
 
-add_executable ( spud-test ${test_srcs} )
-target_link_libraries ( spud-test PRIVATE spud )
-target_link_libraries ( spud-test PRIVATE ${CHECK_LIBRARIES} )
-target_include_directories ( spud-test PRIVATE ../include )
-target_include_directories ( spud-test PRIVATE ${CHECK_INCLUDE_DIRS} )
+add_executable ( check_spudlib ${test_srcs} )
+target_link_libraries ( check_spudlib PRIVATE spud )
+target_link_libraries ( check_spudlib PRIVATE ${CHECK_LIBRARIES} )
+target_include_directories ( check_spudlib PRIVATE ../include )
+target_include_directories ( check_spudlib PRIVATE ${CHECK_INCLUDE_DIRS} )
+add_definitions(-DUSE_CBOR_CONTEXT)
 
-add_custom_target ( spud-testrun ALL
-    COMMAND ./spud-test
-    DEPENDS spud-test
+add_custom_target ( check_spudlibrun ALL
+    COMMAND ./check_spudlib
+    DEPENDS check_spudlib
     WORKING_DIRECTORY ${dist_dir}/bin
   )
