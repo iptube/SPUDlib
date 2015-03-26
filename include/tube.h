@@ -370,24 +370,26 @@ LS_API bool tube_send(tube *t,
                       uint8_t **data, size_t *len,
                       int num,
                       ls_err *err);
-<<<<<<< HEAD
-LS_API bool tube_send_cbor(tube *t, spud_command cmd, bool adec, bool pdec, cn_cbor *cbor, ls_err *err);
-=======
 
+LS_API bool tube_send_cbor(tube *t, spud_command cmd, bool adec, bool pdec, cn_cbor *cbor, ls_err *err);
 
 /**
  * Set the data associated with a tube.  (Unused.)
  */
->>>>>>> docs
 LS_API void tube_set_data(tube *t, void *data);
 
 /**
  * Returns the data associated with a tube. (Unused.)
  */
 LS_API void *tube_get_data(tube *t);
-<<<<<<< HEAD
+
+/**
+ * Set the local address of a tube.
+ *
+ * \param[in] t The tube whose address is to be set
+ * \param[in] addr  The (ipv6) address to set
+ */
 LS_API void tube_set_local(tube *t, struct in6_addr *addr);
-=======
 
 /**
  * Print the ID of a tube (on stdout) as a 16-digit hex string.
@@ -397,7 +399,6 @@ LS_API void tube_set_local(tube *t, struct in6_addr *addr);
  * \param[in] len  Size of the buffer
  * \return buf on success, else NULL.
  */
->>>>>>> docs
 LS_API char *tube_id_to_string(tube *t, char* buf, size_t len);
 
 /**
