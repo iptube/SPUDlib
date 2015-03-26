@@ -48,6 +48,7 @@ static const uint8_t SpudMagicCookie[]   = SPUD_MAGIC_COOKIE_ARRAY;
 
 /**
  * Codes for tube establishment/teardown.
+ * OR with top byte of flags_id.
  */
 typedef enum {
     /** Tube already open */
