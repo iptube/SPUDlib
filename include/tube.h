@@ -3,10 +3,6 @@
  * \brief
  * SPUDlib facilities for working with tubes.
  *
- * A tube_manager handles a collection of tubes.
- *   tube_manager_create() -- create
- *   tube_manager_socket() -- set address
- * 
  * Copyright (c) 2015 SPUDlib authors.  See LICENSE file.
  */
 
@@ -192,7 +188,7 @@ LS_API void tube_manager_remove(tube_manager *mgr,
  * \param[in] mgr The manager to start
  * \param[in,out] err If non-NULL on input, contains error if false is returned
  * \return true: manager is running, incoming packets will be processed.
- *         false: see err.
+ *         false: manager stopped (not receiving).
  */
 LS_API bool tube_manager_loop(tube_manager *mgr, ls_err *err);
 
@@ -292,14 +288,18 @@ LS_API bool tube_print(const tube *t, ls_err *err);
 LS_API bool tube_open(tube *t, const struct sockaddr *dest, ls_err *err);
 
 /**
- * Respond to incoming OPEN. Called from tube_manager_loop. Not used by program.
+ * Respond to an incoming OPEN. (Called from tube_manager_loop;
+ * application programs should use with care.)
  * The tube ID is taken from the incoming OPEN. The peer address is set to the
- * source of the OPEN.
+ * source of the OPEN.  The ACK is sent in a datagram with no payload.
+ *
+ * \invariant t != NULL
+ * \invariant dest != NULL
  * \param[in] t  The tube to be activated.
  * \param[in] id  Tube ID from incoming message.
  * \param[in] peer  Source of the received OPEN message.
  * \param[in,out] err  If non-NULL on input, points to error when false is returned
- * \return true: ACK has been sent, tube added to hash table.
+ * \return true: ACK has been sent, tube added to mgr's hash table. false: see err.
  */
 LS_API bool tube_ack(tube *t,
                      spud_tube_id *id,
@@ -307,7 +307,11 @@ LS_API bool tube_ack(tube *t,
                      ls_err *err);
 
 /**
- * Send a DATA packet.  Adds fixed header and payload encoded as type 0 CBOR map.
+ * Send a DATA packet.  Adds fixed header and encodes payload into CBOR map.
+ * If invoked with len==0, will send a SPUD packet with no (data).
+ *
+ * \invariant t != NULL
+ *
  * \param[in] t  The tube to send on
  * \param[in] data  Bytes to send
  * \param[in] len  Number of bytes to send
@@ -318,15 +322,18 @@ LS_API bool tube_data(tube *t, uint8_t *data, size_t len, ls_err *err);
 
 /**
  * Close a tube.  Sends an (empty) CLOSE packet and sets tube state to UNKNOWN.
+ *
  * \param[in] t  The tube to send on (must have peer address set)
- * \param[in,out] err  What went wrong
+ * \param[in,out] err  If non-NULL on input, points to error when false is returned
  * \return true: tube closed.  false: see err.
  */
 LS_API bool tube_close(tube *t, ls_err *err);
 
 /**
  * Construct and send a fully-specified SPUD packet.
- * \param[in] t  The tube to send on (peer address must be set)
+ *
+ * \invariant t != NULL
+ * \param[in] t  The tube to send on (peer address must have been set)
  * \param[in] cmd SPUD command to send
  * \param[in] adec App-to-path declaration bit
  * \param[in] pdec Path-to-app declaration bit
