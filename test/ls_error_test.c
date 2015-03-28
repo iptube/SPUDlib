@@ -3,167 +3,145 @@
  */
 
 #include <stdlib.h>
-#include <check.h>
 #include <errno.h>
 #include <netdb.h>
+#include <string.h>
 
 #include "ls_error.h"
+#include "test_utils.h"
 
-Suite * ls_error_suite (void);
-
-START_TEST (ls_error_message_test)
+CTEST(ls_error, message_test)
 {
     const char *msg;
     msg = ls_err_message(LS_ERR_NONE);
-    ck_assert_str_eq(msg, "no error");
+    ASSERT_STR(msg, "no error");
     msg = ls_err_message(LS_ERR_INVALID_ARG);
-    ck_assert_str_eq(msg, "invalid argument");
+    ASSERT_STR(msg, "invalid argument");
     msg = ls_err_message(LS_ERR_INVALID_STATE);
-    ck_assert_str_eq(msg, "invalid state");
+    ASSERT_STR(msg, "invalid state");
     msg = ls_err_message(LS_ERR_NO_MEMORY);
-    ck_assert_str_eq(msg, "out of memory");
+    ASSERT_STR(msg, "out of memory");
     msg = ls_err_message(LS_ERR_OVERFLOW);
-    ck_assert_str_eq(msg, "buffer overflow");
+    ASSERT_STR(msg, "buffer overflow");
     msg = ls_err_message(LS_ERR_SOCKET_CONNECT);
-    ck_assert_str_eq(msg, "socket connect failure");
+    ASSERT_STR(msg, "socket connect failure");
     msg = ls_err_message(LS_ERR_BAD_FORMAT);
-    ck_assert_str_eq(msg, "bad data format");
+    ASSERT_STR(msg, "bad data format");
     msg = ls_err_message(LS_ERR_PROTOCOL);
-    ck_assert_str_eq(msg, "protocol error");
+    ASSERT_STR(msg, "protocol error");
     msg = ls_err_message(LS_ERR_TIMEOUT);
-    ck_assert_str_eq(msg, "timed out");
+    ASSERT_STR(msg, "timed out");
     msg = ls_err_message(LS_ERR_USER);
-    ck_assert_str_eq(msg, "user-defined error");
+    ASSERT_STR(msg, "user-defined error");
 }
-END_TEST
 
-START_TEST (ls_error_macro_test)
+CTEST(ls_error, macro_test)
 {
     ls_err  *err_ctx;
 
     err_ctx = malloc(sizeof(ls_err));
-    ck_assert(err_ctx != NULL);
+    ASSERT_NOT_NULL(err_ctx );
     LS_ERROR(err_ctx, LS_ERR_INVALID_ARG);
-    ck_assert_int_eq(err_ctx->code, LS_ERR_INVALID_ARG);
-    ck_assert_str_eq(err_ctx->message, "invalid argument");
-    ck_assert(err_ctx->function != NULL);
-    ck_assert(err_ctx->file != NULL);
-    ck_assert(err_ctx->line != 0);
+    ASSERT_EQUAL(err_ctx->code, LS_ERR_INVALID_ARG);
+    ASSERT_STR(err_ctx->message, "invalid argument");
+    ASSERT_NOT_NULL(err_ctx->function);
+    ASSERT_NOT_NULL(err_ctx->file);
+    ASSERT_NOT_EQUAL(err_ctx->line, 0);
 
     memset(err_ctx, 0, sizeof(ls_err));
     LS_ERROR(err_ctx, LS_ERR_INVALID_STATE);
-    ck_assert_int_eq(err_ctx->code, LS_ERR_INVALID_STATE);
-    ck_assert_str_eq(err_ctx->message, "invalid state");
-    ck_assert(err_ctx->function != NULL);
-    ck_assert(err_ctx->file != NULL);
-    ck_assert(err_ctx->line != 0);
+    ASSERT_EQUAL(err_ctx->code, LS_ERR_INVALID_STATE);
+    ASSERT_STR(err_ctx->message, "invalid state");
+    ASSERT_NOT_NULL(err_ctx->function);
+    ASSERT_NOT_NULL(err_ctx->file);
+    ASSERT_NOT_EQUAL(err_ctx->line, 0);
 
     memset(err_ctx, 0, sizeof(ls_err));
     LS_ERROR(err_ctx, LS_ERR_NO_MEMORY);
-    ck_assert_int_eq(err_ctx->code, LS_ERR_NO_MEMORY);
-    ck_assert_str_eq(err_ctx->message, "out of memory");
-    ck_assert(err_ctx->function != NULL);
-    ck_assert(err_ctx->file != NULL);
-    ck_assert(err_ctx->line != 0);
+    ASSERT_EQUAL(err_ctx->code, LS_ERR_NO_MEMORY);
+    ASSERT_STR(err_ctx->message, "out of memory");
+    ASSERT_NOT_NULL(err_ctx->function );
+    ASSERT_NOT_NULL(err_ctx->file );
+    ASSERT_NOT_EQUAL(err_ctx->line , 0);
 
     memset(err_ctx, 0, sizeof(ls_err));
     LS_ERROR(err_ctx, LS_ERR_OVERFLOW);
-    ck_assert_int_eq(err_ctx->code, LS_ERR_OVERFLOW);
-    ck_assert_str_eq(err_ctx->message, "buffer overflow");
-    ck_assert(err_ctx->function != NULL);
-    ck_assert(err_ctx->file != NULL);
-    ck_assert(err_ctx->line != 0);
+    ASSERT_EQUAL(err_ctx->code, LS_ERR_OVERFLOW);
+    ASSERT_STR(err_ctx->message, "buffer overflow");
+    ASSERT_NOT_NULL(err_ctx->function );
+    ASSERT_NOT_NULL(err_ctx->file );
+    ASSERT_NOT_EQUAL(err_ctx->line , 0);
 
     memset(err_ctx, 0, sizeof(ls_err));
     LS_ERROR(err_ctx, LS_ERR_SOCKET_CONNECT);
-    ck_assert_int_eq(err_ctx->code, LS_ERR_SOCKET_CONNECT);
-    ck_assert_str_eq(err_ctx->message, "socket connect failure");
-    ck_assert(err_ctx->function != NULL);
-    ck_assert(err_ctx->file != NULL);
-    ck_assert(err_ctx->line != 0);
+    ASSERT_EQUAL(err_ctx->code, LS_ERR_SOCKET_CONNECT);
+    ASSERT_STR(err_ctx->message, "socket connect failure");
+    ASSERT_NOT_NULL(err_ctx->function );
+    ASSERT_NOT_NULL(err_ctx->file );
+    ASSERT_NOT_EQUAL(err_ctx->line , 0);
 
     memset(err_ctx, 0, sizeof(ls_err));
     LS_ERROR(err_ctx, LS_ERR_BAD_FORMAT);
-    ck_assert_int_eq(err_ctx->code, LS_ERR_BAD_FORMAT);
-    ck_assert_str_eq(err_ctx->message, "bad data format");
-    ck_assert(err_ctx->function != NULL);
-    ck_assert(err_ctx->file != NULL);
-    ck_assert(err_ctx->line != 0);
+    ASSERT_EQUAL(err_ctx->code, LS_ERR_BAD_FORMAT);
+    ASSERT_STR(err_ctx->message, "bad data format");
+    ASSERT_NOT_NULL(err_ctx->function );
+    ASSERT_NOT_NULL(err_ctx->file );
+    ASSERT_NOT_EQUAL(err_ctx->line , 0);
 
     memset(err_ctx, 0, sizeof(ls_err));
     LS_ERROR(err_ctx, LS_ERR_PROTOCOL);
-    ck_assert_int_eq(err_ctx->code, LS_ERR_PROTOCOL);
-    ck_assert_str_eq(err_ctx->message, "protocol error");
-    ck_assert(err_ctx->function != NULL);
-    ck_assert(err_ctx->file != NULL);
-    ck_assert(err_ctx->line != 0);
+    ASSERT_EQUAL(err_ctx->code, LS_ERR_PROTOCOL);
+    ASSERT_STR(err_ctx->message, "protocol error");
+    ASSERT_NOT_NULL(err_ctx->function );
+    ASSERT_NOT_NULL(err_ctx->file );
+    ASSERT_NOT_EQUAL(err_ctx->line , 0);
 
     memset(err_ctx, 0, sizeof(ls_err));
     LS_ERROR(err_ctx, LS_ERR_TIMEOUT);
-    ck_assert_int_eq(err_ctx->code, LS_ERR_TIMEOUT);
-    ck_assert_str_eq(err_ctx->message, "timed out");
-    ck_assert(err_ctx->function != NULL);
-    ck_assert(err_ctx->file != NULL);
-    ck_assert(err_ctx->line != 0);
+    ASSERT_EQUAL(err_ctx->code, LS_ERR_TIMEOUT);
+    ASSERT_STR(err_ctx->message, "timed out");
+    ASSERT_NOT_NULL(err_ctx->function );
+    ASSERT_NOT_NULL(err_ctx->file );
+    ASSERT_NOT_EQUAL(err_ctx->line , 0);
 
     memset(err_ctx, 0, sizeof(ls_err));
     LS_ERROR(err_ctx, LS_ERR_USER);
-    ck_assert_int_eq(err_ctx->code, LS_ERR_USER);
-    ck_assert_str_eq(err_ctx->message, "user-defined error");
-    ck_assert(err_ctx->function != NULL);
-    ck_assert(err_ctx->file != NULL);
-    ck_assert(err_ctx->line != 0);
+    ASSERT_EQUAL(err_ctx->code, LS_ERR_USER);
+    ASSERT_STR(err_ctx->message, "user-defined error");
+    ASSERT_NOT_NULL(err_ctx->function );
+    ASSERT_NOT_NULL(err_ctx->file );
+    ASSERT_NOT_EQUAL(err_ctx->line , 0);
 
     memset(err_ctx, 0, sizeof(ls_err));
     LS_ERROR(err_ctx, LS_ERR_NONE);
-    ck_assert_int_eq(err_ctx->code, LS_ERR_NONE);
-    ck_assert(err_ctx->message == NULL);
-    ck_assert(err_ctx->function == NULL);
-    ck_assert(err_ctx->file == NULL);
-    ck_assert(err_ctx->line == 0);
+    ASSERT_EQUAL(err_ctx->code, LS_ERR_NONE);
+    ASSERT_NULL(err_ctx->message );
+    ASSERT_NULL(err_ctx->function );
+    ASSERT_NULL(err_ctx->file );
+    ASSERT_EQUAL(err_ctx->line , 0);
 
     free(err_ctx);
     err_ctx = NULL;
     LS_ERROR(err_ctx, LS_ERR_NONE);
-    ck_assert_msg(1, "successful NULL-check");
     LS_ERROR(err_ctx, LS_ERR_INVALID_ARG);
-    ck_assert_msg(1, "successful NULL-check");
 }
-END_TEST
 
-START_TEST (ls_error_perror_test)
+CTEST(ls_error, perror_test)
 {
     const char *msg = ls_err_message(-EINTR);
-    ck_assert_str_eq(msg, "Interrupted system call");
+    ASSERT_STR(msg, "Interrupted system call");
 }
-END_TEST
 
-START_TEST (ls_error_gai_test)
+CTEST(ls_error, gai_test)
 {
     ls_errcode c = ls_err_gai(EAI_FAIL);
     const char *msg = ls_err_message(c);
-    ck_assert_str_eq(msg, "Non-recoverable failure in name resolution");
+    ASSERT_STR(msg, "Non-recoverable failure in name resolution");
 
     c = ls_err_gai(4);
-    ck_assert_int_eq((int)c, -1004);
+    ASSERT_EQUAL((int)c, -1004);
     c = ls_err_gai(-4);
-    ck_assert_int_eq((int)c, -1104);
-    fail_if(strlen(ls_err_message(-1004)) == 0);
-    fail_if(strlen(ls_err_message(-1104)) == 0);
-}
-END_TEST
-Suite * ls_error_suite (void)
-{
-  Suite *s = suite_create ("ls_error");
-  {/* Error test case */
-      TCase *tc_ls_error = tcase_create ("Error");
-      tcase_add_test (tc_ls_error, ls_error_message_test);
-      tcase_add_test (tc_ls_error, ls_error_macro_test);
-      tcase_add_test (tc_ls_error, ls_error_perror_test);
-      tcase_add_test (tc_ls_error, ls_error_gai_test);
-
-      suite_add_tcase (s, tc_ls_error);
-  }
-
-  return s;
+    ASSERT_EQUAL((int)c, -1104);
+    ASSERT_NOT_EQUAL(strlen(ls_err_message(-1004)), 0);
+    ASSERT_NOT_EQUAL(strlen(ls_err_message(-1104)), 0);
 }

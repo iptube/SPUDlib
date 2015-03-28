@@ -12,6 +12,7 @@ extern "C" {
 #include <string.h>
 #include <strings.h>
 #include <stdint.h>
+#include <assert.h>
 
 #include "cn-cbor/cn-encoder.h"
 #include "cbor.h"
@@ -60,6 +61,7 @@ static uint8_t _xlate[] = {
   0xFF         /* CN_CBOR_INVALID */
 };
 
+// TODO: copy parse_buf
 ssize_t cbor_encoder_write_head(uint8_t *buf,
                                 size_t buf_offset,
                                 size_t buf_size,
@@ -78,9 +80,11 @@ ssize_t cbor_encoder_write_head(uint8_t *buf,
   }
 
   if (val < 24) {
+    // TODO: add ensure_writable?
     write_byte(ib + (uint8_t)val);
   } else if (val < 256) {
     ensure_writable(2);
+    // TODO: make symmetric w/ write_byte
     buf[buf_offset+count] = ib | 24;
     count++;
     buf[buf_offset+count] = (uint8_t)val;
@@ -115,12 +119,9 @@ ssize_t cbor_encoder_write_double(uint8_t *buf,
     uint64_t u;
   } u64;
   ssize_t count = 0;
-  /* TODO: decide if we can write smaller float sizes */
-  /* approach: mask off 0x0000000000000f7fUL (the exponent), shift it over, */
-  /* re-byte-order it if needed, subtract 1023 (the double exponent bias), */
-  /* then see if it's abs is less than 256 (single) or 32(half) */
-  /* Do something similar with mantissa. */
-  /* Also, check -0, +-inf, +-NaN, and sub-normals */
+  /* TODO: cast double to float and back, and see if it changes.
+     See cabo's ruby code for more:
+     https://github.com/cabo/cbor-ruby/blob/master/ext/cbor/packer.h */
 
   /* Note: This currently makes the tests fail */
   ensure_writable(9);
@@ -135,14 +136,17 @@ ssize_t cbor_encoder_write_negative(uint8_t *buf,
                                     size_t buf_offset,
                                     size_t buf_size,
                                     int64_t val) {
+  // TODO: ~val ?
+  // TODO: test -MININT64
   return cbor_encoder_write_head(buf, buf_offset, buf_size, CN_CBOR_INT, -val - 1);
 }
 
-
+// TODO: rename, or undefine
 #define ADVANCE(st) ret = (st); \
 if (ret < 0) { return -1; } \
 count += ret;
 
+// TODO: un-recurse.
 static ssize_t _write_children(uint8_t *buf,
                                size_t buf_offset,
                                size_t buf_size,
@@ -158,6 +162,7 @@ static ssize_t _write_children(uint8_t *buf,
    return count;
 }
 
+// TODO: take out recursion
 ssize_t cbor_encoder_write(uint8_t *buf,
                            size_t buf_offset,
                            size_t buf_size,
@@ -206,6 +211,9 @@ ssize_t cbor_encoder_write(uint8_t *buf,
     count += cb->length;
     break;
 
+// TODO: you knew you were going to have to take this out.
+// consider using a map from type to value
+// also consider combining the tables.
   case CN_CBOR_NULL:
   case CN_CBOR_FALSE:
   case CN_CBOR_TRUE:
@@ -215,6 +223,7 @@ ssize_t cbor_encoder_write(uint8_t *buf,
     break;
 
   case CN_CBOR_INT:
+    assert(cb->v.sint < 0);
     ADVANCE(cbor_encoder_write_negative(buf, buf_offset, buf_size, cb->v.sint));
     break;
   case CN_CBOR_DOUBLE:

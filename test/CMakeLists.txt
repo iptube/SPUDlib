@@ -2,32 +2,34 @@
 #
 # Compiling/running tests
 
-set ( test_srcs
-      cbor_test.c
-      ls_error_test.c
-      ls_eventing_test.c
-      ls_htable_test.c
-      ls_log_test.c
-      ls_mem_test.c
-      ls_sockaddr_test.c
-      ls_str_test.c
-      spud_test.c
-      test_utils.c
-      test_utils.h
-      testmain.c
-      tube_test.c )
+# set ( test_srcs
+#       ls_sockaddr_test.c
+#       ls_str_test.c
+#       spud_test.c
+#       test_utils.c
+#       test_utils.h
+#       testmain.c
+#       tube_test.c )
 
-link_directories ( ${CHECK_LIBRARY_DIRS} )
-
-add_executable ( check_spudlib ${test_srcs} )
-target_link_libraries ( check_spudlib PRIVATE spud )
-target_link_libraries ( check_spudlib PRIVATE ${CHECK_LIBRARIES} )
-target_include_directories ( check_spudlib PRIVATE ../include )
-target_include_directories ( check_spudlib PRIVATE ${CHECK_INCLUDE_DIRS} )
 add_definitions(-DUSE_CBOR_CONTEXT)
+set ( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${dist_dir}/test )
 
-add_custom_target ( check_spudlibrun ALL
-    COMMAND ./check_spudlib
-    DEPENDS check_spudlib
-    WORKING_DIRECTORY ${dist_dir}/bin
-  )
+function (ls_test name)
+  add_executable ( ${name}_test ${name}_test.c test_utils.c )
+  target_link_libraries ( ${name}_test PRIVATE spud )
+  target_include_directories ( ${name}_test PRIVATE ../include )
+  add_test ( NAME ${name} COMMAND ${name}_test )
+endfunction()
+
+ls_test( cbor )
+ls_test( ls_error )
+ls_test( ls_eventing )
+ls_test( ls_htable )
+ls_test( ls_log )
+ls_test( ls_mem )
+ls_test( ls_sockaddr )
+ls_test( ls_str )
+ls_test( spud )
+ls_test( tube )
+
+include ( CTest )

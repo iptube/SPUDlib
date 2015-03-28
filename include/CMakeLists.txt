@@ -1,2 +1,2 @@
-install ( DIRECTORY ../include DESTINATION include
+install ( DIRECTORY ../include DESTINATION .
           PATTERN CMakeLists.txt EXCLUDE )

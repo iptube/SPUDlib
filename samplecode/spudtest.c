@@ -108,7 +108,7 @@ static void running_cb(ls_event_data evt, void *arg)
     printf("running!\n");
 
     //Start a thread that sends packet to the destination
-    pthread_create(&sendDataThread, NULL, (void *)sendData, arg);
+    pthread_create(&sendDataThread, NULL, sendData, arg);
 }
 
 void done() {
@@ -205,7 +205,7 @@ int spudtest(int argc, char **argv)
     ls_log(LS_LOG_INFO, "-> %s\n", ls_sockaddr_to_string((struct sockaddr*)&config.remoteAddr, buf, sizeof(buf), true));
 
     //Start and listen to the sockets.
-    pthread_create(&listenThread, NULL, (void *)socketListen, NULL);
+    pthread_create(&listenThread, NULL, socketListen, NULL);
     signal(SIGINT, done);
 
     if (!tube_open(config.t, (const struct sockaddr*)&config.remoteAddr, &err)) {

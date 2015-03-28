@@ -9,6 +9,8 @@
 #pragma once
 
 #include "ls_log.h"
+#define CTEST_SEGFAULT
+#include "ctest.h"
 
 /**
  * Out of memory test data
@@ -59,7 +61,7 @@ oom_test_data *oom_get_data();
     _oom_result = (expr); \
     oom_get_data()->failureAttempts = oom_get_data()->ls_AllocCount; \
     oom_set_enabled(false); \
-    ck_assert(_oom_result); \
+    ASSERT_TRUE(_oom_result); \
     ls_log(LS_LOG_INFO, "testing %u alloc failures for expression: '%s'", \
            oom_get_data()->failureAttempts, #expr); \
 }
@@ -101,14 +103,14 @@ oom_test_data *oom_get_data();
         oom_set_enabled(true); \
         oom_data->ls_AllocLimit = _oom_idx; \
         _oom_result = (expr); \
-        ck_assert(!check_err || !_oom_result); \
+        ASSERT_TRUE(!check_err || !_oom_result); \
         if (check_err && _oom_err) { \
             if (_oom_err->code != LS_ERR_NO_MEMORY) { \
                 ls_log(LS_LOG_ERROR, \
                        "unexpected error value (%d) on iteration %d", \
                        _oom_err->code, _oom_idx + 1); \
             } \
-            ck_assert_int_eq(_oom_err->code, LS_ERR_NO_MEMORY);\
+            ASSERT_EQUAL(_oom_err->code, LS_ERR_NO_MEMORY);\
         } \
     } \
     oom_set_enabled(false); \

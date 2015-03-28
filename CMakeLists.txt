@@ -10,11 +10,12 @@ project ( "spudlib" VERSION "0.3.0" )
 option ( verbose "Produce verbose makefile output" OFF )
 option ( optimize "Set high optimization level" OFF )
 option ( fatal_warnings "Treat build warnings as errors" ON )
+option ( coveralls "Generate coveralls data" OFF )
+option ( coveralls_send "Send data to coveralls site" OFF )
 
 ## setup CMAKE building
 set ( CPACK_PROJECT_VERSION_MAJOR "0" )
 set ( CPACK_PROJECT_VERSION_MINOR "3pre" )
-find_package ( PkgConfig )
 
 set ( dist_dir ${CMAKE_BINARY_DIR}/dist )
 
@@ -31,8 +32,6 @@ include ( CheckIncludeFiles )
 include ( CheckLibraryExists )
 include ( CheckFunctionExists )
 include ( CheckTypeSize )
-
-pkg_check_modules ( CHECK check>=0.9.8 )
 
 check_include_files ( stdint.h HAVE_STDINT_H )
 check_include_files ( stdlib.h HAVE_STDLIB_H )
@@ -56,7 +55,7 @@ include_directories ( ${CMAKE_CURRENT_BINARY_DIR} )
 if ( CMAKE_C_COMPILER_ID STREQUAL "GNU" OR
      CMAKE_C_COMPILER_ID MATCHES "Clang" )
   message ( STATUS "adding GCC/Clang options ")
-  add_definitions ( -g -std=gnu99 -Wall -Wextra -pedantic )
+  add_definitions ( -std=gnu99 -Wall -Wextra -pedantic )
   ## disable VLA "is a GNU extension" warning
   add_definitions ( -Wno-gnu-zero-variadic-macro-arguments )
   if ( fatal_warnings )
@@ -81,10 +80,34 @@ endif ()
 add_subdirectory ( include )
 add_subdirectory ( src )
 add_subdirectory ( test )
+add_subdirectory ( samplecode )
+
+install (FILES AUTHORS LICENSE README.md DESTINATION .)
 
 ## setup packaging
 set ( CPACK_GENERATOR "TGZ" )
 set ( CPACK_PACKAGE_VERSION "${PROJECT_VERSION}" )
 set ( CPACK_SOURCE_GENERATOR "TGZ" )
-set ( CPACK_SOURCE_IGNORE_FILES "/.git/;${CMAKE_CURRENT_BINARY_DIR}" )
+set ( CPACK_SOURCE_IGNORE_FILES "/\\\\.git/" )
+file(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/.gitignore igs)
+foreach (ig IN ITEMS ${igs})
+    # remove comments
+    string ( REGEX REPLACE "^\\s*#.*" "" ig "${ig}")
+    # remove any other whitespace
+    string ( STRIP "${ig}" ig)
+    # anything left?
+    if (ig)
+      # dots are literal
+      string ( REPLACE "." "\\\\." ig "${ig}" )
+      # stars are on thars
+      string ( REPLACE "*" ".*" ig "${ig}" )
+      list ( APPEND CPACK_SOURCE_IGNORE_FILES "/${ig}/" )
+    endif()
+endforeach()
+
+#message ( "CPACK_SOURCE_IGNORE_FILES: " ${CPACK_SOURCE_IGNORE_FILES} )
+set ( CPACK_PACKAGE_DESCRIPTION_FILE ${CMAKE_CURRENT_SOURCE_DIR}/README.md )
+set ( CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE" )
+
 include ( CPack )
+include ( CTest )

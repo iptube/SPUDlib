@@ -4,23 +4,12 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
-#include <check.h>
-
+#include "test_utils.h"
 #include "spud.h"
 
-Suite * spud_suite (void);
-
-START_TEST (empty)
-{
-
-    fail_unless( 1==1,
-                 "Test app fails");
-
-}
-END_TEST
-
-START_TEST (is_spud)
+CTEST(spud, is_spud)
 {
     int len = 1024;
     unsigned char buf[len];
@@ -32,12 +21,10 @@ START_TEST (is_spud)
     //copy the whole spud msg into the buffer..
     memcpy(buf, &hdr, sizeof(hdr));
 
-    fail_unless( spud_is_spud((const uint8_t *)&buf,len),
-                 "isSpud() failed");
+    ASSERT_TRUE( spud_is_spud((const uint8_t *)&buf,len));
 }
-END_TEST
 
-START_TEST (createId)
+CTEST(spud, createId)
 {
     int len = 1024;
     unsigned char buf[len];
@@ -47,33 +34,30 @@ START_TEST (createId)
 
     spud_header hdr;
     //should this be in init() instead?
-    fail_unless(spud_init(&hdr, NULL, &err));
+    ASSERT_TRUE(spud_init(&hdr, NULL, &err));
 
-    ck_assert(spud_id_to_string(idStr, 15, &hdr.tube_id) == NULL);
+    ASSERT_NULL(spud_id_to_string(idStr, 15, &hdr.tube_id));
 
     memset(idStr, 0, len);
     spud_id_to_string(idStr, len, &hdr.tube_id);
-    ck_assert_int_eq(strlen(idStr), SPUD_ID_STRING_SIZE);
+    ASSERT_EQUAL(strlen(idStr), SPUD_ID_STRING_SIZE);
 
-    fail_if(spud_set_id(NULL, NULL, &err));
-    fail_if(spud_set_id(&hdr, NULL, &err));
+    ASSERT_FALSE(spud_set_id(NULL, NULL, &err));
+    ASSERT_FALSE(spud_set_id(&hdr, NULL, &err));
 
     spud_copy_id(&hdr.tube_id, &id);
-    fail_unless(spud_is_id_equal(&hdr.tube_id, &id));
+    ASSERT_TRUE(spud_is_id_equal(&hdr.tube_id, &id));
 
-    fail_if(spud_is_spud((const uint8_t *)&buf,len),
-            "isSpud() failed");
+    ASSERT_FALSE(spud_is_spud((const uint8_t *)&buf,len));
 
 
     //copy the whole spud msg into the buffer..
     memcpy(buf, &hdr, sizeof(hdr));
 
-    fail_unless(spud_is_spud((const uint8_t *)&buf,len),
-                "isSpud() failed");
+    ASSERT_TRUE(spud_is_spud((const uint8_t *)&buf,len));
 }
-END_TEST
 
-START_TEST (isIdEqual)
+CTEST(spud, isIdEqual)
 {
     ls_err err;
 
@@ -81,17 +65,16 @@ START_TEST (isIdEqual)
     spud_header msgB;//Equal to A
     spud_header msgC;//New random
 
-    fail_unless(spud_init(&msgA, NULL, &err));
-    fail_unless(spud_init(&msgB, &msgA.tube_id, &err));
-    fail_unless(spud_init(&msgC, NULL, &err));
+    ASSERT_TRUE(spud_init(&msgA, NULL, &err));
+    ASSERT_TRUE(spud_init(&msgB, &msgA.tube_id, &err));
+    ASSERT_TRUE(spud_init(&msgC, NULL, &err));
 
-    fail_unless( spud_is_id_equal(&msgA.tube_id, &msgB.tube_id));
-    fail_if( spud_is_id_equal(&msgA.tube_id, &msgC.tube_id));
-    fail_if( spud_is_id_equal(&msgB.tube_id, &msgC.tube_id));
+    ASSERT_TRUE( spud_is_id_equal(&msgA.tube_id, &msgB.tube_id));
+    ASSERT_FALSE( spud_is_id_equal(&msgA.tube_id, &msgC.tube_id));
+    ASSERT_FALSE( spud_is_id_equal(&msgB.tube_id, &msgC.tube_id));
 }
-END_TEST
 
-START_TEST (spud_parse_test)
+CTEST(spud, parse)
 {
     spud_message msg;
     ls_err err;
@@ -101,31 +84,12 @@ START_TEST (spud_parse_test)
                       0xa1, 0x00,
                       0x41, 0x61 };
 
-    fail_if(spud_parse(NULL, 0, NULL, &err));
-    fail_if(spud_parse(buf, 0, NULL, &err));
-    fail_if(spud_parse(buf, 0, &msg, &err));
-    fail_unless(spud_parse(buf, 13, &msg, &err));
-    fail_if(spud_parse(buf, 14, &msg, &err));
-    fail_if(spud_parse(buf, 15, &msg, &err));
-    fail_unless(spud_parse(buf, sizeof(buf), &msg, &err));
+    ASSERT_FALSE(spud_parse(NULL, 0, NULL, &err));
+    ASSERT_FALSE(spud_parse(buf, 0, NULL, &err));
+    ASSERT_FALSE(spud_parse(buf, 0, &msg, &err));
+    ASSERT_TRUE(spud_parse(buf, 13, &msg, &err));
+    ASSERT_FALSE(spud_parse(buf, 14, &msg, &err));
+    ASSERT_FALSE(spud_parse(buf, 15, &msg, &err));
+    ASSERT_TRUE(spud_parse(buf, sizeof(buf), &msg, &err));
     spud_unparse(&msg);
-}
-END_TEST
-
-Suite * spud_suite (void)
-{
-  Suite *s = suite_create ("spud");
-
-  {/* Core test case */
-      TCase *tc_core = tcase_create ("Core");
-      tcase_add_test (tc_core, empty);
-      tcase_add_test (tc_core, is_spud);
-      tcase_add_test (tc_core, createId);
-      tcase_add_test (tc_core, isIdEqual);
-      tcase_add_test (tc_core, spud_parse_test);
-
-      suite_add_tcase (s, tc_core);
-  }
-
-  return s;
 }
