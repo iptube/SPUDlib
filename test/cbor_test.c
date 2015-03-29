@@ -297,6 +297,6 @@ CTEST(cbor, create)
 
     val = cn_cbor_mapget_int(cb_map, 7);
     ASSERT_NOT_NULL(val);
-	ASSERT_TRUE(val->v.str == "abc");
+	ASSERT_STR(val->v.str, "abc");
     //cn_cbor_free(cb_map);
 }
