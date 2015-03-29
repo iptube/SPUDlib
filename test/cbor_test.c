@@ -17,7 +17,7 @@
 
 typedef struct _buffer {
     size_t sz;
-    char *ptr;
+    unsigned char *ptr;
 } buffer;
 
 static bool parse_hex(char *inp, buffer *b)

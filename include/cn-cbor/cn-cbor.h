@@ -86,7 +86,7 @@ typedef struct cn_cbor_context {
 #else
 
 #define CBOR_CONTEXT
-#define CBOR_CONTEXT_COMMA 
+#define CBOR_CONTEXT_COMMA
 #ifndef CN_CALLOC
 #define CN_CALLOC calloc(1, sizeof(cn_cbor))
 #endif
@@ -96,7 +96,7 @@ typedef struct cn_cbor_context {
 
 #endif
 
-const cn_cbor* cn_cbor_decode(const char* buf, size_t len CBOR_CONTEXT, cn_cbor_errback *errp);
+const cn_cbor* cn_cbor_decode(const unsigned char* buf, size_t len CBOR_CONTEXT, cn_cbor_errback *errp);
 const cn_cbor* cn_cbor_mapget_string(const cn_cbor* cb, const char* key);
 const cn_cbor* cn_cbor_mapget_int(const cn_cbor* cb, int key);
 const cn_cbor* cn_cbor_index(const cn_cbor* cb, int idx);

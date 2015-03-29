@@ -229,7 +229,7 @@ fail:
   return 0;
 }
 
-const cn_cbor* cn_cbor_decode(const char* buf, size_t len CBOR_CONTEXT, cn_cbor_errback *errp) {
+const cn_cbor* cn_cbor_decode(const unsigned char* buf, size_t len CBOR_CONTEXT, cn_cbor_errback *errp) {
   cn_cbor catcher = {CN_CBOR_INVALID, 0, {0}, 0, NULL, NULL, NULL, NULL};
   struct parse_buf pb;
   cn_cbor* ret;
