@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <assert.h>
-#include <strings.h>
+#include <string.h>
 
 #include "cn-cbor/cn-cbor.h"
 #include "../src/cn-cbor/cn-encoder.h"
