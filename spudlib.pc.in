@@ -6,6 +6,6 @@ includedir=@includedir@
 Name: SPUDlib
 Description: Substrate Protocol for User Datagrams (SPUD) Prototype
 URL: https://github.com/iptube/SPUDlib
-Version: @VERSION@
+Version: @SPUDLIB_VERSION@
 Libs: -L${libdir} -lspud
 Cflags: -I${includedir}

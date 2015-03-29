@@ -4,7 +4,13 @@
 
 ## prepare CMAKE
 cmake_minimum_required ( VERSION 3.0.0 )
-project ( "spudlib" VERSION "0.3.0" )
+
+set ( SPUDLIB_VERSION_MAJOR 0 )
+set ( SPUDLIB_VERSION_MINOR "3" )
+set ( SPUDLIB_VERSION_PATCH "0" )
+set ( SPUDLIB_VERSION "${SPUDLIB_VERSION_MAJOR}.${SPUDLIB_VERSION_MINOR}.${SPUDLIB_VERSION_PATCH}" )
+
+project ( "spudlib" VERSION "${SPUDLIB_VERSION}")
 
 ## setup options
 option ( verbose "Produce verbose makefile output" OFF )
@@ -13,11 +19,14 @@ option ( fatal_warnings "Treat build warnings as errors" ON )
 option ( coveralls "Generate coveralls data" ON )
 option ( coveralls_send "Send data to coveralls site" OFF )
 
-## setup CMAKE building
-set ( CPACK_PROJECT_VERSION_MAJOR "0" )
-set ( CPACK_PROJECT_VERSION_MINOR "3pre" )
-
-set ( dist_dir ${CMAKE_BINARY_DIR}/dist )
+set ( dist_dir    ${CMAKE_BINARY_DIR}/dist )
+set ( prefix      ${CMAKE_INSTALL_PREFIX} )
+set ( exec_prefix ${CMAKE_INSTALL_PREFIX}/bin )
+set ( libdir      ${CMAKE_INSTALL_PREFIX}/lib )
+set ( includedir  ${CMAKE_INSTALL_PREFIX}/include )
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/spudlib.pc.in
+               ${CMAKE_CURRENT_BINARY_DIR}/spudlib.pc @ONLY)
+install (FILES ${CMAKE_CURRENT_BINARY_DIR}/spudlib.pc DESTINATION lib/pkgconfig )
 
 set ( package_prefix "${CMAKE_PACKAGE_NAME}-${CMAKE_SYSTEM_NAME}" )
 
