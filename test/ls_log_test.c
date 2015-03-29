@@ -8,17 +8,18 @@
 #include "test_utils.h"
 
 #undef LS_ERROR
-#define LS_ERROR(err, errcode) \
-{\
-        if ((err) != NULL && (errcode) != LS_ERR_NONE) \
-        { \
-            (err)->code = (errcode); \
-            (err)->message = ls_err_message((errcode)); \
-            (err)->function = __func__; \
-            (err)->file = __FILE__; \
-            (err)->line = __LINE__; \
-        } \
+inline static void LS_ERROR(ls_err *err, int errcode)
+{
+    if (((err) != NULL) && (errcode) != LS_ERR_NONE)
+    {
+        (err)->code = (errcode);
+        (err)->message = ls_err_message((errcode));
+        (err)->function = __func__;
+        (err)->file = __FILE__;
+        (err)->line = __LINE__;
+    }
 }
+
 
 typedef struct _log_chunk_int
 {
