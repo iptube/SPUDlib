@@ -98,7 +98,7 @@ oom_test_data *oom_get_data();
 
 #define OOM_TEST_CONDITIONAL_CHECK(err, expr, check_err) \
         bool _oom_result; \
-        ls_err *_oom_err = (NULL != err) ? err : NULL; \
+        ls_err *_oom_err = err; \
         if (_oom_err) { _oom_err->code = LS_ERR_NONE; } \
         oom_set_enabled(true); \
         oom_data->ls_AllocLimit = _oom_idx; \
