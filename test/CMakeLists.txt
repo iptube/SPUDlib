@@ -4,12 +4,11 @@
 
 add_definitions(-DUSE_CBOR_CONTEXT)
 set ( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${dist_dir}/test )
-find_package ( Threads )
 
 function (ls_test name)
   add_executable ( ${name}_test ${name}_test.c test_utils.c )
   target_compile_options( ${name}_test PRIVATE "-pthread" )
-  target_link_libraries ( ${name}_test PRIVATE spud ${CMAKE_THREAD_LIBS_INIT} "m")
+  target_link_libraries ( ${name}_test PRIVATE spud "pthread" "m")
   target_include_directories ( ${name}_test PRIVATE ../include )
   add_test ( NAME ${name} COMMAND ${name}_test )
 endfunction()
