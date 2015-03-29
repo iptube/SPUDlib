@@ -24,6 +24,6 @@ ls_test ( spud )
 ls_test ( tube )
 find_package ( Threads )
 target_compile_options( tube_test PRIVATE "-pthread" )
-target_link_libraries ( tube_test PRIVATE ${CMAKE_THREAD_LIBS_INIT} )
+target_link_libraries ( tube_test PRIVATE ${CMAKE_THREAD_LIBS_INIT} "m" )
 
 include ( CTest )
