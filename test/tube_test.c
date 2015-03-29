@@ -231,7 +231,7 @@ CTEST2(tube, manager_loop)
     tube_manager_stop(data->mgr);
     r = pthread_join(listen_thread, &ret);
     if (r != 0) {
-        printf("pthread_join (%d): '%s'\n", errno, sys_errlist[errno]);
+        printf("pthread_join (%d): '%s'\n", errno, strerror(errno));
         ASSERT_EQUAL(r, 0);
     }
     ASSERT_TRUE(ret == data);
