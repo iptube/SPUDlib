@@ -5,36 +5,31 @@ Substrate Protocol for User Datagrams (SPUD) Prototype
 
 ## Compiling
 
-    ./bootstrap.sh   (To create the ./configure script)
-    ./configure   (To create the Makefiles)
-    make          (To build the code)
+`build.sh` does the following
 
-You will end up with two test binaries in samplecode and a library you can link against in src.
+    mkdir build     (hold all of the build files in a separate directory)
+    cd build; cmake (create the makefiles)
+    make            (To build the code)
 
-sampelcode/spudecho is a simple echo-server that echoes back all UDP packets.
-samplecode/spudtest [iface] [ipaddr] sends SPUD packets to the desired IP from the given interface
+You will end up with two test binaries in build/dist/bin, a library you can link
+against in build/dist/lib.
+
+* `build/dist/bin/spudecho` is a simple echo-server that echoes back all UDP packets.
+* `build/dist/bin/spudtest [ipaddr]` sends SPUD packets to the desired IP\
+* `build/dist/bin/spudload [ipaddr]` creates many SPUD tubes between this box and the given address
 
 ## Development
 
-You need to have autoconf, libtool and pkg-config installed to build the ./configure script.
+You need to have [cmake](http://www.cmake.org/ to build.
 
 ### Unit Tests
-Turn on unit tests with:
-
-    ./configure --enable-check
-
-This need the check library installed
 
 Build and run the checks with
 
-    make check
+    make test
 
-If tests fail it can help to run
-test/check_spudlib to see where it fails.
-
-(On ubuntu I did not get the ubuntu packaged version of check to work, but
-downloading and installing manually did work like a charm. But remember to
-uninstall the ubuntu check package first.)
+If tests fail it can help to run the binaries in `build/dist/test` to see where
+they fail.
 
 Travis will compile and run the tests.
 (https://travis-ci.org/iptube/SPUDlib/)

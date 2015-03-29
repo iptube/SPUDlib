@@ -1,9 +1,6 @@
 #!/bin/bash
-#./configure --with-check --enable-gcov --disable-shared
-./configure --enable-check --enable-gcov
-make clean
-make check
-
-lcov --directory src --capture --no-external --output-file spudlib.info
-genhtml --output-directory lcov spudlib.info
-echo "Open lcov/index.html with your favourite browser"
+if [ ! -d "build" ]; then
+    mkdir build
+fi
+cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug -Dcoveralls=ON -Dcoveralls_send=OFF && make all coveralls && lcov --directory src/CMakeFiles/spud.dir --capture --output-file spudlib.info &&  genhtml --output-directory lcov spudlib.info
+echo "Open build/lcov/index.html with your favourite browser"

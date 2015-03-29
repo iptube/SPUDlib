@@ -69,3 +69,4 @@ cscope.files
 build
 *.make
 *.pc
+.DS_Store

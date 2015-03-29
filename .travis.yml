@@ -12,13 +12,13 @@ matrix:
   - compiler: gcc
     env: COVERAGE=false
 before_install:
-- sudo apt-get install pkg-config check
+- sudo apt-get update
+- sudo apt-get install cmake
 - sudo pip install cpp-coveralls
 script:
-- ./bootstrap.sh
-- ./configure --enable-check && make && make check
+- ./build.sh all test
 after_success:
-- if [[ $COVERAGE == 'true' ]]; then ./coverage.sh; make dist; fi
+- if [[ $COVERAGE == 'true' ]]; then ./coverage.sh; make package_source; fi
 notifications:
   slack:
     secure: 4VG8/5JgqQadvwm2MnTzOxq8z0iCzKZOr08xD3Q5TG02Yec07bPlAJendMkK1xZgS0zAlwrhdbPfTdYm7D720Gi0iX+95y1tNpFtYlkxRGp4JmjXI2/t0066yBtB03+ZPZkku/2OCM1c248YJ8ls1wOfFQfHkTAQfdy8KOlZjv0=
@@ -27,7 +27,7 @@ deploy:
   provider: releases
   api_key:
     secure: u9c+zbJrWKHTDorqR3pNaups0WEDC07Ur876RWdBqE3kS64usQcsiTWz61E8ERDrokowkTSJWDcMbj7Oy0E7b3P3jn4LBvOjbV0DZ7HUlRDe9BwJjGtB5D8tf9Am3Kw5jb0Uxm4c9/q+9u8cslmq6KzaZhZWX+wx7W8hrOmFh0M=
-  file: spudlib-0.2.tar.gz
+  file: spudlib-0.3.tar.gz
   skip_cleanup: true
   on:
     repo: iptube/SPUDlib

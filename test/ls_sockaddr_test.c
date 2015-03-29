@@ -116,3 +116,47 @@ CTEST(ls_sockaddr, to_string)
                 buf, sizeof(buf), true) != NULL);
     ASSERT_STR(buf, "[ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff]:65534");
 }
+
+CTEST(ls_sockaddr, cmp)
+{
+    struct sockaddr_in6 a1;
+    struct sockaddr_in6 a2;
+    struct sockaddr_in b1;
+    struct sockaddr_in b2;
+    ls_err err;
+
+    ASSERT_EQUAL( ls_sockaddr_cmp(NULL, NULL), 0 );
+
+    ASSERT_TRUE( ls_sockaddr_get_remote_ip_addr(&a1,
+                                                "1.2.3.4",
+                                                "1402",
+                                                &err) );
+
+    ASSERT_TRUE( ls_sockaddr_get_remote_ip_addr(&a2,
+                                                "1.2.3.4",
+                                                "1403",
+                                                &err) );
+
+    ASSERT_TRUE( ls_sockaddr_cmp(NULL, (const struct sockaddr*)&a2) < 0 );
+    ASSERT_TRUE( ls_sockaddr_cmp((const struct sockaddr*)&a1, NULL) > 0 );
+    ASSERT_TRUE( ls_sockaddr_cmp((const struct sockaddr*)&a1, (const struct sockaddr*)&a2) < 0 );
+    ASSERT_TRUE( ls_sockaddr_cmp((const struct sockaddr*)&a2, (const struct sockaddr*)&a1) > 0 );
+    ASSERT_EQUAL( ls_sockaddr_cmp((const struct sockaddr*)&a1, (const struct sockaddr*)&a1), 0 );
+
+    memset(&b1, 0, sizeof(b1));
+    b1.sin_addr.s_addr = INADDR_ANY;
+    b1.sin_port = htons(1402);
+    b1.sin_family = AF_INET;
+    ASSERT_TRUE( ls_sockaddr_cmp((const struct sockaddr*)&b1, (const struct sockaddr*)&a1) < 0 );
+    ASSERT_TRUE( ls_sockaddr_cmp((const struct sockaddr*)&a1, (const struct sockaddr*)&b1) > 0 );
+
+    b2 = b1;
+    b2.sin_addr.s_addr = 0x00000001;
+    ASSERT_TRUE( ls_sockaddr_cmp((const struct sockaddr*)&b1, (const struct sockaddr*)&b2) < 0 );
+    ASSERT_TRUE( ls_sockaddr_cmp((const struct sockaddr*)&b2, (const struct sockaddr*)&b1) > 0 );
+
+    b2.sin_addr.s_addr = INADDR_ANY;
+    b2.sin_port = htons(1403);
+    ASSERT_TRUE( ls_sockaddr_cmp((const struct sockaddr*)&b1, (const struct sockaddr*)&b2) < 0 );
+    ASSERT_TRUE( ls_sockaddr_cmp((const struct sockaddr*)&b2, (const struct sockaddr*)&b1) > 0 );
+}

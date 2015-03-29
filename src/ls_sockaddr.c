@@ -195,7 +195,21 @@ LS_API int ls_addr_cmp(const struct in6_addr *a, const struct in6_addr *b)
 LS_API int ls_sockaddr_cmp(const struct sockaddr * sa,
                            const struct sockaddr * sb)
 {
-    int diff = sa->sa_family - sb->sa_family;
+    int diff;
+    struct sockaddr_in *a_in, *b_in;
+    struct sockaddr_in6 *a_in6, *b_in6;
+
+    if (sa == NULL) {
+        if (sb == NULL) {
+            return 0;
+        }
+        return -1;
+    }
+    if (sb == NULL) {
+        return 1;
+    }
+
+    diff= sa->sa_family - sb->sa_family;
     if (diff != 0) {
         return diff;
     }
@@ -203,14 +217,18 @@ LS_API int ls_sockaddr_cmp(const struct sockaddr * sa,
     switch (sa->sa_family)
     {
     case AF_INET:
-        diff = ((struct sockaddr_in *)sa)->sin_addr.s_addr - ((struct sockaddr_in *)sb)->sin_addr.s_addr;
+        a_in = (struct sockaddr_in *)sa;
+        b_in = (struct sockaddr_in *)sb;
+        diff = a_in->sin_addr.s_addr - b_in->sin_addr.s_addr;
         if (diff != 0) { return diff; }
+        return ntohs(a_in->sin_port) - ntohs(b_in->sin_port);
         break;
     case AF_INET6:
-        diff = ls_addr_cmp(&((struct sockaddr_in6 *)sa)->sin6_addr,
-                           &((struct sockaddr_in6 *)sb)->sin6_addr);
+        a_in6 = (struct sockaddr_in6 *)sa;
+        b_in6 = (struct sockaddr_in6 *)sb;
+        diff = ls_addr_cmp(&a_in6->sin6_addr, &b_in6->sin6_addr);
         if (diff != 0) { return diff; }
-        return &((struct sockaddr_in6 *)sa)->sin6_port - &((struct sockaddr_in6 *)sb)->sin6_port;
+        return ntohs(a_in6->sin6_port) - ntohs(b_in6->sin6_port);
         break;
     default:
         assert(false);

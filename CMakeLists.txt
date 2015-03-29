@@ -10,7 +10,7 @@ project ( "spudlib" VERSION "0.3.0" )
 option ( verbose "Produce verbose makefile output" OFF )
 option ( optimize "Set high optimization level" OFF )
 option ( fatal_warnings "Treat build warnings as errors" ON )
-option ( coveralls "Generate coveralls data" OFF )
+option ( coveralls "Generate coveralls data" ON )
 option ( coveralls_send "Send data to coveralls site" OFF )
 
 ## setup CMAKE building
