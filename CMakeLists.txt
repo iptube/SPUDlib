@@ -3,7 +3,7 @@
 # top level build file for the SPUDlib
 
 ## prepare CMAKE
-cmake_minimum_required ( VERSION 3.0.0 )
+#cmake_minimum_required ( VERSION 3.0.0 )
 
 set ( SPUDLIB_VERSION_MAJOR 0 )
 set ( SPUDLIB_VERSION_MINOR "3" )
