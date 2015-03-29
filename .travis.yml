@@ -12,7 +12,8 @@ matrix:
   - compiler: gcc
     env: COVERAGE=false
 before_install:
-- sudo apt-get update
+- echo "yes" | sudo add-apt-repository ppa:kalakris/cmake
+- sudo apt-get update -qq
 - sudo apt-get install cmake
 - sudo pip install cpp-coveralls
 script:
