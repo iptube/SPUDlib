@@ -22,5 +22,6 @@ ls_test( ls_sockaddr )
 ls_test( ls_str )
 ls_test( spud )
 ls_test( tube )
+target_compile_options( tube_test PRIVATE "-pthread")
 
 include ( CTest )
