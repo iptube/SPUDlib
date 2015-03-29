@@ -25,7 +25,7 @@ static ssize_t _mock_sendmsg(int socket,
     ssize_t count = 0;
     UNUSED_PARAM(socket);
     UNUSED_PARAM(flags);
-    for (i=0; i<hdr->msg_iovlen; i++) {
+    for (i=0; i<(int)hdr->msg_iovlen; i++) {
         count += hdr->msg_iov[i].iov_len;
     }
     // I totally sent it.  Really.
