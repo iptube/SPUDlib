@@ -23,5 +23,6 @@ ls_test( ls_str )
 ls_test( spud )
 ls_test( tube )
 target_compile_options( tube_test PRIVATE "-pthread")
+target_link_libraries( tube_test PRIVATE "-pthread")
 
 include ( CTest )
