@@ -2,15 +2,6 @@
 #
 # Compiling/running tests
 
-# set ( test_srcs
-#       ls_sockaddr_test.c
-#       ls_str_test.c
-#       spud_test.c
-#       test_utils.c
-#       test_utils.h
-#       testmain.c
-#       tube_test.c )
-
 add_definitions(-DUSE_CBOR_CONTEXT)
 set ( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${dist_dir}/test )
 

@@ -49,4 +49,6 @@ if (coveralls)
         "${COVERAGE_SRCS}"
         ${coveralls_send}                 # If we should upload.
     )
+
+    #add_dependencies(coveralls, all)
 endif()
