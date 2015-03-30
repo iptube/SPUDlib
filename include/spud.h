@@ -22,7 +22,7 @@
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     |cmd|a|p|  resv |           CBOR Map                            |
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-\endverbatim 
+\endverbatim
  */
 
 #pragma once
@@ -102,20 +102,20 @@ typedef struct _spud_message
 
 /**
  * Is this a spud packet?  Checks for valid length and magic number.
- * 
+ *
  * \param[in] payload The packet to be checked.
  * \param[in] length Length of the payload.
  * \return true if length > fixed header and magic # is correct.
  */
 bool spud_is_spud(const uint8_t *payload, size_t length);
 
-/** 
+/**
  * Decode a packet into header and parsed CBOR structure.
  *
  * \param[in] payload The received packet
  * \param[in] length  Bytes in payload
  * \param[out] msg  Parsed message is placed here
- * \param[in,out] err  If non-NULL on input, indicates error when returning false
+ * \param[out] err  If non-NULL on input, indicates error when returning false
  * \return true on success.
  */
 bool spud_parse(const uint8_t *payload, size_t length, spud_message *msg, ls_err *err);
@@ -131,8 +131,8 @@ void spud_unparse(spud_message *msg);
  * Initialize the fixed part of a SPUD header.
  *
  * \param[in] hdr The header to be init'd
- * \param[in] id  Tube ID to use. If NULL, a fresh (random) ID will be created 
- * \param[in,out] err If non-NULL on input, indicates error when returning false
+ * \param[in] id  Tube ID to use. If NULL, a fresh (random) ID will be created
+ * \param[out] err If non-NULL on input, indicates error when returning false
  * \return true on success, else false and err describes the problem.
  */
 bool spud_init(spud_header *hdr, spud_tube_id *id, ls_err *err);
@@ -141,7 +141,7 @@ bool spud_init(spud_header *hdr, spud_tube_id *id, ls_err *err);
  * Create a new tube ID.
  *
  * \param[in] id  Where to put it
- * \param[in,out] err If non-NULL on input, indicates error when returning false
+ * \param[out] err If non-NULL on input, indicates error when returning false
  * \return true on success.
  */
 bool spud_create_id(spud_tube_id *id, ls_err *err);
@@ -160,7 +160,7 @@ bool spud_is_id_equal(const spud_tube_id *a,
  * Set tube ID field in header.
  * \param[in] hdr Header to be modified
  * \param[in] id  The Tube ID to use
- * \param[in,out] err If non-NULL on input, indicates error when returning false
+ * \param[out] err If non-NULL on input, indicates error when returning false
  * \return  true on success
  */
 bool spud_set_id(spud_header *hdr, const spud_tube_id *id, ls_err *err);

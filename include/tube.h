@@ -28,14 +28,14 @@ typedef enum {
   TS_OPENING,
   /** Tube is known and running */
   TS_RUNNING,
-  /** ???? Not in the code... */
+  /** Tube might be resumed later.  Not yet used. */
   TS_RESUMING
 } tube_states_t;
 
 /** Tube policies.  Currently ony deals with handling OPEN.
  */
 typedef enum {
-  /** Ignore the source.  */
+  /** Ignore the source IP/port, and just match on tube ID's.   Not currently recommended. */
   TP_IGNORE_SOURCE = 1 << 0,
   /** If set, act as a responder, creating new tube when OPEN cmd is received. */
   TP_WILL_RESPOND  = 1 << 1
@@ -47,9 +47,9 @@ typedef enum {
  */
 /**
  * Tube manager starts
- */ 
+ */
 #define EV_RUNNING_NAME "running"
-/** 
+/**
  *Data arrived
  */
 #define EV_DATA_NAME    "data"
@@ -58,20 +58,20 @@ typedef enum {
  */
 #define EV_CLOSE_NAME   "close"
 /**
- * Added a tube
+ * A tube was added to the manager
  */
 #define EV_ADD_NAME     "add"
 /**
- * A tube was removed
+ * A tube was removed from the manager
  */
 #define EV_REMOVE_NAME  "remove"
 
-/** 
+/**
  * Handle for a tube manager
  */
 typedef struct _tube_manager tube_manager;
 
-/** 
+/**
  * Handle for an individual tube
  */
 typedef struct _tube tube;
@@ -95,11 +95,11 @@ typedef ssize_t (*tube_recvmsg_func)(int socket,
  * Type of tube event data; passed to event handler.
  */
 typedef struct _tube_event_data {
-  /** the tube the event applies to */
+    /** the tube the event applies to */
     tube *t;
-  /** data in */
+    /** data in */
     const cn_cbor *cbor;
-  /** address of tube's peer or source of incoming packet */
+    /** address of tube's peer or source of incoming packet */
     const struct sockaddr* peer;
 } tube_event_data;
 
@@ -109,8 +109,8 @@ typedef struct _tube_event_data {
  * \invariant m != NULL
  * \param[in] buckets Number of buckets in tube hash table. If 0,
  *    a value appropriate for a server is used.
- * \param[in,out] m  Where to put pointer to new tube manager
- * \param[in,out] err If non-NULL on input, describes error if false is returned
+ * \param[out] m  Where to put pointer to new tube manager
+ * \param[out] err If non-NULL on input, describes error if false is returned
  * \return true: m points to the manager.  false: see err.
  */
 LS_API bool tube_manager_create(int buckets,
@@ -132,7 +132,7 @@ LS_API void tube_manager_destroy(tube_manager *mgr);
  * \invariant m != NULL
  * \param[in] m  The tube manager to get the socket
  * \param[in] port The port to bind to (clients use 0)
- * \param[in,out] err If non-NULL on input, contains error if false is returned
+ * \param[out] err If non-NULL on input, contains error if false is returned
  * \return true: socket created and bound.  false: see err.
  */
 LS_API bool tube_manager_socket(tube_manager *m,
@@ -149,7 +149,7 @@ LS_API bool tube_manager_socket(tube_manager *m,
  * \param[in] mgr The tube manager for the event handler
  * \param[in] name The (string) name of the event
  * \param[in] cb  The event handler to be bound to the event
- * \param[in,out] err If non-NULL on input, contains error if false is returned
+ * \param[out] err If non-NULL on input, contains error if false is returned
  * \return true: event bound. false: see err.
  */
 LS_API bool tube_manager_bind_event(tube_manager *mgr,
@@ -162,7 +162,7 @@ LS_API bool tube_manager_bind_event(tube_manager *mgr,
  * \invariant mgr != NULL
  * \param[in] mgr The tube manager to manage the tube
  * \param[in] t The tube to be managed
- * \param[in,out] err If non-NULL on input, contains error if false is returned
+ * \param[out] err If non-NULL on input, contains error if false is returned
  * \return true: tube was added. false: see err.
  */
 LS_API bool tube_manager_add(tube_manager *mgr,
@@ -186,7 +186,7 @@ LS_API void tube_manager_remove(tube_manager *mgr,
  *
  * \invariant mgr != NULL, t != NULL
  * \param[in] mgr The manager to start
- * \param[in,out] err If non-NULL on input, contains error if false is returned
+ * \param[out] err If non-NULL on input, contains error if false is returned
  * \return true: manager is running, incoming packets will be processed.
  *         false: manager stopped (not receiving).
  */
@@ -194,7 +194,7 @@ LS_API bool tube_manager_loop(tube_manager *mgr, ls_err *err);
 
 /**
  * Check whether tube manager is running, i.e., keepgoing is true.
- * 
+ *
  * \invariant mgr != NULL
  * \param[in] mgr The manager to check
  * \return true: The manager is running. false: see err.
@@ -203,7 +203,7 @@ LS_API bool tube_manager_running(tube_manager *mgr);
 
 /**
  * Shut down tube manager.  Sets keepgoing to false.
- * 
+ *
  * \invariant mgr != NULL
  * \param[in] mgr The manager to shut down
  */
@@ -251,8 +251,8 @@ LS_API bool tube_manager_is_responder(tube_manager *mgr);
  * \invariant mgr != NULL
  * \invariant t != NULL
  * \param[in] mgr  The manager
- * \param[in,out] t  Where to put the new tube
- * \param[in,out] err If non-NULL on input, points to error when false is returned
+ * \param[out] t  Where to put the new tube
+ * \param[out] err If non-NULL on input, points to error when false is returned
  * \return  true: *t points to the new tube.
  *       false: see err
  */
@@ -265,13 +265,13 @@ LS_API bool tube_create(tube_manager *mgr, tube **t, ls_err *err);
  */
 LS_API void tube_destroy(tube *t);
 
- 
+
 
 /**
  * Print local address of tube to stdout in the format "[address]:port".
  * \invariant t != NULL
  * \param[in] t  The tube to be printed
- * \param[in,out] err  If non-NULL on input, points to error when false is returned
+ * \param[out] err  If non-NULL on input, points to error when false is returned
  * \return true: print succeeded. false: getsockname, getnameinfo or printf failed.
  */
 LS_API bool tube_print(const tube *t, ls_err *err);
@@ -282,7 +282,7 @@ LS_API bool tube_print(const tube *t, ls_err *err);
  * \invariant t != NULL
  * \param[in] t  The tube to be connected to the destination
  * \param[in] dest  Address and port of destination
- * \param[in,out] err  If non-NULL on input, points to error when false is returned
+ * \param[out] err  If non-NULL on input, points to error when false is returned
  * \return true: OPEN has been sent to the destination.  false: see err.
  */
 LS_API bool tube_open(tube *t, const struct sockaddr *dest, ls_err *err);
@@ -298,7 +298,7 @@ LS_API bool tube_open(tube *t, const struct sockaddr *dest, ls_err *err);
  * \param[in] t  The tube to be activated.
  * \param[in] id  Tube ID from incoming message.
  * \param[in] peer  Source of the received OPEN message.
- * \param[in,out] err  If non-NULL on input, points to error when false is returned
+ * \param[out] err  If non-NULL on input, points to error when false is returned
  * \return true: ACK has been sent, tube added to mgr's hash table. false: see err.
  */
 LS_API bool tube_ack(tube *t,
@@ -315,7 +315,7 @@ LS_API bool tube_ack(tube *t,
  * \param[in] t  The tube to send on
  * \param[in] data  Bytes to send
  * \param[in] len  Number of bytes to send
- * \param[in,out] err  If non-NULL on input, points to error when false is returned
+ * \param[out] err  If non-NULL on input, points to error when false is returned
  * \return true: packet successfully sent. false: see err.
  */
 LS_API bool tube_data(tube *t, uint8_t *data, size_t len, ls_err *err);
@@ -324,11 +324,11 @@ LS_API bool tube_data(tube *t, uint8_t *data, size_t len, ls_err *err);
  * create keys for the CBOR map
  */
 LS_API void path_create_mandatory_keys(cn_cbor **cbor,
-				       uint8_t *ipadress, 
-				       size_t iplen,
-				       uint8_t *token,
-				       size_t tokenlen,
-				       char* url);
+                       uint8_t *ipadress,
+                       size_t iplen,
+                       uint8_t *token,
+                       size_t tokenlen,
+                       char* url);
 /**
  * Send a path declaration on the given tube.
  * Sent as a DATA packet with PDEC flag set.
@@ -337,7 +337,7 @@ LS_API void path_create_mandatory_keys(cn_cbor **cbor,
  * \param[in] t The tube to send on
  * \param[in] cbor  The encoded map to send
  * \param[in] reflect  The value to place in the ADEC flag
- * \param[in,out] err  If non-NULL on input, points to error when false is returned
+ * \param[out] err  If non-NULL on input, points to error when false is returned
  */
 LS_API bool tube_send_pdec(tube *t, cn_cbor *cbor, bool reflect, ls_err *err);
 
@@ -345,7 +345,7 @@ LS_API bool tube_send_pdec(tube *t, cn_cbor *cbor, bool reflect, ls_err *err);
  * Close a tube.  Sends an (empty) CLOSE packet and sets tube state to UNKNOWN.
  *
  * \param[in] t  The tube to send on (must have peer address set)
- * \param[in,out] err  If non-NULL on input, points to error when false is returned
+ * \param[out] err  If non-NULL on input, points to error when false is returned
  * \return true: tube closed.  false: see err.
  */
 LS_API bool tube_close(tube *t, ls_err *err);
@@ -361,7 +361,7 @@ LS_API bool tube_close(tube *t, ls_err *err);
  * \param[in] data Payload - sent as-is (must be CBOR-encoded)
  * \param[in] len  Size of the payload
  * \param[in] num  Number of items in the data array
- * \param[in,out] err If non-NULL on input, points to error when false is returned
+ * \param[out] err If non-NULL on input, points to error when false is returned
  * \return true: success.  false: see err.
  */
 LS_API bool tube_send(tube *t,
@@ -415,7 +415,7 @@ LS_API tube_states_t tube_get_state(tube *t);
  * \invariant t != NULL
  * \invariant id != NULL
  * \param[in] t  The tube whose id is returned
- * \param[in,out] id  Space for the ID.  On return, contains the tube ID.
+ * \param[out] id  Space for the ID.  On return, contains the tube ID.
  */
 LS_API void tube_get_id(tube *t, spud_tube_id *id);
 
