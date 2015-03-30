@@ -293,7 +293,8 @@ static bool _prepare_trigger(ls_event_dispatcher *dispatch,
         return false;
     }
 
-    if (!ls_pool_malloc(pool,
+    if (!ls_pool_calloc(pool,
+                        1,
                         sizeof(struct _ls_event_moment_t),
                         &momentUnion.momentPtr,
                         err))
@@ -302,8 +303,6 @@ static bool _prepare_trigger(ls_event_dispatcher *dispatch,
         ls_pool_destroy(pool);
         return false;
     }
-
-    memset(momentUnion.momentPtr, 0, sizeof(struct _ls_event_moment_t));
 
     if (!ls_pool_malloc(pool,
                         sizeof(ls_event_trigger_t), &tdataUnion.tdataPtr, err))
@@ -386,7 +385,7 @@ LS_API bool ls_event_dispatcher_create(void *source,
         return false;
     }
 
-    dispatch = ls_data_malloc(sizeof(ls_event_dispatch_t));
+    dispatch = ls_data_calloc(1, sizeof(ls_event_dispatch_t));
     if (dispatch == NULL)
     {
         LS_ERROR(err, LS_ERR_NO_MEMORY);
@@ -403,7 +402,6 @@ LS_API bool ls_event_dispatcher_create(void *source,
     }
     ls_log(LS_LOG_TRACE, "creating new event dispatcher");
 
-    memset(dispatch, 0, sizeof(ls_event_dispatch_t));
     dispatch->source = source;
     dispatch->events = events;
     *outdispatch = dispatch;
@@ -506,7 +504,7 @@ LS_API bool ls_event_dispatcher_create_event(
     }
     memcpy(evt_name, name, nameLen + 1);
 
-    notifier = ls_data_malloc(sizeof(ls_event_notifier_t));
+    notifier = ls_data_calloc(1, sizeof(ls_event_notifier_t));
     if (notifier == NULL)
     {
         LS_ERROR(err, LS_ERR_NO_MEMORY);
@@ -514,7 +512,6 @@ LS_API bool ls_event_dispatcher_create_event(
         goto ls_event_dispatcher_create_event_done_label;
     }
 
-    memset(notifier, 0, sizeof(ls_event_notifier_t));
     notifier->dispatcher = dispatch;
     notifier->source = dispatch->source;
     notifier->name = evt_name;
@@ -592,14 +589,13 @@ LS_API bool ls_event_bind(ls_event                 *event,
     if (!_remove_binding(event, cb, &binding, &prev))
     {
         /* no match found; allocate a new one */
-        binding = ls_data_malloc(sizeof(ls_event_binding_t));
+        binding = ls_data_calloc(1, sizeof(ls_event_binding_t));
         if (binding == NULL)
         {
             LS_ERROR(err, LS_ERR_NO_MEMORY);
             POP_EVENTING_NDC;
             return false;
         }
-        memset(binding, 0, sizeof(ls_event_binding_t));
     }
     else
     {

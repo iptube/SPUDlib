@@ -182,14 +182,13 @@ LS_API int ls_log_push_ndc(const char *fmt, ...)
     }
     va_end(ap);
 
-    newNode = ls_data_malloc(sizeof(struct _ndc_node_int_t));
+    newNode = ls_data_calloc(1, sizeof(struct _ndc_node_int_t));
     if (!newNode)
     {
         ls_log(LS_LOG_WARN, "could not push NDC: '%s' (out of memory)", fmt);
         return 0;
     }
 
-    memset(newNode, 0, sizeof(struct _ndc_node_int_t));
     newNode->message = ls_data_malloc(messageLen+1);
     if (!newNode->message)
     {

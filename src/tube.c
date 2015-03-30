@@ -64,13 +64,12 @@ LS_API bool tube_create(tube_manager *mgr, tube **t, ls_err *err)
     assert(t != NULL);
     assert(mgr != NULL);
 
-    ret = ls_data_malloc(sizeof(tube));
+    ret = ls_data_calloc(1, sizeof(tube));
     if (ret == NULL) {
         LS_ERROR(err, LS_ERR_NO_MEMORY);
         *t = NULL;
         return false;
     }
-    memset(ret, 0, sizeof(tube));
     ret->state = TS_UNKNOWN;
     ret->mgr = mgr;
     *t = ret;
@@ -462,12 +461,11 @@ LS_API bool tube_manager_create(int buckets,
 {
     tube_manager *ret = NULL;
     assert(m != NULL);
-    ret = ls_data_malloc(sizeof(tube_manager));
+    ret = ls_data_calloc(1, sizeof(tube_manager));
     if (ret == NULL) {
         LS_ERROR(err, LS_ERR_NO_MEMORY);
         return false;
     }
-    memset(ret, 0, sizeof(tube_manager));
     ret->sock = -1;
     ret->keep_going = false;
 

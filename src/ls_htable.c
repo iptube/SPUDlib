@@ -88,13 +88,12 @@ static bool _resize_hashtable(ls_htable *tab,
     ls_hnode *node, *next_node;
     unsigned int c;
 
-    new_buckets = ls_data_malloc(buckets * sizeof(ls_hnode*));
+    new_buckets = ls_data_calloc(buckets, sizeof(ls_hnode*));
     if (!new_buckets)
     {
         LS_ERROR(err, LS_ERR_NO_MEMORY);
         return false;
     }
-    memset(new_buckets, 0, buckets * sizeof(ls_hnode*));
 
     tab->buckets = new_buckets;
     tab->bcount = buckets;
@@ -197,15 +196,14 @@ LS_API bool ls_htable_create(int buckets,
         buckets = HASH_NUM_BUCKETS;
     }
 
-    ret_table = ls_data_malloc(sizeof(struct _ls_htable));
+    ret_table = ls_data_calloc(1, sizeof(struct _ls_htable));
     if (!ret_table)
     {
         LS_ERROR(err, LS_ERR_NO_MEMORY);
         return false;
     }
-    memset(ret_table, 0, sizeof(struct _ls_htable));
 
-    ret_table->buckets = ls_data_malloc(buckets * sizeof(ls_hnode*));
+    ret_table->buckets = ls_data_calloc(buckets, sizeof(ls_hnode*));
     if (!ret_table->buckets)
     {
         ls_data_free(ret_table);
@@ -214,7 +212,6 @@ LS_API bool ls_htable_create(int buckets,
         LS_ERROR(err, LS_ERR_NO_MEMORY);
         return false;
     }
-    memset(ret_table->buckets, 0, buckets * sizeof(ls_hnode*));
 
     // fill the fields of the hash table
     ret_table->hash = hash;
