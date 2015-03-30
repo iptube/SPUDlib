@@ -356,7 +356,7 @@ CTEST(cbor, create_pool)
     ls_pool_destroy(pool);
 }
 
-CTEST(cbor, create_errors)
+CTEST(cbor, map_errors)
 {
     cn_cbor_errback err;
     cn_cbor *ci;
@@ -364,5 +364,32 @@ CTEST(cbor, create_errors)
     cn_cbor_mapput_int(ci, 12, NULL, NULL, &err);
     ASSERT_EQUAL(err.err, CN_CBOR_ERR_INVALID_PARAMETER);
     cn_cbor_mapput_string(ci, "foo", NULL, NULL, &err);
+    ASSERT_EQUAL(err.err, CN_CBOR_ERR_INVALID_PARAMETER);
+}
+
+CTEST(cbor, array)
+{
+    cn_cbor_errback err;
+    cn_cbor *a = cn_cbor_array_create(NULL, &err);
+    ASSERT_NOT_NULL(a);
+    ASSERT_TRUE(err.err == CN_CBOR_NO_ERROR);
+    ASSERT_EQUAL(a->length, 0);
+
+    cn_cbor_array_append(a, cn_cbor_int_create(256, NULL, &err), &err);
+    ASSERT_TRUE(err.err == CN_CBOR_NO_ERROR);
+    ASSERT_EQUAL(a->length, 1);
+
+    cn_cbor_array_append(a, cn_cbor_string_create("five", NULL, &err), &err);
+    ASSERT_TRUE(err.err == CN_CBOR_NO_ERROR);
+    ASSERT_EQUAL(a->length, 2);
+}
+
+CTEST(cbor, array_errors)
+{
+    cn_cbor_errback err;
+    cn_cbor *ci = cn_cbor_int_create(12, NULL, &err);
+    cn_cbor_array_append(NULL, ci, &err);
+    ASSERT_EQUAL(err.err, CN_CBOR_ERR_INVALID_PARAMETER);
+    cn_cbor_array_append(ci, NULL, &err);
     ASSERT_EQUAL(err.err, CN_CBOR_ERR_INVALID_PARAMETER);
 }

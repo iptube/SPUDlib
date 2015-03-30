@@ -138,6 +138,39 @@ void cn_cbor_mapput_string(cn_cbor* cb_map,
 	_append_kv(cb_map, cb_key, cb_value);
 }
 
+cn_cbor* cn_cbor_array_create(CBOR_CONTEXT_COMMA cn_cbor_errback *errp)
+{
+	cn_cbor* ret;
+	INIT_CB(ret);
+
+	ret->type = CN_CBOR_ARRAY;
+	ret->flags |= CN_CBOR_FL_COUNT;
+
+	return ret;
+}
+
+void cn_cbor_array_append(cn_cbor* cb_array,
+	                      cn_cbor* cb_value,
+						  cn_cbor_errback *errp)
+{
+	//Make sure input is an array.
+	if(!cb_array || !cb_value || cb_array->type != CN_CBOR_ARRAY)
+	{
+		if (errp) {errp->err = CN_CBOR_ERR_INVALID_PARAMETER;}
+		return;
+	}
+
+	cb_value->parent = cb_array;
+	cb_value->next = NULL;
+	if(cb_array->last_child) {
+		cb_array->last_child->next = cb_value;
+	} else {
+		cb_array->first_child = cb_value;
+	}
+	cb_array->last_child = cb_value;
+	cb_array->length++;
+}
+
 #ifdef  __cplusplus
 }
 #endif

@@ -31,6 +31,12 @@ void cn_cbor_mapput_string(cn_cbor* cb_map,
 						   CBOR_CONTEXT,
 						   cn_cbor_errback *errp);
 
+cn_cbor* cn_cbor_array_create(CBOR_CONTEXT_COMMA cn_cbor_errback *errp);
+
+void cn_cbor_array_append(cn_cbor* cb_array,
+	                      cn_cbor* cb_value,
+						  cn_cbor_errback *errp);
+
 #ifdef  __cplusplus
 }
 #endif
