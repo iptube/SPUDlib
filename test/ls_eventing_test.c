@@ -512,8 +512,9 @@ CTEST_TEARDOWN(event)
     memset(&g_audit, 0, sizeof(log_t));
 }
 
-CTEST(event, dispatcher_create_destroy)
+CTEST2(event, dispatcher_create_destroy)
 {
+    UNUSED_PARAM(data);
     ls_event_dispatcher *dispatch;
     ls_err              err;
     void                *source = "the source";
@@ -527,8 +528,9 @@ CTEST(event, dispatcher_create_destroy)
     ls_event_dispatcher_destroy(dispatch);
 }
 
-CTEST(event, create)
+CTEST2(event, create)
 {
+    UNUSED_PARAM(data);
     ls_event        *evt1, *evt2, *evt3;
     ls_err          err;
 
@@ -585,8 +587,9 @@ CTEST(event, create)
     ASSERT_TRUE(evt2 != evt3);
 }
 
-CTEST(event, bindings)
+CTEST2(event, bindings)
 {
+    UNUSED_PARAM(data);
     ls_event            *evt1;
     ls_err              err;
     ls_event_binding_t  *b;
@@ -666,8 +669,9 @@ CTEST(event, bindings)
     ls_event_unbind(evt1, mock_evt1_callback2);
 }
 
-CTEST(event, trigger_simple)
+CTEST2(event, trigger_simple)
 {
+    UNUSED_PARAM(data);
     ls_event    *evt1;
     ls_err      err;
     logitem_t   *item;
@@ -687,8 +691,9 @@ CTEST(event, trigger_simple)
     ls_event_unbind(evt1, mock_evt1_callback1);
 }
 
-CTEST(event, trigger_simple_results)
+CTEST2(event, trigger_simple_results)
 {
+    UNUSED_PARAM(data);
     ls_event    *evt1;
     ls_err      err;
     logitem_t   *item;
@@ -714,8 +719,9 @@ CTEST(event, trigger_simple_results)
     ls_event_unbind(evt1, mock_evt1_callback_handled1);
 }
 
-CTEST(event, create_errors)
+CTEST2(event, create_errors)
 {
+    UNUSED_PARAM(data);
     ls_event    *evt1, *evt2;
     ls_err      err;
     ls_event_dispatcher *dispatch;
@@ -748,8 +754,9 @@ CTEST(event, create_errors)
     ls_event_dispatcher_destroy(dispatch);
 }
 
-CTEST(event, trigger_nested)
+CTEST2(event, trigger_nested)
 {
+    UNUSED_PARAM(data);
     ls_event    *evt1, *evt2;
     ls_err      err;
     logitem_t   *item;
@@ -817,8 +824,9 @@ CTEST(event, trigger_nested)
     ls_event_unbind(evt2, nesting_callbackC);
 }
 
-CTEST(event, trigger_double_nested)
+CTEST2(event, trigger_double_nested)
 {
+    UNUSED_PARAM(data);
     ls_event    *evt1, *evt2;
     ls_err      err;
     logitem_t   *item;
@@ -852,7 +860,7 @@ CTEST(event, trigger_double_nested)
     ls_event_unbind(evt2, nesting_callbackB);
 }
 
-CTEST(event, trigger_multi_source)
+CTEST2(event, trigger_multi_source)
 {
     ls_event    *evt1, *evt2, *evt3;
     ls_err      err;
@@ -860,6 +868,8 @@ CTEST(event, trigger_multi_source)
     ls_event_dispatcher *dispatcher1, *dispatcher2;
     void                *source1 = "the first source";
     void                *source2 = "the second source";
+
+    UNUSED_PARAM(data);
     ASSERT_TRUE(ls_event_dispatcher_create(source1, &dispatcher1, &err));
     ASSERT_TRUE(ls_event_dispatcher_create(source2, &dispatcher2, &err));
     ls_event_dispatcher_create_event(dispatcher1,
@@ -920,13 +930,14 @@ CTEST(event, trigger_multi_source)
  * Various forms of unbinding from an event during the events trigger
  * execution
  */
-CTEST(event, trigger_event_unbind)
+CTEST2(event, trigger_event_unbind)
 {
     ls_event *evt1;
     ls_err err;
     ls_event_binding_t  *b;
     logitem_t *item;
 
+    UNUSED_PARAM(data);
     evt1 = ls_event_dispatcher_get_event(g_dispatcher, "mockEvent1");
 
     ASSERT_TRUE(ls_event_bind(evt1, mock_evt_unbind_callback1, NULL, &err) );
@@ -955,13 +966,14 @@ CTEST(event, trigger_event_unbind)
 
 }
 
-CTEST(event, trigger_event_multiple_unbind)
+CTEST2(event, trigger_event_multiple_unbind)
 {
     ls_event *evt1;
     ls_err err;
     ls_event_binding_t  *b;
     logitem_t *item;
 
+    UNUSED_PARAM(data);
     evt1 = ls_event_dispatcher_get_event(g_dispatcher, "mockEvent1");
 
     ASSERT_TRUE(ls_event_bind(evt1, mock_evt_unbind_callback1, NULL, &err) );
@@ -999,13 +1011,14 @@ CTEST(event, trigger_event_multiple_unbind)
 
 }
 
-CTEST(event, trigger_nested_unbind)
+CTEST2(event, trigger_nested_unbind)
 {
     ls_event    *evt1, *evt2;
     ls_err      err;
     logitem_t   *item;
     ls_event_binding_t  *b;
 
+    UNUSED_PARAM(data);
     ASSERT_NOT_NULL((evt1 = ls_event_dispatcher_get_event(g_dispatcher, "mockEvent1")) );
     ASSERT_NOT_NULL((evt2 = ls_event_dispatcher_get_event(g_dispatcher, "mockEvent2")) );
     /* bind evt2 to evt1 callbackA so it will  be triggered */
@@ -1077,13 +1090,14 @@ CTEST(event, trigger_nested_unbind)
 
 }
 
-CTEST(event, trigger_event_unbind_middle)
+CTEST2(event, trigger_event_unbind_middle)
 {
     ls_event *evt1;
     ls_err err;
     ls_event_binding_t  *b;
     logitem_t *item;
 
+    UNUSED_PARAM(data);
     evt1 = ls_event_dispatcher_get_event(g_dispatcher, "mockEvent1");
 
     ASSERT_TRUE(ls_event_bind(evt1, mock_evt1_callback1, NULL, &err) );
@@ -1128,13 +1142,14 @@ CTEST(event, trigger_event_unbind_middle)
 
 }
 
-CTEST(event, trigger_event_unbind_rebind)
+CTEST2(event, trigger_event_unbind_rebind)
 {
     ls_event *evt1;
     ls_err err;
     ls_event_binding_t  *b;
     logitem_t *item;
 
+    UNUSED_PARAM(data);
     evt1 = ls_event_dispatcher_get_event(g_dispatcher, "mockEvent1");
 
     ASSERT_TRUE(ls_event_bind(evt1, mock_evt1_callback1, NULL, &err) );
@@ -1189,13 +1204,14 @@ CTEST(event, trigger_event_unbind_rebind)
 
 }
 
-CTEST(event, trigger_event_simple_defer_bind)
+CTEST2(event, trigger_event_simple_defer_bind)
 {
     ls_event *evt1;
     ls_err err;
     ls_event_binding_t  *b;
     logitem_t *item;
 
+    UNUSED_PARAM(data);
     evt1 = ls_event_dispatcher_get_event(g_dispatcher, "mockEvent1");
 
     ASSERT_TRUE(ls_event_bind(evt1, mock_evt_bind1_callback1, NULL, &err) );
@@ -1240,13 +1256,14 @@ CTEST(event, trigger_event_simple_defer_bind)
     ASSERT_NULL(item->next );
 }
 
-CTEST(event, trigger_event_multiple_defer_bind)
+CTEST2(event, trigger_event_multiple_defer_bind)
 {
     ls_event *evt1;
     ls_err err;
     ls_event_binding_t  *b;
     logitem_t *item;
 
+    UNUSED_PARAM(data);
     evt1 = ls_event_dispatcher_get_event(g_dispatcher, "mockEvent1");
 
     ASSERT_TRUE(ls_event_bind(evt1, mock_evt_bind1_callback1, NULL, &err) );
@@ -1303,13 +1320,14 @@ CTEST(event, trigger_event_multiple_defer_bind)
     ASSERT_NULL(item->next );
 }
 
-CTEST(event, trigger_event_defer_bind_rebind)
+CTEST2(event, trigger_event_defer_bind_rebind)
 {
     ls_event *evt1;
     ls_err err;
     ls_event_binding_t  *b;
     logitem_t *item;
 
+    UNUSED_PARAM(data);
     evt1 = ls_event_dispatcher_get_event(g_dispatcher, "mockEvent1");
 
     ASSERT_TRUE(ls_event_bind(evt1, mock_evt_bind1_callback1, NULL, &err) );
@@ -1357,13 +1375,14 @@ CTEST(event, trigger_event_defer_bind_rebind)
     ASSERT_NULL(item->next );
 }
 
-CTEST(event, trigger_event_defer_bind_unbind)
+CTEST2(event, trigger_event_defer_bind_unbind)
 {
     ls_event *evt1;
     ls_err err;
     ls_event_binding_t  *b;
     logitem_t *item;
 
+    UNUSED_PARAM(data);
     evt1 = ls_event_dispatcher_get_event(g_dispatcher, "mockEvent1");
 
     ASSERT_TRUE(ls_event_bind(evt1, mock_evt_bind1_callback1, NULL, &err) );
@@ -1393,13 +1412,14 @@ CTEST(event, trigger_event_defer_bind_unbind)
     ASSERT_NULL(item->next );
 }
 
-CTEST(event, trigger_event_defer_bind_unbind_rebind)
+CTEST2(event, trigger_event_defer_bind_unbind_rebind)
 {
     ls_event *evt1;
     ls_err err;
     ls_event_binding_t  *b;
     logitem_t *item;
 
+    UNUSED_PARAM(data);
     evt1 = ls_event_dispatcher_get_event(g_dispatcher, "mockEvent1");
 
     ASSERT_TRUE(ls_event_bind(evt1, mock_evt_bind1_callback1, NULL, &err) );
@@ -1461,11 +1481,12 @@ CTEST(event, trigger_event_defer_bind_unbind_rebind)
     ASSERT_NULL(item->next );
 }
 
-CTEST(event, trigger_prepared)
+CTEST2(event, trigger_prepared)
 {
     ls_event_trigger_data *trigger_data;
     ls_event *evt;
 
+    UNUSED_PARAM(data);
     // can't use audit trail since that would require memory allocation
     evt = ls_event_dispatcher_get_event(g_dispatcher, "mockEvent1");
     ASSERT_TRUE(ls_event_bind(evt, mock_nofail_callback, NULL, NULL));
@@ -1484,10 +1505,11 @@ CTEST(event, trigger_prepared)
     ls_event_unbind(evt, mock_evt1_callback_handled1);
 }
 
-CTEST(event, trigger_prepare_unprepare)
+CTEST2(event, trigger_prepare_unprepare)
 {
     ls_event_trigger_data *trigger_data;
 
+    UNUSED_PARAM(data);
     ls_data_set_memory_funcs(_counting_malloc, _counting_realloc, _counting_free);
 
     ASSERT_TRUE(ls_event_prepare_trigger(g_dispatcher, &trigger_data, NULL));
@@ -1498,11 +1520,12 @@ CTEST(event, trigger_prepare_unprepare)
     ls_data_set_memory_funcs(NULL, NULL, NULL);
 }
 
-CTEST(event, trigger_deferred_destroy)
+CTEST2(event, trigger_deferred_destroy)
 {
     ls_event            *evt        = NULL;
     ls_event_dispatcher *dispatcher = NULL;
 
+    UNUSED_PARAM(data);
     g_destroy_first_free = false;
     g_destroy_first_alloc = NULL;
     ls_data_set_memory_funcs(destroy_test_malloc, NULL, destroy_test_free);
@@ -1519,11 +1542,12 @@ CTEST(event, trigger_deferred_destroy)
     ls_data_set_memory_funcs(NULL, NULL, NULL);
 }
 
-CTEST(event, oom)
+CTEST2(event, oom)
 {
     ls_event_dispatcher *dispatcher;
     ls_event            *evt;
 
+    UNUSED_PARAM(data);
     // create dispatcher
     OOM_SIMPLE_TEST(ls_event_dispatcher_create(
                             g_source, &dispatcher, &err));

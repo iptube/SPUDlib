@@ -135,8 +135,9 @@ CTEST(ls_log, message)
     ASSERT_STR(msg, "MEMTRACE");
 }
 
-CTEST(ls_log, levels)
+CTEST2(ls_log, levels)
 {
+    UNUSED_PARAM(data);
     ls_log_set_level(LS_LOG_DEBUG);
 
     _log_offset = 0;
@@ -165,8 +166,9 @@ CTEST(ls_log, levels)
     ASSERT_STR(_log_output, "[\x1b[34mDEBUG   \x1b[0m]: Debug");
 }
 
-CTEST(ls_log, ndc)
+CTEST2(ls_log, ndc)
 {
+    UNUSED_PARAM(data);
     ls_log_set_level(LS_LOG_DEBUG);
 
     _log_offset = 0;
@@ -219,8 +221,9 @@ CTEST(ls_log, ndc)
     ASSERT_EQUAL(_log_offset, 0);
 }
 
-CTEST(ls_log, err)
+CTEST2(ls_log, err)
 {
+    UNUSED_PARAM(data);
     ls_err err;
     ls_log_set_level(LS_LOG_ERROR);
 
@@ -266,8 +269,9 @@ CTEST(ls_log, err)
     ASSERT_EQUAL(ls_log_get_level(), LS_LOG_NONE);
 }
 
-CTEST(ls_log, chunked)
+CTEST2(ls_log, chunked)
 {
+    UNUSED_PARAM(data);
     ls_log_set_level(LS_LOG_ERROR);
 
     char expected[256];
@@ -305,8 +309,9 @@ CTEST(ls_log, chunked)
     ASSERT_STR(_log_output, expected);
 }
 
-CTEST(ls_log, set_level)
+CTEST2(ls_log, set_level)
 {
+    UNUSED_PARAM(data);
     ls_log_set_level(LS_LOG_ERROR);
     _log_offset = 0;
     ls_log(LS_LOG_MEMTRACE, "MemTrace");
