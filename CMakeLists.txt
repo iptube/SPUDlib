@@ -5,12 +5,16 @@
 ## prepare CMAKE
 cmake_minimum_required ( VERSION 3.0.0 )
 
-set ( SPUDLIB_VERSION_MAJOR 0 )
-set ( SPUDLIB_VERSION_MINOR "3" )
-set ( SPUDLIB_VERSION_PATCH "0" )
+set ( SPUDLIB_VERSION_MAJOR 0 CACHE STRING "Project major version number")
+set ( SPUDLIB_VERSION_MINOR "3" CACHE STRING "Project minor version number" )
+set ( SPUDLIB_VERSION_PATCH "0" CACHE STRING "Project patch version number" )
+mark_as_advanced(SPUDLIB_VERSION_MAJOR SPUDLIB_VERSION_MINOR SPUDLIB_VERSION_PATCH)
+
 set ( SPUDLIB_VERSION "${SPUDLIB_VERSION_MAJOR}.${SPUDLIB_VERSION_MINOR}.${SPUDLIB_VERSION_PATCH}" )
 
 project ( "spudlib" VERSION "${SPUDLIB_VERSION}")
+
+find_package(Doxygen)
 
 ## setup options
 option ( verbose "Produce verbose makefile output" OFF )
@@ -18,6 +22,7 @@ option ( optimize "Set high optimization level" OFF )
 option ( fatal_warnings "Treat build warnings as errors" ON )
 option ( coveralls "Generate coveralls data" ON )
 option ( coveralls_send "Send data to coveralls site" OFF )
+option ( build_docs "Create docs using Doxygen" ${DOXYGEN_FOUND} )
 
 set ( dist_dir    ${CMAKE_BINARY_DIR}/dist )
 set ( prefix      ${CMAKE_INSTALL_PREFIX} )
@@ -123,3 +128,22 @@ include ( CTest )
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 include ( LCov )
+
+if (build_docs)
+    if(NOT DOXYGEN_FOUND)
+        message(FATAL_ERROR "Doxygen is needed to build the documentation.")
+    endif()
+
+    set(doxyfile_in ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
+    set(doxyfile ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
+
+    configure_file(${doxyfile_in} ${doxyfile} @ONLY)
+
+    add_custom_target(doc
+        COMMAND ${DOXYGEN_EXECUTABLE} ${doxyfile}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        COMMENT "Generating API documentation with Doxygen"
+        VERBATIM)
+
+    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html DESTINATION share/doc)
+endif()
