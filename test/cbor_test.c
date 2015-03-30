@@ -270,8 +270,8 @@ CTEST(cbor, create)
     cn_cbor_errback err;
     const cn_cbor* val;
     const char* data = "abc";
-
     cn_cbor *cb_map = cn_cbor_map_create(NULL, &err);
+
     ASSERT_NOT_NULL(cb_map);
     ASSERT_TRUE(err.err == CN_CBOR_NO_ERROR);
 
@@ -298,5 +298,5 @@ CTEST(cbor, create)
     val = cn_cbor_mapget_int(cb_map, 7);
     ASSERT_NOT_NULL(val);
 	ASSERT_STR(val->v.str, "abc");
-    //cn_cbor_free(cb_map);
+    cn_cbor_free(cb_map, NULL);
 }

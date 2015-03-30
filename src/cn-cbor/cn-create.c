@@ -5,6 +5,7 @@
 extern "C" {
 #endif
 
+#include <string.h>
 
 #include "cn-cbor/cn-encoder.h"
 #include "cn-cbor/cn-create.h"
@@ -113,6 +114,54 @@ void cn_cbor_mapput_int(cn_cbor* cb_map,
     cb_key->type = CN_CBOR_INT;
     cb_key->v.sint = key;
     cb_key->length = 0;
+
+	//Connect key and value and insert them into the map.
+	cb_key->next = cb_value;
+	cb_value->parent = cb_key;
+	cb_value->next = NULL;
+
+	if(!cb_map->last_child){ //This is the first item
+		cb_map->next = cb_key;
+		cb_map->first_child = cb_key;
+		cb_map->last_child = cb_value;
+		cb_key->parent = cb_map;
+	}
+	else{ //There are already items in the map.
+		cb_key->parent = cb_map->last_child;
+		cb_map->last_child->next = cb_key;
+		cb_map->last_child = cb_value;
+	}
+
+	cb_map->length++;
+
+	return;
+
+	fail:
+		return;
+
+}
+
+void cn_cbor_mapput_string(cn_cbor* cb_map,
+	                       char* key, cn_cbor* cb_value
+						   CBOR_CONTEXT,
+						   cn_cbor_errback *errp) {
+	cn_cbor* cb_key;
+
+	//Make sure input is a map. Otherwise
+	if(!cb_map || cb_map->type != CN_CBOR_MAP)
+		CN_CBOR_FAIL(CN_CBOR_ERR_INVALID_PARAMETER);
+
+	errp->err = CN_CBOR_NO_ERROR;
+	errp->pos = 0;
+
+	//Create key element
+	cb_key = CN_CALLOC_CONTEXT();
+	if (!cb_key)
+    	CN_CBOR_FAIL(CN_CBOR_ERR_OUT_OF_MEMORY);
+
+    cb_key->type = CN_CBOR_TEXT;
+    cb_key->v.str = key;
+    cb_key->length = strlen(key);
 
 	//Connect key and value and insert them into the map.
 	cb_key->next = cb_value;
