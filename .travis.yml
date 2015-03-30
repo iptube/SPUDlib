@@ -19,7 +19,7 @@ before_install:
 script:
 - ./build.sh all test
 after_success:
-- if [[ $COVERAGE == 'true' ]]; then ./coverage.sh; make package_source; fi
+- if [[ $COVERAGE == 'true' ]]; then ./coverage.sh; cd build && make package_source; fi
 notifications:
   slack:
     secure: 4VG8/5JgqQadvwm2MnTzOxq8z0iCzKZOr08xD3Q5TG02Yec07bPlAJendMkK1xZgS0zAlwrhdbPfTdYm7D720Gi0iX+95y1tNpFtYlkxRGp4JmjXI2/t0066yBtB03+ZPZkku/2OCM1c248YJ8ls1wOfFQfHkTAQfdy8KOlZjv0=
