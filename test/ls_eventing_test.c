@@ -490,7 +490,7 @@ CTEST_SETUP(event)
     memset(&g_audit, 0, sizeof(log_t));
     ls_pool_create(0, &g_audit.pool, NULL);
 
-    ls_event_dispatcher_create(g_source, &g_dispatcher, NULL);
+    ASSERT_TRUE(ls_event_dispatcher_create(g_source, &g_dispatcher, NULL));
     ls_event_dispatcher_create_event(g_dispatcher,
                                      "mockEvent1",
                                      &mock1,
