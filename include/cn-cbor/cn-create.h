@@ -12,16 +12,24 @@ cn_cbor* cn_cbor_map_create(CBOR_CONTEXT_COMMA cn_cbor_errback *errp);
 cn_cbor* cn_cbor_data_create(const char* data, int len
 							 CBOR_CONTEXT,
 							 cn_cbor_errback *errp);
-cn_cbor* cn_cbor_int_create(int value
+
+cn_cbor* cn_cbor_string_create(const char* data
+					   		   CBOR_CONTEXT,
+							   cn_cbor_errback *errp);
+
+cn_cbor* cn_cbor_int_create(int64_t value
 							CBOR_CONTEXT,
 	                        cn_cbor_errback *errp);
 
 void cn_cbor_mapput_int(cn_cbor* cb_map,
-	                    int key, cn_cbor* cb_value
+	                    int64_t key, cn_cbor* cb_value
 						CBOR_CONTEXT,
 						cn_cbor_errback *errp);
-//void cn_cbor_mapput_string(const cn_cbor* cb_map,  const char* key, const cn_cbor* value, cn_cbor_errback *errp);
 
+void cn_cbor_mapput_string(cn_cbor* cb_map,
+	                       char* key, cn_cbor* cb_value
+						   CBOR_CONTEXT,
+						   cn_cbor_errback *errp);
 
 #ifdef  __cplusplus
 }
