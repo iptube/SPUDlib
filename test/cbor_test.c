@@ -265,31 +265,57 @@ CTEST(cbor, alloc)
     ls_pool_destroy(pool);
 }
 
+// static const char *CBOR_TYPES[] = {
+//       "CN_CBOR_NULL",
+//       "CN_CBOR_FALSE",   "CN_CBOR_TRUE",
+//       "CN_CBOR_UINT",    "CN_CBOR_INT",
+//       "CN_CBOR_BYTES",   "CN_CBOR_TEXT",
+//       "CN_CBOR_BYTES_CHUNKED",   "CN_CBOR_TEXT_CHUNKED", /* += 2 */
+//       "CN_CBOR_ARRAY",   "CN_CBOR_MAP",
+//       "CN_CBOR_TAG",
+//       "CN_CBOR_SIMPLE",  "CN_CBOR_DOUBLE",
+//       "CN_CBOR_INVALID"
+// };
+
+// static void print_cbor_tree(const cn_cbor *cb, int depth)
+// {
+//     cn_cbor *p = (cn_cbor*) cb;
+//     const char *spaces = "                                                     ";
+//
+//     printf("%.*s%s\n", depth*2, spaces, CBOR_TYPES[p->type]);
+//     for (p = p->first_child; p; p = p->next)
+//     {
+//         print_cbor_tree(p, depth+1);
+//     }
+// }
+
 CTEST(cbor, create)
 {
     cn_cbor_errback err;
     const cn_cbor* val;
     const char* data = "abc";
     cn_cbor *cb_map = cn_cbor_map_create(NULL, &err);
+    cn_cbor *cb_int;
+    cn_cbor *cb_data;
 
     ASSERT_NOT_NULL(cb_map);
     ASSERT_TRUE(err.err == CN_CBOR_NO_ERROR);
 
-    cn_cbor *cb_int = cn_cbor_int_create(256, NULL, &err);
+    cb_int = cn_cbor_int_create(256, NULL, &err);
     ASSERT_NOT_NULL(cb_int);
 	ASSERT_TRUE(err.err == CN_CBOR_NO_ERROR);
 
-	cn_cbor *cb_data = cn_cbor_data_create(data, 4, NULL, &err);
+	cb_data = cn_cbor_data_create(data, 4, NULL, &err);
 	ASSERT_NOT_NULL(cb_data);
 	ASSERT_TRUE(err.err == CN_CBOR_NO_ERROR);
 
     cn_cbor_mapput_int(cb_map, 5, cb_int, NULL, &err);
     ASSERT_TRUE(err.err == CN_CBOR_NO_ERROR);
-    ASSERT_TRUE(cb_map->length == 1);
+    ASSERT_TRUE(cb_map->length == 2);
 
     cn_cbor_mapput_int(cb_map, 7, cb_data, NULL, &err);
     ASSERT_TRUE(err.err == CN_CBOR_NO_ERROR);
-    ASSERT_TRUE(cb_map->length == 2);
+    ASSERT_TRUE(cb_map->length == 4);
 
     val = cn_cbor_mapget_int(cb_map, 5);
     ASSERT_NOT_NULL(val);
@@ -298,5 +324,45 @@ CTEST(cbor, create)
     val = cn_cbor_mapget_int(cb_map, 7);
     ASSERT_NOT_NULL(val);
 	ASSERT_STR(val->v.str, "abc");
+
     cn_cbor_free(cb_map, NULL);
+}
+
+CTEST(cbor, create_pool)
+{
+    cn_cbor_errback err;
+    const char* data = "abc";
+    cn_cbor *cb_map;
+    ls_err lerr;
+    ls_pool *pool;
+    unsigned char buf[32];
+    ssize_t encoded_size;
+    unsigned char expected[] = "\xa2\x24\x19\x01\x00\x63" "foo\x63" "abc";
+    cn_cbor_context ctx;
+
+    ASSERT_TRUE(ls_pool_create(2048, &pool, &lerr));
+    ctx.calloc_func = cn_test_calloc;
+    ctx.free_func = dummy_free;
+    ctx.context = pool;
+
+    cb_map = cn_cbor_map_create(&ctx, &err);
+    cn_cbor_mapput_int(cb_map, -5, cn_cbor_int_create(256, &ctx, &err), &ctx, &err);
+    cn_cbor_mapput_string(cb_map, "foo", cn_cbor_string_create(data, &ctx, &err), &ctx, &err);
+
+    encoded_size = cbor_encoder_write(buf, 0, sizeof(buf), cb_map);
+    ASSERT_TRUE(encoded_size > 0);
+    ASSERT_DATA(expected, sizeof(expected)-1, buf, encoded_size);
+
+    ls_pool_destroy(pool);
+}
+
+CTEST(cbor, create_errors)
+{
+    cn_cbor_errback err;
+    cn_cbor *ci;
+    ci = cn_cbor_int_create(65536, NULL, &err);
+    cn_cbor_mapput_int(ci, 12, NULL, NULL, &err);
+    ASSERT_EQUAL(err.err, CN_CBOR_ERR_INVALID_PARAMETER);
+    cn_cbor_mapput_string(ci, "foo", NULL, NULL, &err);
+    ASSERT_EQUAL(err.err, CN_CBOR_ERR_INVALID_PARAMETER);
 }
