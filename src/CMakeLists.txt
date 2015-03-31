@@ -10,7 +10,7 @@ set ( spud_srcs
       cn-cbor/cn-encoder.c
       cn-cbor/cn-encoder.h
       cn-cbor/cn-error.c
-      cn-cbor/cn-manip.c
+      cn-cbor/cn-get.c
       ls_error.c
       ls_eventing.c
       ls_eventing.h
