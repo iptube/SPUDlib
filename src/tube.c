@@ -230,77 +230,122 @@ LS_API bool tube_ack(tube *t,
     return tube_send(t, SPUD_ACK, false, false, NULL, 0, 0, err);
 }
 
-LS_API void path_create_mandatory_keys(cn_cbor **cbor, uint8_t *ipadress, size_t iplen, uint8_t *token, size_t tokenlen, char* url)
+static void *_pool_calloc(size_t count, size_t size, void *context)
 {
-    //TODO: no error checking, use functions which fill these propoerly and do error checking
-    // it works at the moment though
-    //TODO: rewrite using newly imlemented CBOR functions
-    cn_cbor *ret =NULL;
-    const char * SPUD_IPADDR = "ipaddr";
-    const char * SPUD_TOKEN = "token";
-    const char * SPUD_URL = "url";
+    ls_pool *pool = context;
+    ls_err err;
+    void *ptr;
 
+    if (!ls_pool_calloc(pool, count, size, &ptr, &err)) {
+        LS_LOG_ERR(err, "ls_pool_calloc");
+        return NULL;
+    }
+    return ptr;
+}
 
-    ret=ls_data_malloc(sizeof(cn_cbor)*20); //TODO: free
-    ret[0].type = CN_CBOR_MAP;
-    ret[0].flags = CN_CBOR_FL_COUNT;
-    ret[0].length = 6;
-    ret[0].first_child=&(ret[1]);
+static void _pool_free(void *ptr, void *context)
+{
+    UNUSED_PARAM(ptr);
+    UNUSED_PARAM(context);
+    return;
+}
 
-   /*"ipaddr" (byte string, major type 2)  the IPv4 address or IPv6
+static bool _map_create(cn_cbor_context *ctx, cn_cbor **map, ls_err *err)
+{
+    ls_pool *pool;
+    cn_cbor *m;
+
+    ctx->calloc_func = _pool_calloc;
+    ctx->free_func = _pool_free;
+
+    // TODO: add pool High-water mark, and test to see if this is enough
+    if (!ls_pool_create(128, &pool, err)) {
+        return false;
+    }
+    ctx->context = pool;
+    m = cn_cbor_map_create(ctx, NULL);
+    if (!m)
+    {
+        LS_ERROR(err, LS_ERR_NO_MEMORY);
+        ls_pool_destroy(pool);
+        return false;
+    }
+
+    *map = m;
+    return true;
+}
+
+static bool _mapput_string_data(cn_cbor         *map,
+                                const char      *key,
+                                uint8_t         *data,
+                                size_t           sz,
+                                cn_cbor_context *ctx,
+                                ls_err *err)
+{
+    cn_cbor *cdata = cn_cbor_data_create(data, sz, ctx, NULL);
+    if (!cdata || !cn_cbor_mapput_string(map, key, cdata, ctx, NULL)) {
+        LS_ERROR(err, LS_ERR_NO_MEMORY);
+        return false;
+    }
+    return true;
+}
+
+static bool _mapput_string_string(cn_cbor  *map,
+                                const char *key,
+                                const char *data,
+                                cn_cbor_context *ctx,
+                                ls_err *err)
+{
+    cn_cbor *cdata = cn_cbor_string_create(data, ctx, NULL);
+    if (!cdata || !cn_cbor_mapput_string(map, key, cdata, ctx, NULL)) {
+        LS_ERROR(err, LS_ERR_NO_MEMORY);
+        return false;
+    }
+    return true;
+}
+
+LS_API bool path_mandatory_keys_create(uint8_t *ipadress,
+                                       size_t iplen,
+                                       uint8_t *token,
+                                       size_t tokenlen,
+                                       char* url,
+                                       cn_cbor_context *ctx,
+                                       cn_cbor **map,
+                                       ls_err *err)
+{
+    const char *SPUD_IPADDR = "ipaddr";
+    const char *SPUD_TOKEN  = "token";
+    const char *SPUD_URL    = "url";
+
+    if (!_map_create(ctx, map, err)) {
+        // no need to destroy pool
+        return false;
+    }
+
+   /*
+      "ipaddr" (byte string, major type 2)  the IPv4 address or IPv6
       address of the sender, as a string of 4 or 16 bytes in network
       order.  This is necessary as the source IP address of the packet
-      is spoofed    */
+      is spoofed
 
-
-    ret[1].type = CN_CBOR_TEXT;
-    ret[1].flags = CN_CBOR_FL_COUNT;
-    ret[1].v.str = SPUD_IPADDR;
-    ret[1].length = strlen(SPUD_IPADDR);
-    ret[1].next=&(ret[2]);
-
-    ret[2].type=CN_CBOR_BYTES;
-    ret[2].flags = CN_CBOR_FL_COUNT;
-    ret[2].v.str=(char*)ipadress;
-    ret[2].length = iplen;
-    ret[2].next=&(ret[3]);
-
-    /*
        "token" (byte string, major type 2)  data that identifies the sending
-      path element unambiguously
+       path element unambiguously
 
-    */
-    ret[3].type = CN_CBOR_TEXT;
-    ret[3].flags = CN_CBOR_FL_COUNT;
-    ret[3].v.str = SPUD_TOKEN;
-    ret[3].length = strlen(SPUD_TOKEN);
-    ret[3].next=&(ret[4]);
-
-    ret[4].type=CN_CBOR_BYTES;
-    ret[4].flags = CN_CBOR_FL_COUNT;
-    ret[4].v.str=(char*)token;
-    ret[4].length = tokenlen;
-    ret[4].next=&(ret[5]);
-    /*
-   "url" (text string, major type 3)  a URL identifying some information
+      "url" (text string, major type 3)  a URL identifying some information
       about the path or its relationship with the tube.  The URL
       represents some path condition, and retrieval of content at the
       URL should include a human-readable description.
     */
-    ret[5].type = CN_CBOR_TEXT;
-    ret[5].flags = CN_CBOR_FL_COUNT;
-    ret[5].v.str = SPUD_URL;
-    ret[5].length = strlen(SPUD_URL);
-    ret[5].next=&(ret[6]);
 
-    ret[6].type=CN_CBOR_TEXT;
-    ret[6].flags = CN_CBOR_FL_COUNT;
-    ret[6].v.str= url;
-    ret[6].length = strlen(url);
-    ret[6].next=NULL;
+    if (!_mapput_string_data(*map, SPUD_IPADDR, ipadress, iplen, ctx, err) ||
+        !_mapput_string_data(*map, SPUD_TOKEN, token, tokenlen, ctx, err) ||
+        !_mapput_string_string(*map, SPUD_URL, url, ctx, err))
+    {
+        ls_pool_destroy((ls_pool*)ctx->context);
+        return false;
+    }
 
-
-    *cbor= ret;
+    return true;
 }
 
 LS_API bool tube_send_pdec(tube *t, cn_cbor *cbor, bool reflect, ls_err *err)
@@ -328,51 +373,28 @@ LS_API bool tube_send_cbor(tube *t, spud_command cmd, bool adec, bool pdec, cn_c
     return tube_send(t, cmd, adec, pdec, d, l, 2, err);
 }
 
-static void *_tube_calloc(size_t count, size_t size, void *context)
-{
-    ls_pool *pool = context;
-    ls_err err;
-    void *ptr;
-
-    if (!ls_pool_calloc(pool, count, size, &ptr, &err)) {
-        LS_LOG_ERR(err, "ls_pool_calloc");
-        return NULL;
-    }
-    return ptr;
-}
-
-static void _tube_free(void *ptr, void *context)
-{
-    UNUSED_PARAM(ptr);
-    UNUSED_PARAM(context);
-    return;
-}
-
 LS_API bool tube_data(tube *t, uint8_t *data, size_t len, ls_err *err)
 {
     // max size for CBOR preamble 19 bytes:
     // 1(map|27) 8(length) 1(key:0) 1(bstr|27) 8(length)
     //uint8_t preamble[19];
-    ls_pool *pool;
     cn_cbor *map;
     cn_cbor *cdata;
     bool ret = false;
-    cn_cbor_context ctx = { _tube_calloc, _tube_free, NULL };
+    cn_cbor_context ctx;
 
     assert(t);
     if (len == 0) {
         return tube_send(t, SPUD_DATA, false, false, NULL, 0, 0, err);
     }
 
-    if (!ls_pool_create(128, &pool, err)) {
+    if (!_map_create(&ctx, &map, err)) {
         return false;
     }
-    ctx.context = pool;
 
     // TODO: the whole point of the iov system is so that we don't have to copy
     // the data here.  Which we just did.  Please fix.
-    if (!(map = cn_cbor_map_create(&ctx, NULL)) ||
-        !(cdata = cn_cbor_data_create(data, len, &ctx, NULL)) ||
+    if (!(cdata = cn_cbor_data_create(data, len, &ctx, NULL)) ||
         !cn_cbor_mapput_int(map, 0, cdata, &ctx, NULL))
     {
         LS_ERROR(err, LS_ERR_NO_MEMORY);
@@ -381,7 +403,7 @@ LS_API bool tube_data(tube *t, uint8_t *data, size_t len, ls_err *err)
     ret = tube_send_cbor(t, SPUD_DATA, false, false, map, err);
 
 cleanup:
-    ls_pool_destroy(pool);
+    ls_pool_destroy((ls_pool*)ctx.context);
     return ret;
 }
 
