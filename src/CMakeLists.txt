@@ -3,14 +3,6 @@
 # compiling/installing sources for SPUDlib
 
 set ( spud_srcs
-      cn-cbor/cn-cbor.c
-      cn-cbor/cbor.h
-      cn-cbor/cn-cbor.c
-      cn-cbor/cn-create.c
-      cn-cbor/cn-encoder.c
-      cn-cbor/cn-encoder.h
-      cn-cbor/cn-error.c
-      cn-cbor/cn-get.c
       ls_error.c
       ls_eventing.c
       ls_eventing.h
@@ -27,6 +19,7 @@ add_definitions(-DUSE_CBOR_CONTEXT)
 add_library ( spud SHARED ${spud_srcs} )
 target_include_directories ( spud PUBLIC ../include )
 target_include_directories ( spud PRIVATE ../src )
+target_link_libraries ( spud PRIVATE cn-cbor )
 
 install ( TARGETS spud
           LIBRARY DESTINATION lib

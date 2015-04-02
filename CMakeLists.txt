@@ -90,12 +90,6 @@ if ( verbose )
   set ( CMAKE_VERBOSE_MAKEFILE ON )
 endif ()
 
-## include the parts
-add_subdirectory ( include )
-add_subdirectory ( src )
-add_subdirectory ( test )
-add_subdirectory ( samplecode )
-
 install (FILES AUTHORS LICENSE README.md DESTINATION .)
 
 ## setup packaging
@@ -147,3 +141,24 @@ if (build_docs)
 
     install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html DESTINATION share/doc)
 endif()
+
+Include(ExternalProject)
+ExternalProject_Add(
+   project_cn-cbor
+   GIT_REPOSITORY https://github.com/hildjj/cn-cbor.git
+   GIT_TAG encoder-2
+   CMAKE_ARGS -Doptimize=ON -Duse_context=ON -Dbuild_docs=OFF -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
+   INSTALL_DIR "${dist_dir}"
+)
+
+ExternalProject_Get_Property(project_cn-cbor install_dir)
+include_directories ( "${install_dir}/include" )
+add_library(cn-cbor STATIC IMPORTED)
+set_property(TARGET cn-cbor PROPERTY IMPORTED_LOCATION "${install_dir}/lib/${CMAKE_SHARED_MODULE_PREFIX}cn-cbor${CMAKE_SHARED_LIBRARY_SUFFIX}")
+add_dependencies(cn-cbor project_cn-cbor)
+
+## include the parts
+add_subdirectory ( include )
+add_subdirectory ( src )
+add_subdirectory ( test )
+add_subdirectory ( samplecode )

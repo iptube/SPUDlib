@@ -25,7 +25,6 @@
 #include "ls_htable.h"
 #include "ls_log.h"
 #include "ls_sockaddr.h"
-#include "cn-cbor/cn-encoder.h"
 
 #define DEFAULT_HASH_SIZE 65521
 #define MAXBUFLEN 1500
@@ -329,64 +328,61 @@ LS_API bool tube_send_cbor(tube *t, spud_command cmd, bool adec, bool pdec, cn_c
     return tube_send(t, cmd, adec, pdec, d, l, 2, err);
 }
 
+static void *_tube_calloc(size_t count, size_t size, void *context)
+{
+    ls_pool *pool = context;
+    ls_err err;
+    void *ptr;
 
+    if (!ls_pool_calloc(pool, count, size, &ptr, &err)) {
+        LS_LOG_ERR(err, "ls_pool_calloc");
+        return NULL;
+    }
+    return ptr;
+}
+
+static void _tube_free(void *ptr, void *context)
+{
+    UNUSED_PARAM(ptr);
+    UNUSED_PARAM(context);
+    return;
+}
 
 LS_API bool tube_data(tube *t, uint8_t *data, size_t len, ls_err *err)
 {
     // max size for CBOR preamble 19 bytes:
     // 1(map|27) 8(length) 1(key:0) 1(bstr|27) 8(length)
-    uint8_t preamble[19];
-    uint8_t *d[2];
-    size_t l[2];
-    ssize_t sz = 0;
-    ssize_t count = 0;
+    //uint8_t preamble[19];
+    ls_pool *pool;
+    cn_cbor *map;
+    cn_cbor *cdata;
+    bool ret = false;
+    cn_cbor_context ctx = { _tube_calloc, _tube_free, NULL };
 
     assert(t);
     if (len == 0) {
         return tube_send(t, SPUD_DATA, false, false, NULL, 0, 0, err);
     }
 
-    /* Map with one pair */
-    sz = cbor_encoder_write_head(preamble,
-                                 count,
-                                 sizeof(preamble),
-                                 CN_CBOR_MAP,
-                                 1);
-    if (sz < 0) {
-      LS_ERROR(err, LS_ERR_OVERFLOW);
-      return false;
+    if (!ls_pool_create(128, &pool, err)) {
+        return false;
     }
-    count += sz;
+    ctx.context = pool;
 
-    /* Key 0 */
-    sz = cbor_encoder_write_head(preamble,
-                                 count,
-                                 sizeof(preamble),
-                                 CN_CBOR_UINT,
-                                 0);
-    if (sz < 0) {
-      LS_ERROR(err, LS_ERR_OVERFLOW);
-      return false;
+    // TODO: the whole point of the iov system is so that we don't have to copy
+    // the data here.  Which we just did.  Please fix.
+    if (!(map = cn_cbor_map_create(&ctx, NULL)) ||
+        !(cdata = cn_cbor_data_create(data, len, &ctx, NULL)) ||
+        !cn_cbor_mapput_int(map, 0, cdata, &ctx, NULL))
+    {
+        LS_ERROR(err, LS_ERR_NO_MEMORY);
+        goto cleanup;
     }
-    count += sz;
+    ret = tube_send_cbor(t, SPUD_DATA, false, false, map, err);
 
-    /* the data */
-    sz = cbor_encoder_write_head(preamble,
-                                 count,
-                                 sizeof(preamble),
-                                 CN_CBOR_BYTES,
-                                 len);
-    if (sz < 0) {
-      LS_ERROR(err, LS_ERR_OVERFLOW);
-      return false;
-    }
-    count += sz;
-
-    d[0] = preamble;
-    l[0] = count;
-    d[1] = data;
-    l[1] = len;
-    return tube_send(t, SPUD_DATA, false, false, d, l, 2, err);
+cleanup:
+    ls_pool_destroy(pool);
+    return ret;
 }
 
 LS_API bool tube_close(tube *t, ls_err *err)
