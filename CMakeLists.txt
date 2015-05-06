@@ -146,7 +146,6 @@ Include(ExternalProject)
 ExternalProject_Add(
    project_cn-cbor
    GIT_REPOSITORY https://github.com/hildjj/cn-cbor.git
-   GIT_TAG encoder-2
    CMAKE_ARGS -Doptimize=ON -Duse_context=ON -Dbuild_docs=OFF -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
    INSTALL_DIR "${dist_dir}"
 )
