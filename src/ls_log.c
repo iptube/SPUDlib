@@ -327,3 +327,29 @@ LS_API void ls_log_chunked(ls_loglevel level,
 
     _ls_log_fixed_function(stderr, "\n");
 }
+
+LS_API void ls_log_format_timeval(struct timeval *tv, const char *tag)
+{
+    size_t w_strftime;
+    char buf[28];
+    struct tm *gm;
+
+    if (!tv) {
+        ls_log(LS_LOG_INFO, "%s: NULL timeval", tag);
+        return;
+    }
+    gm = gmtime(&tv->tv_sec);
+    if (!gm)
+    {
+        return;
+    }
+    w_strftime = strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S", gm);
+    if ((w_strftime == 0) || (w_strftime > sizeof(buf)-1))
+    {
+        return;
+    }
+    if (snprintf(buf+w_strftime, sizeof(buf)-w_strftime, ".%06u", (unsigned)tv->tv_usec) < 0) {
+        return;
+    }
+    ls_log(LS_LOG_INFO, "%s: %s", tag, buf);
+}

@@ -113,16 +113,12 @@ LS_API void ls_data_set_memory_funcs(ls_data_malloc_func  malloc_func,
  * data. The function documentation will explicitly state what should be
  * released using ls_data_free.
  *
- * \see api-design for a detailed discussion of jwc memor  philosophy and design
- *
  * \param[in] ptr The pointer to be freed. May be NULL.
  */
 LS_API void ls_data_free(void *ptr);
 
 /**
  * Allocate 'size' bytes of memory and return a pointer of the allocated memory.
- *
- * \see api-design for a detailed discussion of jwc memory philosophy and design
  *
  * \param[in] size The number of bytes to allocate.
  * \retval void* Pointer to the allocated memory
@@ -131,8 +127,6 @@ LS_API void * ls_data_malloc(size_t size);
 
 /**
  * Changes the size of the memory block pointed to by 'ptr' to size 'size'.
- *
- * \see api-design for a detailed discussion of jwc memory philosophy and design
  *
  * \param[in] ptr The original block of memory allocated through ls_data_malloc.
  *              if ptr is NULL, this function is equivalent to ls_data_malloc.
@@ -146,8 +140,6 @@ LS_API void * ls_data_realloc(void *ptr, size_t size);
  * memory each and returns a pointer to the allocated memory.  The allocated
  * memory is filled with bytes of value zero.
  *
- * \see api-design for a detailed discussion of jwc memory philosophy and design
- *
  * \param[in] nmemb The number of contiguous chunks to allocate.
  * \param[in] size The number of bytes to allocate per chunk.
  * \retval void* Pointer to the allocated memory
@@ -156,8 +148,6 @@ LS_API void * ls_data_calloc(size_t nmemb, size_t size);
 
 /**
  * Duplicate a string by allocating memory
- *
- * \see api-design for a detailed discussion of jwc memory philosophy and design
  *
  * This function can generate the same errors as ls_data_malloc()
  *
@@ -169,8 +159,6 @@ LS_API char * ls_data_strdup(const char *src);
 
 /**
  * Duplicate a string by allocating memory
- *
- * \see api-design for a detailed discussion of jwc memory philosophy and design
  *
  * This function can generate the same errors as ls_data_malloc()
  *

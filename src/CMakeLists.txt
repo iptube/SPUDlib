@@ -9,10 +9,12 @@ set ( spud_srcs
       ls_htable.c
       ls_log.c
       ls_mem.c
+      ls_pktinfo.c
       ls_sockaddr.c
       ls_str.c
       spud.c
       tube.c
+      tube_manager.c
 )
 
 add_definitions(-DUSE_CBOR_CONTEXT)

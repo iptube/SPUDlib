@@ -29,20 +29,46 @@ CTEST(ls_sockaddr, length)
     ASSERT_TRUE( ls_sockaddr_get_length( (struct sockaddr *)&ip6addr ) == sizeof(struct sockaddr_in6));
 }
 
+CTEST(ls_sockaddr, port)
+{
+    struct sockaddr_storage addr;
+    memset(&addr, 0, sizeof(addr));
+
+    ASSERT_EQUAL(-1, ls_sockaddr_get_port((struct sockaddr*)&addr));
+
+    ls_sockaddr_v6_any((struct sockaddr_in6*)&addr, 443);
+    ASSERT_EQUAL(443, ls_sockaddr_get_port((struct sockaddr*)&addr));
+    ls_sockaddr_set_port((struct sockaddr*)&addr, 65535);
+    ASSERT_EQUAL(65535, ls_sockaddr_get_port((struct sockaddr*)&addr));
+
+    ls_sockaddr_v4_any((struct sockaddr_in*)&addr, 443);
+    ASSERT_EQUAL(443, ls_sockaddr_get_port((struct sockaddr*)&addr));
+    ls_sockaddr_set_port((struct sockaddr*)&addr, 65535);
+    ASSERT_EQUAL(65535, ls_sockaddr_get_port((struct sockaddr*)&addr));
+}
+
 CTEST(ls_sockaddr, get_remote_ip)
 {
     ls_err err;
-    struct sockaddr_in6 remoteAddr;
+    struct sockaddr_storage remoteAddr;
 
-    ASSERT_TRUE( ls_sockaddr_get_remote_ip_addr(&remoteAddr,
-                                                "1.2.3.4",
-                                                 "1402",
+    ASSERT_TRUE( ls_sockaddr_get_remote_ip_addr("1.2.3.4",
+                                                "1402",
+                                                (struct sockaddr *)&remoteAddr,
+                                                sizeof(remoteAddr),
+                                                &err) );
+
+    ASSERT_FALSE ( ls_sockaddr_get_remote_ip_addr("foo.invalid",
+                                                  "1402",
+                                                  (struct sockaddr *)&remoteAddr,
+                                                  sizeof(remoteAddr),
                                                   &err) );
 
-    ASSERT_FALSE ( ls_sockaddr_get_remote_ip_addr(&remoteAddr,
-                                             "foo.invalid",
-                                             "1402",
-                                             &err) );
+    ASSERT_FALSE ( ls_sockaddr_get_remote_ip_addr("localhost",
+                                                  "1402",
+                                                  (struct sockaddr *)&remoteAddr,
+                                                  0,
+                                                  &err) );
 }
 
 CTEST(ls_sockaddr, v6_any)
@@ -60,13 +86,15 @@ CTEST(ls_sockaddr, v6_any)
 
 CTEST(ls_addr, parse)
 {
-    struct in6_addr addr;
+    struct sockaddr_storage addr;
     ls_err err;
-    ASSERT_TRUE(ls_addr_parse("::1", &addr, &err));
-    ASSERT_TRUE(ls_addr_cmp(&addr, &in6addr_loopback) == 0);
-    ASSERT_TRUE(ls_addr_parse("127.0.0.1", &addr, &err));
-    ASSERT_TRUE(IN6_IS_ADDR_V4MAPPED(&addr));
-    ASSERT_FALSE(ls_addr_parse("fooobaaar", &addr, &err));
+    ASSERT_TRUE(ls_sockaddr_parse("::1", (struct sockaddr*)&addr, sizeof(addr), &err));
+    ASSERT_EQUAL(AF_INET6, addr.ss_family);
+    ASSERT_EQUAL(0, ls_addr_cmp6(&((struct sockaddr_in6*)&addr)->sin6_addr, &in6addr_loopback));
+    ASSERT_TRUE(ls_sockaddr_parse("127.0.0.1", (struct sockaddr*)&addr, sizeof(addr), &err));
+    ASSERT_EQUAL(AF_INET, addr.ss_family);
+    ASSERT_EQUAL(0x7f000001, ntohl((u_int32_t)((struct sockaddr_in*)&addr)->sin_addr.s_addr));
+    ASSERT_FALSE(ls_sockaddr_parse("fooobaaar", (struct sockaddr*)&addr, sizeof(addr), &err));
 }
 
 #include <stdio.h>
@@ -79,9 +107,17 @@ CTEST(ls_sockaddr, to_string)
     const char *iret = NULL;
 
     memset(&in4, 0, sizeof(in4));
+    iret = ls_sockaddr_to_string(NULL,
+                                 buf, 1, true);
+    ASSERT_STR("", iret);
+
     iret = ls_sockaddr_to_string((const struct sockaddr*)&in4,
                                  buf, 1, true);
-    ASSERT_TRUE(iret == NULL);
+    ASSERT_STR("", iret);
+
+    iret = ls_sockaddr_to_string((const struct sockaddr*)&in4,
+                                 buf, sizeof(buf), true);
+    ASSERT_STR("", iret);
 
     in4.sin_family = AF_INET;
     in4.sin_port = htons(65534);
@@ -119,22 +155,27 @@ CTEST(ls_sockaddr, to_string)
 
 CTEST(ls_sockaddr, cmp)
 {
-    struct sockaddr_in6 a1;
-    struct sockaddr_in6 a2;
+    struct sockaddr_in a1;
+    struct sockaddr_in a2;
     struct sockaddr_in b1;
     struct sockaddr_in b2;
+    struct sockaddr_in6 c1;
+    struct sockaddr_in6 c2;
+
     ls_err err;
 
     ASSERT_EQUAL( ls_sockaddr_cmp(NULL, NULL), 0 );
 
-    ASSERT_TRUE( ls_sockaddr_get_remote_ip_addr(&a1,
-                                                "1.2.3.4",
+    ASSERT_TRUE( ls_sockaddr_get_remote_ip_addr("1.2.3.4",
                                                 "1402",
+                                                (struct sockaddr*)&a1,
+                                                sizeof(a1),
                                                 &err) );
 
-    ASSERT_TRUE( ls_sockaddr_get_remote_ip_addr(&a2,
-                                                "1.2.3.4",
+    ASSERT_TRUE( ls_sockaddr_get_remote_ip_addr("1.2.3.4",
                                                 "1403",
+                                                (struct sockaddr*)&a2,
+                                                sizeof(a2),
                                                 &err) );
 
     ASSERT_TRUE( ls_sockaddr_cmp(NULL, (const struct sockaddr*)&a2) < 0 );
@@ -159,4 +200,13 @@ CTEST(ls_sockaddr, cmp)
     b2.sin_port = htons(1403);
     ASSERT_TRUE( ls_sockaddr_cmp((const struct sockaddr*)&b1, (const struct sockaddr*)&b2) < 0 );
     ASSERT_TRUE( ls_sockaddr_cmp((const struct sockaddr*)&b2, (const struct sockaddr*)&b1) > 0 );
+
+    memset(&c1, 0, sizeof(c1));
+    memset(&c2, 0, sizeof(c1));
+    ASSERT_EQUAL(0, ls_sockaddr_cmp((const struct sockaddr*)&c1, (const struct sockaddr*)&c2));
+    
+    ls_sockaddr_v6_any(&c1, 443);
+    ls_sockaddr_v6_any(&c2, 443);
+    ASSERT_EQUAL(0, ls_sockaddr_cmp((const struct sockaddr*)&c1, (const struct sockaddr*)&c2));
+    ASSERT_TRUE(ls_sockaddr_cmp((const struct sockaddr*)&b1, (const struct sockaddr*)&c2) < 0);
 }

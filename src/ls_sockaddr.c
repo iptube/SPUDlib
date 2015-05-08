@@ -11,35 +11,18 @@
 #include "ls_sockaddr.h"
 #include "ls_log.h"
 
-LS_API size_t ls_sockaddr_get_length(const struct sockaddr *addr)
+static bool get_first_addr(const char *hostname,
+                           const char *servname,
+                           const struct addrinfo *hints,
+                           struct sockaddr *addr,
+                           size_t addr_len,
+                           ls_err *err)
 {
-    switch (addr->sa_family) {
-    case AF_INET:
-        return sizeof(struct sockaddr_in);
-    case AF_INET6:
-        return sizeof(struct sockaddr_in6);
-    default:
-        //assert(false);
-        return -1;
-    }
-}
-
-LS_API bool ls_sockaddr_get_remote_ip_addr(struct sockaddr_in6 *remoteAddr,
-                                           const char *fqdn,
-                                           const char *port,
-                                           ls_err *err)
-{
-    struct addrinfo hints, *res, *p;
     int status;
-    bool found = false;
+    struct addrinfo *res, *p, *found;
+    bool ret = false;
 
-    memset(&hints, 0, sizeof hints);
-    hints.ai_flags = AI_V4MAPPED;
-    hints.ai_family = AF_INET6; // use AI_V4MAPPED for v4 addresses
-    hints.ai_protocol = IPPROTO_UDP;
-    hints.ai_socktype = SOCK_DGRAM;
-
-    if ((status = getaddrinfo(fqdn, port, &hints, &res)) != 0) {
+    if ((status = getaddrinfo(hostname, servname, hints, &res)) != 0) {
         if (err != NULL)
         {
             // HACK.  GAI errors on linux are negative, positive on OSX
@@ -52,19 +35,88 @@ LS_API bool ls_sockaddr_get_remote_ip_addr(struct sockaddr_in6 *remoteAddr,
         return false;
     }
 
-    for(p = res;p != NULL; p = p->ai_next) {
-        // copy the first match
-        if (p->ai_family == AF_INET6) { // Should always be v6 (mapped for v4)
-            memcpy(remoteAddr, p->ai_addr, sizeof(struct sockaddr_in6));
-            found = true;
+    // Take the first v6 address, otherwise take the first v4 address
+    found = NULL;
+    for (p = res; p != NULL; p = p->ai_next) {
+        if (p->ai_family == AF_INET6) {
+            found = p;
             break;
         }
+        else if (!found && (p->ai_family == AF_INET)) {
+            found = p;
+        }
     }
-    freeaddrinfo(res); // free the linked list
-    if (!found) {
+    if (found) {
+        if (addr_len < found->ai_addrlen) {
+            LS_ERROR(err, LS_ERR_OVERFLOW);
+        } else {
+            memcpy(addr, found->ai_addr, found->ai_addrlen);
+            ret = true;
+        }
+    } else {
         LS_ERROR(err, LS_ERR_NOT_FOUND);
     }
-    return found;
+
+    freeaddrinfo(res);
+    return ret;
+}
+
+LS_API size_t ls_sockaddr_get_length(const struct sockaddr *addr)
+{
+    assert(addr);
+    switch (addr->sa_family) {
+    case AF_INET:
+        return sizeof(struct sockaddr_in);
+    case AF_INET6:
+        return sizeof(struct sockaddr_in6);
+    default:
+        return -1;
+    }
+}
+
+LS_API int ls_sockaddr_get_port(const struct sockaddr *addr)
+{
+    assert(addr);
+    switch (addr->sa_family) {
+    case AF_INET:
+        return ntohs(((struct sockaddr_in*)addr)->sin_port);
+    case AF_INET6:
+        return ntohs(((struct sockaddr_in6*)addr)->sin6_port);
+    default:
+        return -1;
+    }
+
+}
+
+LS_API void ls_sockaddr_set_port(const struct sockaddr *addr, int port)
+{
+    assert(addr);
+    switch (addr->sa_family) {
+    case AF_INET:
+        ((struct sockaddr_in*)addr)->sin_port = htons(port);
+        break;
+    case AF_INET6:
+        ((struct sockaddr_in6*)addr)->sin6_port = htons(port);
+        break;
+    default:
+        assert(false); // LCOV_EXCL_LINE
+        break;
+    }
+}
+
+LS_API bool ls_sockaddr_get_remote_ip_addr(const char *fqdn,
+                                           const char *port,
+                                           struct sockaddr *remoteAddr,
+                                           size_t addr_len,
+                                           ls_err *err)
+{
+    struct addrinfo hints;
+
+    memset(&hints, 0, sizeof hints);
+    hints.ai_protocol = IPPROTO_UDP;
+    hints.ai_socktype = SOCK_DGRAM;
+
+    return get_first_addr(fqdn, port, &hints, remoteAddr, addr_len, err);
 }
 
 LS_API void ls_sockaddr_v6_any(struct sockaddr_in6 * sa, int port)
@@ -74,6 +126,15 @@ LS_API void ls_sockaddr_v6_any(struct sockaddr_in6 * sa, int port)
     sa->sin6_addr = in6addr_any;
     //sa->sin6_len = sizeof(*sa);
     sa->sin6_port = htons(port);
+}
+
+LS_API void ls_sockaddr_v4_any(struct sockaddr_in * sa, int port)
+{
+    memset(sa, 0, sizeof(*sa));
+    sa->sin_family = AF_INET;
+    sa->sin_addr.s_addr = htonl(INADDR_ANY);
+    //sa->sin6_len = sizeof(*sa);
+    sa->sin_port = htons(port);
 }
 
 LS_API void ls_sockaddr_copy(const struct sockaddr *src, struct sockaddr *dest) {
@@ -90,20 +151,23 @@ LS_API const char *ls_sockaddr_to_string(const struct sockaddr *sa,
     assert(dest);
     assert(destlen > 0);
 
+    if (!sa) {
+        goto warn;
+    }
     if (sa->sa_family == AF_INET)
     {
         if (destlen < INET_ADDRSTRLEN + 8)
         {
              /* 8 is enough for :port and termination addr:65535\n\0 */
-             dest[0] = '\0';
-             return dest;
+             goto warn;
         }
         else
         {
             const struct sockaddr_in *sa4 = (const struct sockaddr_in *)sa;
             iret = inet_ntop(AF_INET, &(sa4->sin_addr), dest, destlen);
             if (iret == NULL) {
-                return NULL; // TODO: should we take an ls_err*?
+                assert(false); // LCOV_EXCL_LINE Should be impossible
+                goto warn;     // LCOV_EXCL_LINE Should be impossible
             }
             if(addport){
                 r = strnlen(dest, INET_ADDRSTRLEN+1);
@@ -117,8 +181,7 @@ LS_API const char *ls_sockaddr_to_string(const struct sockaddr *sa,
         if (destlen < INET6_ADDRSTRLEN + 10)
         {
             /* 10 is enough for brackets, :port and termination [addr]:65535\n\0 */
-            dest[0] = '\0';
-            return dest;
+            goto warn;
         }
         else
         {
@@ -128,7 +191,8 @@ LS_API const char *ls_sockaddr_to_string(const struct sockaddr *sa,
             }
             iret = inet_ntop(AF_INET6, &(sa6->sin6_addr), dest+r, destlen);
             if (iret == NULL) {
-                return NULL;
+                assert(false); // LCOV_EXCL_LINE Should be impossible
+                goto warn;     // LCOV_EXCL_LINE Should be impossible
             }
             r = strnlen(dest, INET6_ADDRSTRLEN+2);
 
@@ -140,54 +204,26 @@ LS_API const char *ls_sockaddr_to_string(const struct sockaddr *sa,
         }
     }
 
-    return NULL;
+warn:
+    dest[0] = '\0';
+    return dest;
 }
 
-LS_API bool ls_addr_parse(const char *src,
-                          struct in6_addr *addr,
-                          ls_err *err)
+LS_API bool ls_sockaddr_parse(const char *src,
+                              struct sockaddr *addr,
+                              size_t addr_len,
+                              ls_err *err)
 {
-    struct addrinfo hints, *res, *p;
-    int status;
-    bool found = false;
-
+    struct addrinfo hints;
     memset(&hints, 0, sizeof hints);
-    hints.ai_flags = AI_V4MAPPED | AI_NUMERICHOST;
-    hints.ai_family = AF_INET6; // use AI_V4MAPPED for v4 addresses
+    hints.ai_flags = AI_NUMERICHOST;
     hints.ai_protocol = IPPROTO_UDP;
     hints.ai_socktype = SOCK_DGRAM;
 
-    if ((status = getaddrinfo(src, NULL, &hints, &res)) != 0) {
-        if (err != NULL)
-        {
-            // HACK.  GAI errors on linux are negative, positive on OSX
-            err->code = ls_err_gai(status);
-            err->message = gai_strerror(status);
-            err->function = __func__;
-            err->file = __FILE__;
-            err->line = __LINE__;
-        }
-        return false;
-    }
-
-    // TODO: make two passes, check if there is a non-mapped v6 address to prefer?
-    // or will the "real" v6 addresses be sorted first?
-    for(p = res; p != NULL; p = p->ai_next) {
-        // copy the first match
-        if (p->ai_family == AF_INET6) { // Should always be v6 (mapped for v4)
-            memcpy(addr, &((struct sockaddr_in6*)p->ai_addr)->sin6_addr, sizeof(*addr));
-            found = true;
-            break;
-        }
-    }
-    freeaddrinfo(res); // free the linked list
-    if (!found) {
-        LS_ERROR(err, LS_ERR_NOT_FOUND);
-    }
-    return found;
+    return get_first_addr(src, NULL, &hints, addr, addr_len, err);
 }
 
-LS_API int ls_addr_cmp(const struct in6_addr *a, const struct in6_addr *b)
+LS_API int ls_addr_cmp6(const struct in6_addr *a, const struct in6_addr *b)
 {
     return memcmp(a, b, sizeof(struct in6_addr));
 }
@@ -226,12 +262,12 @@ LS_API int ls_sockaddr_cmp(const struct sockaddr * sa,
     case AF_INET6:
         a_in6 = (struct sockaddr_in6 *)sa;
         b_in6 = (struct sockaddr_in6 *)sb;
-        diff = ls_addr_cmp(&a_in6->sin6_addr, &b_in6->sin6_addr);
+        diff = ls_addr_cmp6(&a_in6->sin6_addr, &b_in6->sin6_addr);
         if (diff != 0) { return diff; }
         return ntohs(a_in6->sin6_port) - ntohs(b_in6->sin6_port);
         break;
     default:
-        assert(false);
+        break;
     }
     return 0;
 }

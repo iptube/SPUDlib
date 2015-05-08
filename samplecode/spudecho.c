@@ -3,16 +3,13 @@
  */
 
 #include <errno.h>
-#include <netinet/in.h>
 #include <stdio.h>
 #include <strings.h>
-#include <sys/socket.h>
-#include <signal.h>
 #include <string.h>
 #include <stdlib.h>
 
 #include "spud.h"
-#include "tube.h"
+#include "tube_manager.h"
 #include "ls_htable.h"
 #include "ls_log.h"
 #include "ls_sockaddr.h"
@@ -22,6 +19,12 @@
 #define MAX_LISTEN_SOCKETS 10
 
 tube_manager *mgr = NULL;
+
+typedef struct _delay_write_t {
+    tube *t;
+    uint8_t *buf;
+    size_t length;
+} delay_write_t;
 
 typedef struct _context_t {
     size_t count;
@@ -35,8 +38,11 @@ context_t *new_context() {
 
 void teardown()
 {
+    ls_err err;
     ls_log(LS_LOG_INFO, "Quitting...");
-    tube_manager_stop(mgr);
+    if (!tube_manager_stop(mgr, &err)) {
+        LS_LOG_ERR(err, "tube_manager_stop");
+    }
 }
 
 void print_stats()
@@ -44,33 +50,54 @@ void print_stats()
     ls_log(LS_LOG_INFO, "Tube count: %zu", tube_manager_size(mgr));
 }
 
+static void read_delay(const struct timeval *now, const void *ctx)
+{
+    delay_write_t *dw = (delay_write_t*)ctx;
+    ls_err err;
+    context_t *c = tube_get_data(dw->t);
+
+    UNUSED_PARAM(now);
+
+    if (!tube_data(dw->t, dw->buf, dw->length, &err)) {
+        LS_LOG_ERR(err, "tube_data");
+    }
+    ls_data_free(dw->buf);
+    ls_data_free(dw);
+    c->count++;
+}
+
 static void read_cb(ls_event_data evt,
                     void *arg)
 {
     tube_event_data *td = evt->data;
+    delay_write_t *dw;
     ls_err err;
-    context_t *c = tube_get_data(td->t);
-
     UNUSED_PARAM(arg);
 
+    dw = ls_data_calloc(1, sizeof(*dw));
+    if (!dw) {
+        ls_log(LS_LOG_ERROR, "%s:%d ls_data_malloc", __FILE__, __LINE__);
+        return;
+    }
+    dw->t = td->t;
     if (td->cbor) {
         const cn_cbor *cp = cn_cbor_mapget_int(td->cbor, 0);
         if (cp) {
-            // echo
-            if (!tube_data(td->t, (uint8_t*)cp->v.str, cp->length, &err)) {
-                LS_LOG_ERR(err, "tube_data");
-            }
-            else 
+            dw->length = cp->length;
+            dw->buf = ls_data_malloc(cp->length);
+            if (!dw->buf)
             {
-                ls_log(LS_LOG_VERBOSE, "Received %s", (uint8_t*)cp->v.str);
+                ls_log(LS_LOG_ERROR, "ls_data_malloc");
+                ls_data_free(dw);
+                return;
             }
-        } else {
-            if (!tube_data(td->t, NULL, 0, &err)) {
-                LS_LOG_ERR(err, "tube_data");
-            }
+            memcpy(dw->buf, cp->v.str, dw->length);
+            ls_log(LS_LOG_VERBOSE, "Received %*s", (int)dw->length, dw->buf);
         }
     }
-    c->count++;
+    if (!tube_manager_schedule_ms(mgr, 10, read_delay, dw, &err)) {
+        LS_LOG_ERR(err, "tube_manager_schedule_ms");
+    }
 }
 
 static void close_cb(ls_event_data evt,
@@ -106,19 +133,23 @@ static void remove_cb(ls_event_data evt,
 
 int main(int argc, char** argv)
 {
+    ls_err err;
+
     if (argc > 1 && !strcmp(argv[1], "-v"))
     {
         ls_log_set_level(LS_LOG_VERBOSE);
-    } 
- 
-    ls_err err;
-
-    signal(SIGUSR1, print_stats);
+    }
 
     if (!tube_manager_create(0, &mgr, &err)) {
         LS_LOG_ERR(err, "tube_manager_create");
         return 1;
     }
+
+    if (!tube_manager_signal(mgr, SIGUSR1, print_stats, &err)) {
+        LS_LOG_ERR(err, "tube_manager_signal");
+        return 1;
+    }
+
     if (!tube_manager_socket(mgr, MYPORT, &err)) {
       LS_LOG_ERR(err, "tube_manager_socket");
       return 1;

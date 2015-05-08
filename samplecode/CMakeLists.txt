@@ -2,6 +2,9 @@
 #
 # Sample programs
 
+add_executable ( timertest timertest.c )
+target_link_libraries ( timertest PRIVATE spud cn-cbor pthread )
+
 add_executable ( spudtest spudtest.c )
 target_link_libraries ( spudtest PRIVATE spud cn-cbor pthread )
 

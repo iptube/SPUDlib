@@ -2,8 +2,9 @@
  * Copyright (c) 2015 SPUDlib authors.  See LICENSE file.
  */
 
-#include <stdio.h>
 #include <netdb.h>
+#include <stdio.h>
+#include <string.h>
 
 #include "ls_error.h"
 
@@ -38,7 +39,7 @@ LS_API const char * ls_err_message(ls_errcode code)
         else if (ic < GAI_OFFSET_POS) {
             return gai_strerror(-(ic-GAI_OFFSET_POS));
         }
-        return sys_errlist[-ic];
+        return strerror(-ic);
     }
     if (ic > LS_ERR_USER) {
         return "Unknown code";

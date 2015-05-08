@@ -11,6 +11,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <sys/errno.h>
+#include <sys/time.h>
 
 #include "ls_mem.h"
 
@@ -215,5 +216,26 @@ LS_API void ls_log_chunked(ls_loglevel level,
         ls_log_generator_fn generator_fn, void *arg,
         const char *fmt, ...) __attribute__ ((__format__ (__printf__, 4, 5)));
 
-#define LS_LOG_ERR(err, what) ls_log(LS_LOG_ERROR, "%s:%d (%s) %d, %s", __FILE__, __LINE__, (what), (err).code, (err).message)
+/**
+ * Log the specified time in human-readable form.
+ *
+ * @param[in] tv  The time to log
+ * @param[in] tag A string describing the logged time
+ */
+LS_API void ls_log_format_timeval(struct timeval *tv, const char *tag);
+
+/**
+ * Log the specified error, with the current information, where the error came
+ * from, etc.
+ *
+ * @param[in]  err     The error to log
+ * @param[in]  what    A string describing what failed
+ */
+#define LS_LOG_ERR(err, what) ls_log(LS_LOG_ERROR, "%s:%d->%s%zu (%s) %d, %s", __FILE__, __LINE__, (err).file, (err).line, (what), (err).code, (err).message)
+
+/**
+ * ls_log equivalent of perror
+ *
+ * @param[in]  what    A string describing what failed
+ */
 #define LS_LOG_PERROR(what) ls_log(LS_LOG_ERROR, "%s:%d (%s) %d, %s", __FILE__, __LINE__, (what), errno, strerror(errno))
