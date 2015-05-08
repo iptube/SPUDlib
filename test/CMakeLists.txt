@@ -12,7 +12,6 @@ function (ls_test name)
   add_test ( NAME ${name} COMMAND ${name}_test )
 endfunction()
 
-ls_test ( cbor )
 ls_test ( ls_error )
 ls_test ( ls_eventing )
 ls_test ( ls_htable )

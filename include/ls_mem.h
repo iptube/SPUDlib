@@ -53,8 +53,8 @@ typedef struct _ls_pool_int ls_pool;
  * A callback invoked when the bound pool entry is destroyed.
  *
  * \param[in] arg Argument bound to cleaner when it was added.
- *                  Typically the pointer about to be freed
- *                  but it may be any user data.
+ *                Typically the pointer about to be freed
+ *                but it may be any user data.
  */
 typedef void (*ls_pool_cleaner)(void *arg);
 

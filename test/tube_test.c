@@ -260,25 +260,24 @@ CTEST2(tube, send_pdec)
     uint8_t token[] = {42, 42, 42, 42, 42};
     char url[]= "http://example.com";
     struct sockaddr_in6 remoteAddr;
+    cn_cbor_context ctx;
+    cn_cbor *map;
 
     ASSERT_TRUE(ls_sockaddr_get_remote_ip_addr(&remoteAddr,
                                                "127.0.0.1",
                                                "1402",
-                                            &data->err));
+                                               &data->err));
 
     ASSERT_TRUE( tube_create(data->mgr, &t, &data->err) );
 
     ASSERT_TRUE( tube_open(t, (const struct sockaddr*)&remoteAddr, &data->err) );
 
-    cn_cbor **cbor=ls_data_malloc(sizeof(cn_cbor*));
 
+    ASSERT_TRUE(path_mandatory_keys_create(ip, sizeof(ip), token, sizeof(token), url, &ctx, &map, &data->err));
 
-    path_create_mandatory_keys(cbor, ip, 4, token, 5, url); //TODO error checking
+    ASSERT_TRUE( tube_send_pdec(t,map,true, &data->err) );
 
-    ASSERT_TRUE( tube_send_pdec(t,*cbor,true, &data->err) );
-
-    ls_data_free(*cbor);
-    ls_data_free(cbor);
+    ls_pool_destroy((ls_pool*)ctx.context);
 
     tube_manager_remove(data->mgr, t);
     ASSERT_EQUAL(tube_manager_size(data->mgr), 0);
