@@ -3,10 +3,10 @@
 # top level build file for the SPUDlib
 
 ## prepare CMAKE
-cmake_minimum_required ( VERSION 3.0.0 )
+cmake_minimum_required ( VERSION 3.2.0 )
 
-set ( SPUDLIB_VERSION_MAJOR 0 CACHE STRING "Project major version number")
-set ( SPUDLIB_VERSION_MINOR "3" CACHE STRING "Project minor version number" )
+set ( SPUDLIB_VERSION_MAJOR "0" CACHE STRING "Project major version number")
+set ( SPUDLIB_VERSION_MINOR "4" CACHE STRING "Project minor version number" )
 set ( SPUDLIB_VERSION_PATCH "0" CACHE STRING "Project patch version number" )
 mark_as_advanced(SPUDLIB_VERSION_MAJOR SPUDLIB_VERSION_MINOR SPUDLIB_VERSION_PATCH)
 
@@ -90,6 +90,9 @@ if ( verbose )
   set ( CMAKE_VERBOSE_MAKEFILE ON )
 endif ()
 
+find_program( MEMORYCHECK_COMMAND valgrind )
+set( MEMORYCHECK_COMMAND_OPTIONS "--trace-children=yes --leak-check=full" )
+
 install (FILES AUTHORS LICENSE README.md DESTINATION .)
 
 ## setup packaging
@@ -148,6 +151,7 @@ ExternalProject_Add(
    GIT_REPOSITORY https://github.com/hildjj/cn-cbor.git
    CMAKE_ARGS -Doptimize=OFF -Duse_context=ON -Dbuild_docs=OFF -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
    INSTALL_DIR "${dist_dir}"
+   UPDATE_DISCONNECTED 1
 )
 
 ExternalProject_Get_Property(project_cn-cbor install_dir)

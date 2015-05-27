@@ -340,3 +340,13 @@ CTEST2(ls_log, set_level)
     ls_log(LS_LOG_ERROR, "Error");
     ASSERT_EQUAL(_log_offset, 0);
 }
+
+CTEST2(ls_log, format_timeval)
+{
+    UNUSED_PARAM(data);
+    
+    struct timeval tv = {0, 0};
+    ls_log_format_timeval(NULL, NULL);
+    ls_log_format_timeval(NULL, "foo");
+    ls_log_format_timeval(&tv, "foo");
+}

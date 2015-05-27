@@ -5,13 +5,11 @@
 #include <string.h>
 #include <stdio.h>
 
-#include <netinet/ip.h>
 #include <pthread.h>
-#include <signal.h>
 #include <stdlib.h>
 
 #include "spud.h"
-#include "tube.h"
+#include "tube_manager.h"
 #include "ls_log.h"
 #include "ls_sockaddr.h"
 #include "ls_htable.h"
@@ -23,8 +21,8 @@
 pthread_t listenThread;
 tube_manager *mgr = NULL;
 tube *tubes[NUM_TUBES];
-struct sockaddr_in6 remoteAddr;
-struct sockaddr_in6 localAddr;
+struct sockaddr_storage remoteAddr;
+struct sockaddr_storage localAddr;
 uint8_t data[1024];
 
 static int markov()
@@ -44,7 +42,7 @@ static int markov()
         i = random() % NUM_TUBES;
         t = tubes[i];
         if (!t) {
-            if (!tube_create(mgr, &t, &err)) {
+            if (!tube_create(&t, &err)) {
                 LS_LOG_ERR(err, "tube_create");
                 return 1;
             }
@@ -58,8 +56,11 @@ static int markov()
             ls_log(LS_LOG_ERROR, "invalid tube state");
             return 1;
         case TS_UNKNOWN:
-            if (!tube_open(t, (struct sockaddr*)&remoteAddr, &err)) {
-                LS_LOG_ERR(err, "tube_open");
+            if (!tube_manager_open_tube(mgr,
+                                        (const struct sockaddr*)&remoteAddr,
+                                        &t,
+                                        &err)) {
+                LS_LOG_ERR(err, "tube_manager_open_tube");
                 return 1;
             }
             break;
@@ -111,7 +112,10 @@ static void remove_cb(ls_event_data evt, void *arg)
 }
 
 void done() {
-    tube_manager_stop(mgr);
+    ls_err err;
+    if (!tube_manager_stop(mgr, &err)) {
+        LS_LOG_ERR(err, "tube_manager_stop");
+    }
     pthread_cancel(listenThread);
     pthread_join(listenThread, NULL);
     ls_log(LS_LOG_INFO, "DONE!");
@@ -138,9 +142,10 @@ int spudtest(int argc, char **argv)
         data[i] = nums[i % 10];
     }
 
-    if(!ls_sockaddr_get_remote_ip_addr(&remoteAddr,
-                                       argv[1],
+    if(!ls_sockaddr_get_remote_ip_addr(argv[1],
                                        "1402",
+                                       (struct sockaddr*)&remoteAddr,
+                                       sizeof(remoteAddr),
                                        &err)) {
         return 1;
     }
@@ -154,6 +159,11 @@ int spudtest(int argc, char **argv)
         return 1;
     }
 
+    if (!tube_manager_signal(mgr, SIGINT, done, &err)) {
+        LS_LOG_ERR(err, "tube_manager_signal");
+        return 1;
+    }
+
     if (!tube_manager_bind_event(mgr, EV_REMOVE_NAME, remove_cb, &err)) {
         LS_LOG_ERR(err, "tube_manager_bind_event");
         return 1;
@@ -163,7 +173,6 @@ int spudtest(int argc, char **argv)
 
     //Start and listen to the sockets.
     pthread_create(&listenThread, NULL, socketListen, NULL);
-    signal(SIGINT, done);
 
     return markov();
 }

@@ -5,29 +5,18 @@
 #include <string.h>
 #include <stdio.h>
 
-#include <netinet/ip.h>
-#include <pthread.h>
-#include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <arpa/inet.h>
 
 #include "spud.h"
-#include "tube.h"
+#include "tube_manager.h"
 #include "ls_error.h"
 #include "ls_log.h"
 #include "ls_sockaddr.h"
 
-#define LOGI(...) printf(__VA_ARGS__)
-#define LOGV(...) ls_log(LS_LOG_VERBOSE, __VA_ARGS__)
-#define LOGE(...) ls_log(LS_LOG_ERROR, __VA_ARGS__)
-
 #define ESC_7C 	"\033[7C"
 
 #define MAXBUFLEN 2048
-
-pthread_t sendDataThread;
-pthread_t listenThread;
 
 static const int numChar = 53;
 static const char* s1= "[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~[_]~~ c[_]~~ c[_]~~ COFFEE BREAK c[_]~~ c[_]~~ c[_]~~";
@@ -46,43 +35,30 @@ struct test_config {
 };
 struct test_config config;
 
-static void *sendData(void *arg)
+static void sendData(const struct timeval *actual, const void *context)
 {
-    struct timespec timer;
-    struct timespec remaining;
     unsigned char buf[1024];
     int i;
     ls_err err;
-    UNUSED_PARAM(arg);
+    UNUSED_PARAM(actual);
+    UNUSED_PARAM(context);
 
-    //How fast? Pretty fast..
-    timer.tv_sec = 0;
-    timer.tv_nsec = 50000000;
+    config.numSentPkts++;
 
-    while (tube_manager_running(mgr)) {
-        nanosleep(&timer, &remaining);
-        config.numSentPkts++;
-
-        for (i=0; i<1; i++) {
-            int len = (numChar*i);
-            // TODO: parse this.
-            memcpy(buf+len, s1+(config.numSentPkts%numChar)+(numChar*i), numChar);
-        }
-        if (!tube_data(config.t, buf, strlen(s1), &err)) {
-            LS_LOG_ERR(err, "tube_data");
-        }
+    for (i=0; i<1; i++) {
+        int len = (numChar*i);
+        // TODO: parse this.
+        memcpy(buf+len, s1+(config.numSentPkts%numChar)+(numChar*i), numChar);
     }
-    return NULL;
-}
 
-static void *socketListen(void *arg){
-    ls_err err;
-    UNUSED_PARAM(arg);
-
-    if (!tube_manager_loop(mgr, &err)) {
-        LS_LOG_ERR(err, "tube_manager_loop");
+    if (!tube_data(config.t, buf, strlen(s1), &err)) {
+        LS_LOG_ERR(err, "tube_data");
     }
-    return NULL;
+
+    if (!tube_manager_schedule_ms(mgr, 50, sendData, NULL, &err)) {
+        LS_LOG_ERR(err, "tube_manager_schedule_ms");
+        return;
+    }
 }
 
 static void data_cb(ls_event_data evt, void *arg)
@@ -95,9 +71,12 @@ static void data_cb(ls_event_data evt, void *arg)
         const cn_cbor *data = cn_cbor_mapget_int(td->cbor, 0);
         ((char*)data->v.str)[data->length-1] = '\0';  // TODO: cheating
         if (data && (data->type==CN_CBOR_TEXT || data->type==CN_CBOR_BYTES)) {
-            LOGI("\r " ESC_7C " RX: %i  %s",
-                 config.numRcvdPkts,
-                 data->v.str);
+            // printf("\r " ESC_7C " RX: %i  %s",
+            //        config.numRcvdPkts,
+            //        data->v.str);
+            printf(" RX: %i  %s\n",
+                   config.numRcvdPkts,
+                   data->v.str);
         }
     }
 }
@@ -105,17 +84,47 @@ static void data_cb(ls_event_data evt, void *arg)
 static void running_cb(ls_event_data evt, void *arg)
 {
     UNUSED_PARAM(evt);
-    printf("running!\n");
+    UNUSED_PARAM(arg);
+    ls_log(LS_LOG_INFO, "running!");
 
-    //Start a thread that sends packet to the destination
-    pthread_create(&sendDataThread, NULL, sendData, arg);
+    sendData(NULL, NULL);
 }
 
-void done() {
-    tube_manager_stop(mgr);
-    pthread_join(sendDataThread, NULL);
-    LOGI("\nDONE!\n");
-    exit(0);
+static void loopstart_cb(ls_event_data evt, void *arg)
+{
+    ls_err err;
+    UNUSED_PARAM(evt);
+    UNUSED_PARAM(arg);
+
+    if (!tube_manager_open_tube(mgr,
+                                (const struct sockaddr*)&config.remoteAddr,
+                                &config.t,
+                                &err)) {
+        LS_LOG_ERR(err, "tube_open");
+        return;
+    }
+
+    if (!tube_print(config.t, &err)) {
+        LS_LOG_ERR(err, "tube_print");
+        return;
+    }
+}
+
+void done(const struct timeval *actual, const void *context)
+{
+    ls_err err;
+    UNUSED_PARAM(actual);
+    UNUSED_PARAM(context);
+    printf("done\n");
+    if (!tube_manager_stop(mgr, &err)) {
+        LS_LOG_ERR(err, "tube_manager_stop");
+    }
+}
+
+void done_sig(int sig)
+{
+    UNUSED_PARAM(sig);
+    done(NULL, NULL);
 }
 
 static void usage(void)
@@ -133,9 +142,8 @@ int spudtest(int argc, char **argv)
 {
     ls_err err;
     int ch;
-    char buf[1024];
-    struct in6_addr addr;
-    bool has_addr = false;;
+    struct sockaddr_storage addr;
+    //bool has_addr = false;;
 
     while ((ch = getopt(argc, argv, "?hvs:")) != -1) {
         switch (ch) {
@@ -143,11 +151,11 @@ int spudtest(int argc, char **argv)
             ls_log_set_level(LS_LOG_VERBOSE);
             break;
         case 's':
-            if (!ls_addr_parse(optarg, &addr, &err)) {
+            if (!ls_sockaddr_parse(optarg, (struct sockaddr*)&addr, sizeof(addr), &err)) {
                 LS_LOG_ERR(err, "Invalid address");
                 return 1;
             }
-            has_addr = true;
+            //has_addr = true;
             break;
         case 'h':
         case '?':
@@ -163,12 +171,13 @@ int spudtest(int argc, char **argv)
         usage();
     }
 
-    LOGI("entering spudtest\n");
+    ls_log(LS_LOG_INFO, "entering spudtest");
     memset(&config, 0, sizeof(config));
 
-    if(!ls_sockaddr_get_remote_ip_addr((struct sockaddr_in6*)&config.remoteAddr,
-                                       argv[0],
+    if(!ls_sockaddr_get_remote_ip_addr(argv[0],
                                        "1402",
+                                       (struct sockaddr*)&config.remoteAddr,
+                                       sizeof(config.remoteAddr),
                                        &err)) {
         LS_LOG_ERR(err, "ls_sockaddr_get_remote_ip_addr");
         return 1;
@@ -183,40 +192,32 @@ int spudtest(int argc, char **argv)
         return 1;
     }
 
-    if (!tube_create(mgr, &config.t, &err)) {
-        LS_LOG_ERR(err, "tube_create");
-        return 1;
-    }
+    // TODO: make source addresses work (again?).
+    // if (has_addr) {
+    //     LOGI("source address: %s\n", inet_ntop(AF_INET6, &addr, buf, sizeof(buf)));
+    // }
 
-    if (has_addr) {
-        LOGI("source address: %s\n", inet_ntop(AF_INET6, &addr, buf, sizeof(buf)));
-    }
-
-    if (!tube_manager_bind_event(mgr, EV_RUNNING_NAME, running_cb, &err) ||
+    if (!tube_manager_bind_event(mgr, EV_LOOPSTART_NAME, loopstart_cb, &err) ||
+        !tube_manager_bind_event(mgr, EV_RUNNING_NAME, running_cb, &err) ||
         !tube_manager_bind_event(mgr, EV_DATA_NAME, data_cb, &err)) {
         LS_LOG_ERR(err, "tube_manager_bind_event");
         return 1;
     }
 
-    if (!tube_print(config.t, &err)) {
-        LS_LOG_ERR(err, "tube_print");
-        return 1;
-    }
-    ls_log(LS_LOG_INFO, "-> %s\n", ls_sockaddr_to_string((struct sockaddr*)&config.remoteAddr, buf, sizeof(buf), true));
-
-    //Start and listen to the sockets.
-    pthread_create(&listenThread, NULL, socketListen, NULL);
-    signal(SIGINT, done);
-
-    if (!tube_open(config.t, (const struct sockaddr*)&config.remoteAddr, &err)) {
-        LS_LOG_ERR(err, "tube_open");
+    if (!tube_manager_signal(mgr, SIGINT, done_sig, &err)) {
+        LS_LOG_ERR(err, "tube_manager_signal");
         return 1;
     }
 
-    //Just wait a bit
-    sleep(5);
-    done();
-    //done exits...
+    if (!tube_manager_schedule_ms(mgr, 5000, done, NULL, &err)) {
+        LS_LOG_ERR(err, "tube_manager_schedule_ms");
+        return 1;
+    }
+
+    if (!tube_manager_loop(mgr, &err)) {
+        LS_LOG_ERR(err, "tube_manager_loop");
+    }
+
     return 0;
 }
 
