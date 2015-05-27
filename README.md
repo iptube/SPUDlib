@@ -21,6 +21,7 @@ against in build/dist/lib.
 ## Development
 
 You need to have [cmake](http://www.cmake.org/ to build.
+Note that version 3.2 or newer is needed. (Some linux distributions are a bit slow to update, so manuall install may be needed.)
 
 ### Unit Tests
 
