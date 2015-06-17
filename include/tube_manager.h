@@ -13,6 +13,7 @@
 #include "spud.h"
 #include "ls_error.h"
 #include "ls_event.h"
+#include "ls_htable.h"
 #include "tube.h"
 
 /**
