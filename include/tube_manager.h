@@ -340,3 +340,16 @@ LS_API void tube_manager_set_socket_functions(tube_sendmsg_func send,
  * \param[in] mgr
  */
 LS_API void tube_manager_print_tubes(tube_manager *mgr);
+
+/**
+ * Iterate over every tube in mgr's control, performing some arbitrary action.
+ *
+ * \invariant mgr != NULL
+ * \invariant walker != NULL
+ * \param[in] mgr
+ * \param[in] walker
+ * \param[in] data
+ */
+LS_API void tube_manager_foreach(tube_manager *mgr,
+                                 ls_htable_walkfunc walker,
+                                 void *data);
