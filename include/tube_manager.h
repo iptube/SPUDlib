@@ -13,7 +13,6 @@
 #include "spud.h"
 #include "ls_error.h"
 #include "ls_event.h"
-#include "ls_htable.h"
 #include "tube.h"
 
 /**
@@ -79,6 +78,19 @@ typedef ssize_t (*tube_sendmsg_func)(int socket,
 typedef ssize_t (*tube_recvmsg_func)(int socket,
                                      struct msghdr *message,
                                      int flags);
+
+/**
+ * Type of the function called when iterating over all tubes under the manager's
+ * control.  See tube_manager_foreach.
+ *
+ * \param user_data Optional data provided
+ * \param tube_id The ID of the current tube.
+ * \param tube The current tube.
+ * \retval int Nonzero to continue iterating (continue), 0 to stop (break).
+ */
+typedef int (*tube_walker_func)(void *user_data,
+                                const struct _spud_tube_id *tube_id,
+                                struct _tube *tube);
 
 /**
  * Type of tube event data; passed to event handler.
@@ -347,10 +359,10 @@ LS_API void tube_manager_print_tubes(tube_manager *mgr);
  *
  * \invariant mgr != NULL
  * \invariant walker != NULL
- * \param[in] mgr
- * \param[in] walker
- * \param[in] data
+ * \param[in] mgr The tube manager to iterate over.
+ * \param[in] walker The walker function to be called on each iteration.
+ * \param[in] data Optional data supplied to the walker on each iteration.
  */
 LS_API void tube_manager_foreach(tube_manager *mgr,
-                                 ls_htable_walkfunc walker,
+                                 tube_walker_func walker,
                                  void *data);
