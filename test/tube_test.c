@@ -271,7 +271,7 @@ CTEST2(tube, print_tubes)
 
 static int _mock_tube_walker(void *data,
                              const spud_tube_id *tube_id,
-                             tube * t)
+                             tube *t)
 {
     UNUSED_PARAM(tube_id);
     UNUSED_PARAM(t);
@@ -283,10 +283,7 @@ static int _mock_tube_walker(void *data,
 CTEST2(tube, manager_foreach)
 {
     #ifndef TMGR_FOREACH_NUMTUBES
-        #define TMGR_FOREACH_NUMTUBES 3
-    #else
-        ASSERT_FAIL();
-    #endif
+    #define TMGR_FOREACH_NUMTUBES 3
 
     tube * tubes[TMGR_FOREACH_NUMTUBES];
     spud_tube_id ids[TMGR_FOREACH_NUMTUBES];
@@ -303,4 +300,7 @@ CTEST2(tube, manager_foreach)
     ASSERT_TRUE(num_tubes == TMGR_FOREACH_NUMTUBES);
 
     #undef TMGR_FOREACH_NUMTUBES
+    #else
+    ASSERT_FAIL();
+    #endif
 }
