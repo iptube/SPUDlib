@@ -268,3 +268,39 @@ CTEST2(tube, print_tubes)
     ASSERT_TRUE(tube_manager_add(data->mgr, t, &data->err));
     tube_manager_print_tubes(data->mgr);
 }
+
+static int _mock_tube_walker(void *data,
+                             const spud_tube_id *tube_id,
+                             tube * t)
+{
+    UNUSED_PARAM(tube_id);
+    UNUSED_PARAM(t);
+    int *num_tubes = (int *) data;
+    (*num_tubes)++;
+    return 1;
+}
+
+CTEST2(tube, manager_foreach)
+{
+    #ifndef TMGR_FOREACH_NUMTUBES
+        #define TMGR_FOREACH_NUMTUBES 3
+    #else
+        ASSERT_FAIL();
+    #endif
+
+    tube * tubes[TMGR_FOREACH_NUMTUBES];
+    spud_tube_id ids[TMGR_FOREACH_NUMTUBES];
+
+    for (int i = 0; i < TMGR_FOREACH_NUMTUBES; ++i) {
+        ASSERT_TRUE(tube_create(&tubes[i], &data->err));
+        ASSERT_TRUE(spud_create_id(&ids[i], &data->err));
+        tube_set_info(tubes[i], -1, NULL, &ids[i]);
+        ASSERT_TRUE(tube_manager_add(data->mgr, tubes[i], &data->err));
+    }
+
+    int num_tubes = 0;
+    tube_manager_foreach(data->mgr, _mock_tube_walker, (void *) &num_tubes);
+    ASSERT_TRUE(num_tubes == TMGR_FOREACH_NUMTUBES);
+
+    #undef TMGR_FOREACH_NUMTUBES
+}
