@@ -1008,3 +1008,13 @@ LS_API void tube_manager_print_tubes(tube_manager *mgr)
     assert(mgr);
     ls_htable_walk(mgr->tubes, log_walk, mgr);
 }
+
+LS_API void tube_manager_foreach(tube_manager *mgr,
+                                 tube_walker_func walker,
+                                 void *data)
+{
+    assert(mgr);
+    assert(walker);
+
+    ls_htable_walk(mgr->tubes, (ls_htable_walkfunc) walker, data);
+}

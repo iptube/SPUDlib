@@ -80,6 +80,19 @@ typedef ssize_t (*tube_recvmsg_func)(int socket,
                                      int flags);
 
 /**
+ * Type of the function called when iterating over all tubes under the manager's
+ * control.  See tube_manager_foreach.
+ *
+ * \param user_data Optional data provided
+ * \param tube_id The ID of the current tube.
+ * \param tube The current tube.
+ * \retval int Nonzero to continue iterating (continue), 0 to stop (break).
+ */
+typedef int (*tube_walker_func)(void *user_data,
+                                const struct _spud_tube_id *tube_id,
+                                struct _tube *tube);
+
+/**
  * Type of tube event data; passed to event handler.
  */
 typedef struct _tube_event_data {
@@ -340,3 +353,16 @@ LS_API void tube_manager_set_socket_functions(tube_sendmsg_func send,
  * \param[in] mgr
  */
 LS_API void tube_manager_print_tubes(tube_manager *mgr);
+
+/**
+ * Iterate over every tube in mgr's control, performing some arbitrary action.
+ *
+ * \invariant mgr != NULL
+ * \invariant walker != NULL
+ * \param[in] mgr The tube manager to iterate over.
+ * \param[in] walker The walker function to be called on each iteration.
+ * \param[in] data Optional data supplied to the walker on each iteration.
+ */
+LS_API void tube_manager_foreach(tube_manager *mgr,
+                                 tube_walker_func walker,
+                                 void *data);
