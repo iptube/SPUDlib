@@ -8,8 +8,10 @@
 #include "tube_manager.h"
 #include "ls_sockaddr.h"
 
-// Number of tubes to create for the foreach test.
-static const int TMGR_FOREACH_NUMTUBES = 3;
+enum {
+	// Number of tubes to create for the foreach test.
+	TMGR_FOREACH_NUMTUBES = 3
+};
 
 uint8_t spud[] = { 0xd8, 0x00, 0x00, 0xd8,
                    0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
