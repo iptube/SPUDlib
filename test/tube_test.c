@@ -8,6 +8,9 @@
 #include "tube_manager.h"
 #include "ls_sockaddr.h"
 
+// Number of tubes to create for the foreach test.
+static const int TMGR_FOREACH_NUMTUBES = 3;
+
 uint8_t spud[] = { 0xd8, 0x00, 0x00, 0xd8,
                    0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
                    0x00,
@@ -282,9 +285,6 @@ static int _mock_tube_walker(void *data,
 
 CTEST2(tube, manager_foreach)
 {
-    #ifndef TMGR_FOREACH_NUMTUBES
-    #define TMGR_FOREACH_NUMTUBES 3
-
     tube * tubes[TMGR_FOREACH_NUMTUBES];
     spud_tube_id ids[TMGR_FOREACH_NUMTUBES];
 
@@ -298,9 +298,4 @@ CTEST2(tube, manager_foreach)
     int num_tubes = 0;
     tube_manager_foreach(data->mgr, _mock_tube_walker, (void *) &num_tubes);
     ASSERT_TRUE(num_tubes == TMGR_FOREACH_NUMTUBES);
-
-    #undef TMGR_FOREACH_NUMTUBES
-    #else
-    ASSERT_FAIL();
-    #endif
 }
