@@ -69,3 +69,5 @@ build
 *.make
 *.pc
 .DS_Store
+.kitchen/
+.kitchen.local.yml
