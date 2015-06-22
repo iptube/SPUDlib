@@ -28,6 +28,7 @@ struct _tube
   spud_tube_id id;
   void *data;
   ls_pktinfo *pktinfo;
+  tube_manager *tmgr;
   int sock;
 };
 
@@ -42,6 +43,7 @@ LS_API bool tube_create(tube **t, ls_err *err)
         *t = NULL;
         return false;
     }
+    ret->tmgr = NULL;
     ret->sock = -1;
     ret->state = TS_UNKNOWN;
     *t = ret;
@@ -378,6 +380,18 @@ LS_API void tube_get_id(tube *t, spud_tube_id **id)
 {
     assert(t);
     *id = &t->id;
+}
+
+LS_API void tube_set_manager(tube *t, tube_manager *tmgr)
+{
+    assert(t);
+    t->tmgr = tmgr;
+}
+
+LS_API void tube_get_manager(tube *t, tube_manager **tmgr)
+{
+    assert(t);
+    *tmgr = &t->tmgr;
 }
 
 LS_API void tube_set_info(tube *t,

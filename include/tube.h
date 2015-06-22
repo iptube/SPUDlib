@@ -209,6 +209,25 @@ LS_API void tube_set_state(tube *t, tube_states_t state);
 LS_API void tube_get_id(tube *t, spud_tube_id **id);
 
 /**
+ * Set the current manager of the tube.
+ *
+ * \invariant t != NULL
+ * @param[in] t     The tube to modify.
+ * @param[in] state The new tube manager.
+ */
+LS_API void tube_set_manager(tube *t, tube_manager *tmgr);
+
+/**
+ * Return the manager a tube is attached to.
+ *
+ * \invariant t != NULL
+ * \param[in] t  The tube whose manager is returned.
+ * \param[out] id  On return, contains a pointer to the tube manager. This may
+ * be NULL if the tube belongs to no manager.
+ */
+LS_API void tube_get_manager(tube *t, tube_manager **tmgr);
+
+/**
  * Set various pieces of information about the tube.
  *
  * \invariant t != NULL

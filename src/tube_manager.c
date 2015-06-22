@@ -430,6 +430,7 @@ LS_API bool tube_manager_add(tube_manager *mgr,
     assert(mgr);
     assert(t);
 
+    tube_set_manager(t, mgr);
     tube_get_id(t, &id);
     if (!ls_htable_put(mgr->tubes, id, t, clean_tube, err)) {
       return false;
@@ -444,6 +445,8 @@ LS_API void tube_manager_remove(tube_manager *mgr,
     spud_tube_id *id;
     assert(mgr);
     assert(t);
+
+    tube_set_manager(t, NULL);
     if (!ls_event_trigger(mgr->e_remove, t, NULL, NULL, &err)) {
         LS_LOG_ERR(err, "ls_event_trigger");
         // keep going!
