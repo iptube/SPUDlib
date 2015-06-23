@@ -98,6 +98,8 @@ typedef int (*tube_walker_func)(void *user_data,
 typedef struct _tube_event_data {
     /** the tube the event applies to */
     struct _tube *t;
+    /** the tube manager of the tube the event applies to */
+    struct _tube_manager *tmgr;
     /** data in */
     const cn_cbor *cbor;
     /** address of tube's peer or source of incoming packet */

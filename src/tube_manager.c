@@ -796,6 +796,7 @@ LS_API bool tube_manager_loop(tube_manager *mgr, ls_err *err)
 
         cmd    = msg.header->flags & SPUD_COMMAND;
         d.t    = ls_htable_get(mgr->tubes, &uid);
+        d.tmgr = mgr;
         d.cbor = msg.cbor;
         if (!d.t) {
             if (!tube_manager_is_responder(mgr) || (cmd != SPUD_OPEN)) {
