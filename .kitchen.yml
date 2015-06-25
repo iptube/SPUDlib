@@ -1,0 +1,23 @@
+---
+driver:
+  name: vagrant
+  synced_folders:
+    - [".", "/home/vagrant/dev", "create: true"]
+
+provisioner:
+  name: chef_solo
+
+platforms:
+  - name: ubuntu-12.04
+    run_list:
+      - recipe[apt]
+  - name: ubuntu/vivid64
+    run_list:
+      - recipe[apt]
+  - name: centos-6.4
+
+suites:
+  - name: default
+    run_list:
+      - recipe[SPUDlib::default]
+    attributes:
