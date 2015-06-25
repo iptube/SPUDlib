@@ -151,7 +151,7 @@ LS_API size_t ls_pktinfo_cmsg(ls_pktinfo *p, struct cmsghdr *cmsg)
             cmsg->cmsg_len = CMSG_LEN(sizeof(struct in6_pktinfo));
             {
                 struct in6_pktinfo *ipi = (struct in6_pktinfo*)CMSG_DATA(cmsg);
-                *ipi = p->info.i6;
+                ipi->ipi6_addr = p->info.i6.ipi6_addr;
             }
             return CMSG_SPACE(sizeof(struct in6_pktinfo));
         default:

@@ -981,6 +981,7 @@ LS_API bool tube_manager_sendmsg(int sock,
     msg.msg_iovlen = count;
 
     if (source) {
+        memset(msg_control, 0, sizeof(msg_control));
         msg.msg_control = msg_control;
         msg.msg_controllen = sizeof(msg_control);
         msg.msg_controllen = ls_pktinfo_cmsg(source, CMSG_FIRSTHDR(&msg));
