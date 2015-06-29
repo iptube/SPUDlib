@@ -1,6 +1,7 @@
 ---
 driver:
   name: vagrant
+  vagrantfile_erb: Vagrantfile.erb
   synced_folders:
     - [".", "/home/vagrant/dev", "create: true"]
 

@@ -15,5 +15,5 @@ end
 
 execute "run make" do
   cwd dir
-  command "make"
+  command "make all test"
 end
