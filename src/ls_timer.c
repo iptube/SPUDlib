@@ -4,6 +4,7 @@
 
 #include <assert.h>
 #include <sys/time.h>
+#include <stddef.h>
 
 #include "ls_mem.h"
 #include "ls_timer.h"
@@ -11,15 +12,15 @@
 struct _ls_timer
 {
     ls_timer_func cb;
-    const void *context;
+    void *context;
     struct timeval tv;
 };
 
-const static struct timeval epoch = {0, 0};
+static const struct timeval epoch = {0, 0};
 
 LS_API bool ls_timer_create(const struct timeval *actual,
                             ls_timer_func         cb,
-                            const void           *context,
+                            void                 *context,
                             ls_timer            **tim,
                             ls_err               *err)
 {
@@ -44,7 +45,7 @@ LS_API bool ls_timer_create(const struct timeval *actual,
 LS_API bool ls_timer_create_ms(const struct timeval *now,
                                unsigned long         ms,
                                ls_timer_func         cb,
-                               const void           *context,
+                               void                 *context,
                                ls_timer            **tim,
                                ls_err               *err)
 {
@@ -73,9 +74,21 @@ LS_API bool ls_timer_is_cancelled(ls_timer *tim)
     return timercmp(&tim->tv, &epoch, ==);
 }
 
+LS_API void * ls_timer_get_context(ls_timer *tim)
+{
+    assert(tim);
+    return tim->context;
+}
+
 LS_API bool ls_timer_less(ls_timer *a, ls_timer *b)
 {
     assert(a);
     assert(b);
     return timercmp(&a->tv, &b->tv, <);
+}
+
+LS_API void ls_timer_exec(ls_timer *tim)
+{
+    assert(tim);
+    tim->cb(tim);
 }

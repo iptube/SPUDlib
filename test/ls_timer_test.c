@@ -19,7 +19,10 @@ CTEST(ls_timer, basic)
     ls_err err;
     ASSERT_TRUE(ls_timer_create(&small, timer_cb, NULL, &past, &err));
     ASSERT_FALSE(gettimeofday(&now, NULL));
-    ASSERT_TRUE(ls_timer_create_ms(&now, 100, timer_cb, NULL, &soon, &err));
+    ASSERT_TRUE(ls_timer_create_ms(&now, 100, timer_cb, &err, &soon, &err));
+
+    ASSERT_TRUE(ls_timer_get_context(soon) == &err);
+    ls_timer_exec(soon);
 
     ASSERT_TRUE(ls_timer_less(past, soon));
     ASSERT_FALSE(ls_timer_is_cancelled(past));
