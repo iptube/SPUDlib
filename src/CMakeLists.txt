@@ -12,6 +12,7 @@ set ( spud_srcs
       ls_pktinfo.c
       ls_sockaddr.c
       ls_str.c
+      ls_timer.c
       spud.c
       tube.c
       tube_manager.c
