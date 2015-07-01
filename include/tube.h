@@ -153,12 +153,12 @@ LS_API bool tube_send_cbor(tube *t,
                            ls_err *err);
 
 /**
- * Set the data associated with a tube.  (Unused.)
+ * Set the data associated with a tube.
  */
 LS_API void tube_set_data(tube *t, void *data);
 
 /**
- * Returns the data associated with a tube. (Unused.)
+ * Returns the data associated with a tube.
  */
 LS_API void *tube_get_data(tube *t);
 
