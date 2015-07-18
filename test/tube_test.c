@@ -84,6 +84,24 @@ CTEST_TEARDOWN(tube)
     tube_manager_set_socket_functions(NULL, NULL);
 }
 
+static bool _oom_test(ls_err *err)
+{
+    tube *t;
+    if (!tube_create(&t, err)) {
+		return false;
+	}
+    tube_destroy(t);
+	return true;
+}
+
+CTEST2(tube, oom)
+{
+	UNUSED_PARAM(data);
+    OOM_SIMPLE_TEST(_oom_test(&err));
+    OOM_TEST_INIT();
+    OOM_TEST(NULL, _oom_test(NULL));
+}
+
 CTEST2(tube, create)
 {
     tube *t;
@@ -140,11 +158,14 @@ CTEST2(tube, print)
 
     ASSERT_TRUE( tube_create(&t, &data->err));
     ASSERT_TRUE( tube_print(t, &data->err));
+	tube_destroy(t);
 }
 
 CTEST2(tube, open)
 {
     tube *t;
+	ls_pktinfo *pi;
+	struct in_pktinfo info4;
     struct sockaddr_in6 remoteAddr;
     ASSERT_TRUE( ls_sockaddr_get_remote_ip_addr("::1",
                                                 "1402",
@@ -154,6 +175,13 @@ CTEST2(tube, open)
 
     ASSERT_TRUE( tube_manager_open_tube(data->mgr, (const struct sockaddr*)&remoteAddr, &t, &data->err));
     ASSERT_EQUAL(tube_manager_size(data->mgr), 1);
+
+
+	ASSERT_TRUE(ls_pktinfo_create(&pi, &data->err));
+    info4.ipi_addr.s_addr = htonl(0x7f000001);
+    ls_pktinfo_set4(pi, &info4);
+	tube_set_local(t, pi, &data->err);
+	ASSERT_TRUE( tube_print(t, &data->err));
 }
 
 CTEST2(tube, tube_data)
