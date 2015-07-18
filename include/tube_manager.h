@@ -123,6 +123,16 @@ LS_API bool tube_manager_create(int buckets,
 LS_API void tube_manager_destroy(tube_manager *mgr);
 
 /**
+ * Set the data associated with a tube manager.
+ */
+LS_API void tube_manager_set_data(tube_manager *mgr, void *data);
+
+/**
+ * Returns the data associated with a tube manager.
+ */
+LS_API void *tube_manager_get_data(tube_manager *mgr);
+
+/**
  * Interrupt the processing of the current loop by sending the given byte
  * down the self-pipe.
  *
@@ -272,7 +282,7 @@ LS_API bool tube_manager_is_responder(tube_manager *mgr);
  * \param[in]  cb      The function to call when the timer expires
  * \param[in]  context A pointer to be passed back to context
  * \param[out] err     If non-NULL on input, contains error if false is returned
- * \return     true: callback was schedued.  false: see err.
+ * \return     true: callback was scheduled.  false: see err.
  */
 LS_API bool tube_manager_schedule_ms(tube_manager *mgr,
                                      unsigned long ms,

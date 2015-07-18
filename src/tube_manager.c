@@ -48,6 +48,7 @@ struct _tube_manager
   ls_event *e_remove;
   tube_policies policy;
   bool keep_going;
+  void *data;
 };
 
 typedef struct _sig_context {
@@ -239,6 +240,18 @@ LS_API void tube_manager_destroy(tube_manager *mgr) {
         mgr->dispatcher = NULL;
     }
     ls_data_free(mgr);
+}
+
+LS_API void tube_manager_set_data(tube_manager *m, void *data)
+{
+    assert(m);
+    m->data = data;
+}
+
+LS_API void *tube_manager_get_data(tube_manager *m)
+{
+    assert(m);
+    return m->data;
 }
 
 LS_API bool tube_manager_socket(tube_manager *m,
