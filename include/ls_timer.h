@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include <sys/time.h>
+
 #include "ls_basics.h"
 #include "ls_error.h"
 
@@ -41,6 +43,12 @@ LS_API void ls_timer_cancel(ls_timer *tim);
 
 LS_API void * ls_timer_get_context(ls_timer *tim);
 
+LS_API struct timeval * ls_timer_get_time(ls_timer *tim);
+
 LS_API bool ls_timer_less(ls_timer *a, ls_timer *b);
+
+LS_API bool ls_timer_greater(ls_timer *a, ls_timer *b);
+
+LS_API bool ls_timer_greater_tv(ls_timer *a, struct timeval *b);
 
 LS_API void ls_timer_exec(ls_timer *tim);

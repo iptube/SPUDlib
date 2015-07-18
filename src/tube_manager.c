@@ -6,7 +6,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <pthread.h>
-#include <sys/time.h>
 #include <string.h>
 
 #include "tube.h"
@@ -51,13 +50,6 @@ struct _tube_manager
   bool keep_going;
 };
 
-typedef struct _timer_cb
-{
-    tube_timer_func cb;
-    const void *context;
-    struct timeval tv;
-} timer_cb;
-
 typedef struct _sig_context {
     int sig;
     tube_manager *mgr;
@@ -71,23 +63,21 @@ static int _timer_less(const void *const context,
                        const void *const a,
                        const void *const b)
 {
-    timer_cb *atc = (timer_cb *)a;
-    timer_cb *btc = (timer_cb *)b;
     UNUSED_PARAM(context);
 
-    return timercmp(&atc->tv, &btc->tv, >);
+    return ls_timer_greater(*(ls_timer **)a, *(ls_timer **)b);
 }
 
 static void _timer_move(void *const dst, const void *const src)
 {
-  *(timer_cb *)dst = *(timer_cb *)src;
+    ls_timer **dt = (void*)dst;
+    ls_timer **st = (void*)src;
+    *dt = *st;
 }
 
 static void _timer_del(void *item)
 {
-    // This would only be used if timer_cb had something inside
-    // that was malloc'd
-    UNUSED_PARAM(item);
+    ls_timer_destroy(*(ls_timer **)item);
 }
 
 static unsigned int hash_id(const void *id) {
@@ -181,7 +171,7 @@ LS_API bool tube_manager_create(int buckets,
         static const struct gheap_ctx paged_binary_heap_ctx = {
           .fanout = 2,
           .page_chunks = 512,
-          .item_size = sizeof(timer_cb),
+          .item_size = sizeof(ls_timer*),
           .less_comparer = &_timer_less,
           .less_comparer_ctx = NULL,
           .item_mover = &_timer_move,
@@ -481,49 +471,96 @@ LS_API bool tube_manager_interrupt(tube_manager *mgr, char b, ls_err *err)
     } while(true);
 }
 
-LS_API bool tube_manager_schedule_ms(tube_manager *mgr,
-                                     unsigned long ms,
-                                     tube_timer_func cb,
-                                     void *context,
-                                     ls_err *err)
-{
-    // s^10 = 1024.  Close enough.
-    struct timeval delta = {delta.tv_sec = ms >> 10, (ms & 0x3ff) << 10};
-    struct timeval then;
-
-    // TODO: double-check to see of mgr->last is the right bias for this
-    timeradd(&mgr->last, &delta, &then);
-    return tube_manager_schedule(mgr, &then, cb, context, err);
-}
-
-LS_API bool tube_manager_schedule(tube_manager *mgr,
-                                  struct timeval *tv,
-                                  tube_timer_func cb,
-                                  void *context,
-                                  ls_err *err)
+LS_API bool tube_manager_cancel_timer(tube_manager *mgr,
+                                      ls_timer *tim,
+                                      ls_err *err)
 {
     assert(mgr);
-    bool ret = true;
-    timer_cb tcb = { cb, context, *tv };
+    ls_timer_cancel(tim);
 
     if (pthread_mutex_lock(&mgr->lock) != 0) {
         LS_ERROR(err, -errno);
         return false;
     }
-    // makes a copy of tcb
-    if (!gpriority_queue_push(mgr->timer_q, &tcb)) {
+
+    // TODO: no need to do a full heapwalk here.  Should be able to just
+    // sift this one up to the top.
+    gheap_make_heap(mgr->timer_q->ctx, mgr->timer_q->base, mgr->timer_q->size);
+
+    // always unlock, if lock worked
+    if (pthread_mutex_unlock(&mgr->lock) != 0) {
+        LS_ERROR(err, -errno);
+        return false;
+    }
+    return true;
+}
+
+LS_API bool tube_manager_schedule_timer(tube_manager *mgr,
+                                        ls_timer *tim,
+                                        ls_err *err)
+{
+    bool ret = true;
+    assert(mgr);
+    assert(tim);
+
+    if (pthread_mutex_lock(&mgr->lock) != 0) {
+        LS_ERROR(err, -errno);
+        return false;
+    }
+    if (!gpriority_queue_push(mgr->timer_q, &tim)) {
         LS_ERROR(err, LS_ERR_NO_MEMORY);
         ret = false;
     }
-    // always unlock
+    // always unlock, if lock worked
     if (pthread_mutex_unlock(&mgr->lock) != 0) {
         LS_ERROR(err, -errno);
         ret = false;
     }
-    if (ret) {
-        ret = tube_manager_interrupt(mgr, -1, err);
-    }
     return ret;
+}
+
+LS_API bool tube_manager_schedule_ms(tube_manager *mgr,
+                                     unsigned long ms,
+                                     ls_timer_func cb,
+                                     void *context,
+                                     ls_timer **tim,
+                                     ls_err *err)
+{
+    ls_timer *ret;
+    assert(mgr);
+
+    if (!ls_timer_create_ms(&mgr->last, ms, cb, context, &ret, err)) {
+        return false;
+    }
+    if (!tube_manager_schedule_timer(mgr, ret, err)) {
+        return false;
+    }
+    if (tim) {
+        *tim = ret;
+    }
+    return true;
+}
+
+LS_API bool tube_manager_schedule(tube_manager *mgr,
+                                  struct timeval *tv,
+                                  ls_timer_func cb,
+                                  void *context,
+                                  ls_timer **tim,
+                                  ls_err *err)
+{
+    ls_timer *ret;
+    assert(mgr);
+
+    if (!ls_timer_create(tv, cb, context, &ret, err)) {
+        return false;
+    }
+    if (!tube_manager_schedule_timer(mgr, ret, err)) {
+        return false;
+    }
+    if (tim) {
+        *tim = ret;
+    }
+    return true;
 }
 
 static void _tm_signal(int sig) {
@@ -562,16 +599,14 @@ LS_API bool tube_manager_signal(tube_manager *mgr,
     return true;
 }
 
-static int pending_timers(tube_manager *mgr, struct timeval *tv, ls_err *err)
+static int pending_timers(tube_manager *mgr, struct timeval **tv, ls_err *err)
 {
     // returns:
     //   -1 on error
     //   0 with no pending timers
     //   1 with tv filled out
     int ret = -2;
-    timer_cb *tcb;
-    tube_timer_func cb;
-    const void *context;
+    ls_timer **tim;
 
     // while there are still timeouts to process
     while ((ret == -2) && mgr->keep_going) {
@@ -582,19 +617,17 @@ static int pending_timers(tube_manager *mgr, struct timeval *tv, ls_err *err)
         }
 
         // make sure to copy everything we need out of the tcb while we're locked
-        cb = NULL;
-        tcb = (timer_cb *)gpriority_queue_top(mgr->timer_q);
-        if (!tcb) {
+        tim = (ls_timer **)gpriority_queue_top(mgr->timer_q);
+        if (!tim) {
             ret = 0;
         } else {
-            if (timercmp(&tcb->tv, &mgr->last, <=)) {
-                cb = tcb->cb;
-                context = tcb->context;
+            if (ls_timer_greater_tv(*tim, &mgr->last)) {
+                *tv = ls_timer_get_time(*tim);
+                ret = 1;
+                tim = NULL;
+            } else {
                 gpriority_queue_pop(mgr->timer_q);
                 // keep going
-            } else {
-                *tv = tcb->tv;
-                ret = 1;
             }
         }
 
@@ -604,8 +637,8 @@ static int pending_timers(tube_manager *mgr, struct timeval *tv, ls_err *err)
             break;
         }
 
-        if (cb) {
-            cb(&mgr->last, context);
+        if (tim) {
+            ls_timer_exec(*tim);
         }
     }
     return ret;
@@ -620,7 +653,7 @@ static int tube_manager_wait(tube_manager *mgr,
     int e;
     int pending;
     struct timeval timeout;
-    struct timeval term;
+    struct timeval *term;
     fd_set reads;
     FD_ZERO(&reads);
 
@@ -639,7 +672,7 @@ static int tube_manager_wait(tube_manager *mgr,
         }
         FD_SET(pipe_r, &reads);
         if (pending) {
-            timersub(&term, &mgr->last, &timeout);
+            timersub(term, &mgr->last, &timeout);
         }
         switch (select(mgr->max_fd+1,
                        &reads, NULL, NULL,

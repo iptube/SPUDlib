@@ -35,13 +35,12 @@ struct test_config {
 };
 struct test_config config;
 
-static void sendData(const struct timeval *actual, const void *context)
+static void sendData(ls_timer *tim)
 {
     unsigned char buf[1024];
     int i;
     ls_err err;
-    UNUSED_PARAM(actual);
-    UNUSED_PARAM(context);
+    UNUSED_PARAM(tim);
 
     config.numSentPkts++;
 
@@ -55,7 +54,7 @@ static void sendData(const struct timeval *actual, const void *context)
         LS_LOG_ERR(err, "tube_data");
     }
 
-    if (!tube_manager_schedule_ms(mgr, 50, sendData, NULL, &err)) {
+    if (!tube_manager_schedule_ms(mgr, 50, sendData, NULL, NULL, &err)) {
         LS_LOG_ERR(err, "tube_manager_schedule_ms");
         return;
     }
@@ -87,7 +86,7 @@ static void running_cb(ls_event_data evt, void *arg)
     UNUSED_PARAM(arg);
     ls_log(LS_LOG_INFO, "running!");
 
-    sendData(NULL, NULL);
+    sendData(NULL);
 }
 
 static void loopstart_cb(ls_event_data evt, void *arg)
@@ -110,11 +109,10 @@ static void loopstart_cb(ls_event_data evt, void *arg)
     }
 }
 
-void done(const struct timeval *actual, const void *context)
+void done(ls_timer *tim)
 {
     ls_err err;
-    UNUSED_PARAM(actual);
-    UNUSED_PARAM(context);
+    UNUSED_PARAM(tim);
     printf("done\n");
     if (!tube_manager_stop(mgr, &err)) {
         LS_LOG_ERR(err, "tube_manager_stop");
@@ -124,7 +122,8 @@ void done(const struct timeval *actual, const void *context)
 void done_sig(int sig)
 {
     UNUSED_PARAM(sig);
-    done(NULL, NULL);
+    ls_log(LS_LOG_VERBOSE, "Signal caught: %d", sig);
+    done(NULL);
 }
 
 static void usage(void)
@@ -209,7 +208,7 @@ int spudtest(int argc, char **argv)
         return 1;
     }
 
-    if (!tube_manager_schedule_ms(mgr, 5000, done, NULL, &err)) {
+    if (!tube_manager_schedule_ms(mgr, 5000, done, NULL, NULL, &err)) {
         LS_LOG_ERR(err, "tube_manager_schedule_ms");
         return 1;
     }

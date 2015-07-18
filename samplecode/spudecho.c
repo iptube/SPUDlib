@@ -50,13 +50,11 @@ void print_stats()
     ls_log(LS_LOG_INFO, "Tube count: %zu", tube_manager_size(mgr));
 }
 
-static void read_delay(const struct timeval *now, const void *ctx)
+static void read_delay(ls_timer *tim)
 {
-    delay_write_t *dw = (delay_write_t*)ctx;
     ls_err err;
+    delay_write_t *dw = ls_timer_get_context(tim);
     context_t *c = tube_get_data(dw->t);
-
-    UNUSED_PARAM(now);
 
     if (!tube_data(dw->t, dw->buf, dw->length, &err)) {
         LS_LOG_ERR(err, "tube_data");
@@ -95,7 +93,7 @@ static void read_cb(ls_event_data evt,
             ls_log(LS_LOG_VERBOSE, "Received %*s", (int)dw->length, dw->buf);
         }
     }
-    if (!tube_manager_schedule_ms(mgr, 10, read_delay, dw, &err)) {
+    if (!tube_manager_schedule_ms(mgr, 10, read_delay, dw, NULL, &err)) {
         LS_LOG_ERR(err, "tube_manager_schedule_ms");
     }
 }

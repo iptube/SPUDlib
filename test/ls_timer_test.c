@@ -25,6 +25,7 @@ CTEST(ls_timer, basic)
     ls_timer_exec(soon);
 
     ASSERT_TRUE(ls_timer_less(past, soon));
+    ASSERT_FALSE(ls_timer_greater(past, soon));
     ASSERT_FALSE(ls_timer_is_cancelled(past));
     ls_timer_cancel(past);
     ASSERT_TRUE(ls_timer_is_cancelled(past));
