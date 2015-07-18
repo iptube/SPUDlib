@@ -103,14 +103,12 @@ LS_API bool tube_stream_listen(tube_stream_manager *sm
  * \param[in] sm The tube stream manager to bind to
  * \param[in] name The (string) name of the event
  * \param[in] cb The event handler to be bound to the event
- * \param[in] arg The argument for cb
  * \param[out] err If non-NULL on input, describes error if false is returned
  * \return true: event bound.  false: see err.
  */
 LS_API bool tube_stream_manager_bind_event(tube_stream_manager *sm,
                                            const char *name,
                                            ls_event_callback *cb,
-                                           void *arg,
                                            ls_error *err);
 
 
