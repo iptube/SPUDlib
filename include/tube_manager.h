@@ -13,6 +13,7 @@
 #include "spud.h"
 #include "ls_error.h"
 #include "ls_event.h"
+#include "ls_timer.h"
 #include "tube.h"
 
 /**
@@ -57,12 +58,6 @@ typedef enum {
  * Handle for a tube manager
  */
 typedef struct _tube_manager tube_manager;
-
-/**
- * Type of the function called when a timer expires.
- * See tube_manager_schedule and tube_manager_schedule_ms.
- */
-typedef void (*tube_timer_func)(const struct timeval *actual, const void *context);
 
 /**
  * Type of the function called to send a message on a tube.
@@ -281,8 +276,9 @@ LS_API bool tube_manager_is_responder(tube_manager *mgr);
  */
 LS_API bool tube_manager_schedule_ms(tube_manager *mgr,
                                      unsigned long ms,
-                                     tube_timer_func cb,
+                                     ls_timer_func cb,
                                      void *context,
+                                     ls_timer **tim,
                                      ls_err *err);
 
 /**
@@ -297,8 +293,9 @@ LS_API bool tube_manager_schedule_ms(tube_manager *mgr,
  */
 LS_API bool tube_manager_schedule(tube_manager *mgr,
                                   struct timeval *tv,
-                                  tube_timer_func cb,
+                                  ls_timer_func cb,
                                   void *context,
+                                  ls_timer **tim,
                                   ls_err *err);
 
 /**

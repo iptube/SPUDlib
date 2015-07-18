@@ -49,7 +49,7 @@ LS_API bool ls_timer_create_ms(const struct timeval *now,
                                ls_timer            **tim,
                                ls_err               *err)
 {
-    struct timeval delta = {ms / 1000, ms % 1000};
+    struct timeval delta = {ms / 1000, (ms % 1000)*1000};
     struct timeval then;
     assert(now);
     timeradd(now, &delta, &then);
@@ -80,11 +80,32 @@ LS_API void * ls_timer_get_context(ls_timer *tim)
     return tim->context;
 }
 
+LS_API void ls_timer_get_time(ls_timer *tim, struct timeval *tv)
+{
+    assert(tim);
+    assert(tv);
+    *tv = tim->tv;
+}
+
 LS_API bool ls_timer_less(ls_timer *a, ls_timer *b)
 {
     assert(a);
     assert(b);
     return timercmp(&a->tv, &b->tv, <);
+}
+
+LS_API bool ls_timer_greater(ls_timer *a, ls_timer *b)
+{
+    assert(a);
+    assert(b);
+    return timercmp(&a->tv, &b->tv, >);
+}
+
+LS_API bool ls_timer_greater_tv(ls_timer *a, struct timeval *b)
+{
+    assert(a);
+    assert(b);
+    return timercmp(&a->tv, b, >);
 }
 
 LS_API void ls_timer_exec(ls_timer *tim)
