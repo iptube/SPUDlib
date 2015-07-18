@@ -80,11 +80,10 @@ LS_API void * ls_timer_get_context(ls_timer *tim)
     return tim->context;
 }
 
-LS_API void ls_timer_get_time(ls_timer *tim, struct timeval *tv)
+LS_API struct timeval * ls_timer_get_time(ls_timer *tim)
 {
     assert(tim);
-    assert(tv);
-    *tv = tim->tv;
+    return &tim->tv;
 }
 
 LS_API bool ls_timer_less(ls_timer *a, ls_timer *b)

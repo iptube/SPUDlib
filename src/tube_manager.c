@@ -599,7 +599,7 @@ LS_API bool tube_manager_signal(tube_manager *mgr,
     return true;
 }
 
-static int pending_timers(tube_manager *mgr, struct timeval *tv, ls_err *err)
+static int pending_timers(tube_manager *mgr, struct timeval **tv, ls_err *err)
 {
     // returns:
     //   -1 on error
@@ -622,7 +622,7 @@ static int pending_timers(tube_manager *mgr, struct timeval *tv, ls_err *err)
             ret = 0;
         } else {
             if (ls_timer_greater_tv(*tim, &mgr->last)) {
-                ls_timer_get_time(*tim, tv);
+                *tv = ls_timer_get_time(*tim);
                 ret = 1;
                 tim = NULL;
             } else {
@@ -653,7 +653,7 @@ static int tube_manager_wait(tube_manager *mgr,
     int e;
     int pending;
     struct timeval timeout;
-    struct timeval term;
+    struct timeval *term;
     fd_set reads;
     FD_ZERO(&reads);
 
@@ -672,7 +672,7 @@ static int tube_manager_wait(tube_manager *mgr,
         }
         FD_SET(pipe_r, &reads);
         if (pending) {
-            timersub(&term, &mgr->last, &timeout);
+            timersub(term, &mgr->last, &timeout);
         }
         switch (select(mgr->max_fd+1,
                        &reads, NULL, NULL,
