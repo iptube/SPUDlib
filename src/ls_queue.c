@@ -26,7 +26,7 @@ struct _ls_queue
     ls_queue_cleanfunc cleaner;
 };
 
-LS_API bool ls_queue_create(ls_queue **q, ls_queue_cleanfunc cleaner, ls_err *err)
+LS_API bool ls_queue_create(ls_queue_cleanfunc cleaner, ls_queue **q, ls_err *err)
 {
     ls_queue *ret;
 
