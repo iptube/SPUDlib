@@ -10,6 +10,7 @@ set ( spud_srcs
       ls_log.c
       ls_mem.c
       ls_pktinfo.c
+      ls_queue.c
       ls_sockaddr.c
       ls_str.c
       ls_timer.c
