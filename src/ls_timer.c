@@ -83,6 +83,9 @@ LS_API void * ls_timer_get_context(ls_timer *tim)
 LS_API struct timeval * ls_timer_get_time(ls_timer *tim)
 {
     assert(tim);
+    if (ls_timer_is_cancelled(tim)) {
+        return NULL;
+    }
     return &tim->tv;
 }
 
