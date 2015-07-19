@@ -23,6 +23,7 @@ static const char *_ERR_MSG_TABLE[] = {
     "protocol error",
     "timed out",
     "not found",
+    "not implemented",
     "user-defined error"
 };
 
