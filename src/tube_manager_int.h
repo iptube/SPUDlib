@@ -10,6 +10,7 @@
  
 #include "tube_manager.h"
 #include "ls_eventing.h"
+#include "ls_htable.h"
 
 struct _tube_manager
 {
