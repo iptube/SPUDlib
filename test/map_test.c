@@ -78,9 +78,11 @@ CTEST(map, add_warnings)
     }
 
     for (i = 0; i < sizeof warnings / sizeof(struct warning_s); ++i) {
-        const char *msg = spud_map_get_warning(&map, warnings[i].tag);
+        size_t msg_len;
+        const char *msg = spud_map_get_warning(&map, warnings[i].tag, &msg_len);
         ASSERT_NOT_NULL(msg);
-        ASSERT_STR(warnings[i].msg, msg);
+        ASSERT_DATA((const uint8_t *)warnings[i].msg, strlen(warnings[i].msg),
+                    (const uint8_t *)msg, msg_len);
     }
 
     spud_map_free_ctx(&map);
@@ -93,14 +95,12 @@ CTEST(map, encode_decode_check)
 
     const uint8_t ip0[] = {192, 168, 0, 0};
     const uint8_t token0[] = {0xd, 0xe, 0xa, 0xd, 0xb, 0xe, 0xe, 0xf};
-    const char *url = "http://www.example.org/spud";
+    const char *url0 = "http://www.example.org/spud";
 
     ASSERT_TRUE(spud_map_create_ctx(&map_out, NULL));
     ASSERT_TRUE(spud_map_add_ip_address(&map_out, ip0, sizeof ip0, NULL));
     ASSERT_TRUE(spud_map_add_token(&map_out, token0, sizeof token0, NULL));
-    ASSERT_TRUE(spud_map_add_url(&map_out, url, NULL));
-
-    spud_map_free_ctx(&map_out);
+    ASSERT_TRUE(spud_map_add_url(&map_out, url0, NULL));
 
     uint8_t out[SPUD_MAP_MAX_SERIALIZED_SZ];
     size_t out_sz = sizeof out;
@@ -112,7 +112,10 @@ CTEST(map, encode_decode_check)
     ASSERT_TRUE(spud_map_decode(out, out_sz, &map_in, NULL));
 
     // Check decoded is as expected
-    ASSERT_STR(url, spud_map_get_url(&map_in));
+    size_t url1_len;
+    const char *url1 = spud_map_get_url(&map_in, &url1_len);
+    ASSERT_DATA((const uint8_t *)url0, strlen(url0), (const uint8_t *)url1,
+                url1_len);
 
     size_t ip1_sz;
     const uint8_t *ip1 = spud_map_get_ip_address(&map_in, &ip1_sz);
@@ -127,4 +130,5 @@ CTEST(map, encode_decode_check)
     ASSERT_DATA(token0, sizeof token0, token1, token1_sz);
 
     spud_map_free_ctx(&map_in);
+    spud_map_free_ctx(&map_out);
 }

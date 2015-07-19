@@ -73,11 +73,12 @@ LS_API bool spud_map_add_latency(spud_map_t *map, int64_t msec, ls_err *err);
 //
 // Getters (a very limited subset of what can be set)
 //
-LS_API const char *spud_map_get_url(spud_map_t *map);
+LS_API const char *spud_map_get_url(spud_map_t *map, size_t *purl_len);
 LS_API const uint8_t *spud_map_get_ip_address(spud_map_t *map,
                                               size_t *pip_addr_sz);
 LS_API const uint8_t *spud_map_get_token(spud_map_t *map, size_t *ptoken_sz);
-LS_API const char *spud_map_get_warning(spud_map_t *map, const char *lang_tag);
+LS_API const char *spud_map_get_warning(spud_map_t *map, const char *lang_tag,
+                                        size_t *pmsg_len);
 
 //
 // Encode/decode

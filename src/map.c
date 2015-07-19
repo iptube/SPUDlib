@@ -19,7 +19,8 @@
 static spud_map_t *spud_map_alloc(void);
 static bool cbor_map_add_string(cn_cbor *map, cn_cbor_context *ctx,
                                 const char *key, const char *str, ls_err *err);
-static const char *cbor_map_get_string(cn_cbor *map, const char *key);
+static const char *cbor_map_get_string(cn_cbor *map, const char *key,
+                                       size_t *pstr_len);
 static bool spud_map_add_data(spud_map_t *map, const char *key,
                               const uint8_t *data, size_t data_sz, ls_err *err);
 static bool spud_map_add_string(spud_map_t *map, const char *key,
@@ -89,8 +90,11 @@ LS_API void spud_map_free_ctx(spud_map_t *map)
 {
     assert(map != NULL);
 
-    // We don't need to explicitly free the .cbor member since it'll be
-    // deallocated along with the pool.
+    if (map->cbor) {
+        cn_cbor_free(map->cbor, &map->ctx);
+        map->cbor = NULL;
+    }
+
     if (map->ctx.context) {
         ls_pool_destroy(map->ctx.context);
         map->ctx.context = NULL;
@@ -245,12 +249,12 @@ LS_API bool spud_map_add_warning(spud_map_t *map, const char *lang_tag,
 // spud_map_t getters
 //
 
-LS_API const char *spud_map_get_url(spud_map_t *map)
+LS_API const char *spud_map_get_url(spud_map_t *map, size_t *purl_len)
 {
     assert(map != NULL);
     assert(map->cbor != NULL);
 
-    return cbor_map_get_string(map->cbor, "url");
+    return cbor_map_get_string(map->cbor, "url", purl_len);
 }
 
 LS_API const uint8_t *spud_map_get_ip_address(spud_map_t *map,
@@ -272,7 +276,8 @@ LS_API const uint8_t *spud_map_get_token(spud_map_t *map, size_t *ptoken_sz)
     return spud_map_get_data(map, "token", ptoken_sz);
 }
 
-LS_API const char *spud_map_get_warning(spud_map_t *map, const char *lang_tag)
+LS_API const char *spud_map_get_warning(spud_map_t *map, const char *lang_tag,
+                                        size_t *pmsg_len)
 {
     assert(map != NULL);
     assert(map->cbor != NULL);
@@ -284,7 +289,7 @@ LS_API const char *spud_map_get_warning(spud_map_t *map, const char *lang_tag)
         return NULL;
     }
 
-    return cbor_map_get_string(warning_map, lang_tag);
+    return cbor_map_get_string(warning_map, lang_tag, pmsg_len);
 }
 
 //
@@ -444,13 +449,16 @@ static cn_cbor *spud_map_create_warnings(spud_map_t *map)
     return warning_map;
 }
 
-static const char *cbor_map_get_string(cn_cbor *map, const char *key)
+static const char *cbor_map_get_string(cn_cbor *map, const char *key,
+                                       size_t *pstr_len)
 {
     const cn_cbor *val = cn_cbor_mapget_string(map, key);
 
     if (val->type != CN_CBOR_TEXT) {
         return NULL;
     }
+
+    *pstr_len = val->length;
 
     return val->v.str;
 }
