@@ -12,13 +12,13 @@
 #include <stdint.h>
 
 #include "ls_basics.h"
-#include "ls_error.h"
+#include "ls_err.h"
 #include "ls_event.h"
 #include "tube_manager.h"
 
 // ### TUBE STREAM MANAGER INTERFACE ### //
 /**
- * Handle for a tube stream manager.
+ * Handle for a tube stream manager. Inherits tube manager.
  */
 typedef struct _tube_stream_manager tube_stream_manager;
 
@@ -43,15 +43,15 @@ typedef struct _tube_stream_event_data {
  * Creates a new tube stream manager.  Set up dispatcher, event handlers.
  *
  * \invariant tcpm != NULL
- * \param[in] mgr Underlying tube manager. If NULL, a new tube manager is
- *            created using appropriate default values
+ * \param[in] buckets Number of buckets in tube hash table. If 0,
+ *    a value appropriate for a server is used.
  * \param[out] sm Where to put pointer to new tube stream manager
  * \param[out] err If non-NULL on input, describes error if false is returned
  * \return true: New tube stream manager created.  false: see err.
  */
-LS_API bool tube_stream_manager_create(tube_manager *mgr,
+LS_API bool tube_stream_manager_create(int buckets,
                                        tube_stream_manager **sm,
-                                       ls_error *err);
+                                       ls_err *err);
 /**
  * Destroys a tube stream manager. All tube streams are closed and released.
  *
@@ -74,7 +74,7 @@ LS_API void tube_stream_manager_destroy(tube_stream_manager *sm);
 LS_API bool tube_stream_connect(tube_stream_manager *sm
                                 sockaddr *dest,
                                 tube_stream **s,
-                                ls_error *err);
+                                ls_err *err);
 
 /**
  * Retrieves the tube manager for this tube stream manager.
@@ -92,7 +92,7 @@ LS_API tube_manager *tube_stream_get_manager(tube_stream_manager *sm);
  * \param[in] sm The tube stream manager
  */
 LS_API bool tube_stream_listen(tube_stream_manager *sm
-                               ls_error *err);
+                               ls_err *err);
 
 /**
  * Bind an event handler (callback) to an event.
@@ -109,7 +109,7 @@ LS_API bool tube_stream_listen(tube_stream_manager *sm
 LS_API bool tube_stream_manager_bind_event(tube_stream_manager *sm,
                                            const char *name,
                                            ls_event_callback *cb,
-                                           ls_error *err);
+                                           ls_err *err);
 
 
 // ### TUBE STREAM INTERFACE ### //
@@ -129,7 +129,7 @@ typedef struct _tube_stream tube_stream;
  * \return true: m points to the manager.  false: see err.
  */
 LS_API bool tube_stream_create(tube_stream **s,
-                               ls_error *err);
+                               ls_err *err);
 /**
  * Deallocate an existing tube stream.
  *
@@ -150,7 +150,7 @@ LS_API void tube_stream_destroy(tube_stream *s);
  */
 LS_API bool tube_stream_bind(tube_stream *s,
                              tube *t,
-                             ls_error *err);
+                             ls_err *err);
 
 // QUESTION: amount readable now?
 /**
@@ -179,7 +179,7 @@ LS_API ssize_t tube_stream_read(tube_stream *s,
  */
 LS_API bool tube_stream_write(tube_stream *s,
                               uint8_t *data, size_t len,
-                              ls_error *err);
+                              ls_err *err);
 
 /**
  * Close the tube stream.
@@ -189,6 +189,6 @@ LS_API bool tube_stream_write(tube_stream *s,
  * \return true: tube stream is closed.  false: see err.
  */
 LS_API bool tube_stream_close(tube_stream *s,
-                              ls_error *err);
+                              ls_err *err);
 
 
