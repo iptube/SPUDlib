@@ -155,3 +155,8 @@ CTEST(ls_error, gai_test)
     ASSERT_NOT_EQUAL(strlen(ls_err_message(-1004)), 0);
     ASSERT_NOT_EQUAL(strlen(ls_err_message(-1104)), 0);
 }
+
+CTEST(ls_error, invalid_error)
+{
+    ASSERT_STR(ls_err_message(LS_ERR_USER+1), "Unknown code");
+}

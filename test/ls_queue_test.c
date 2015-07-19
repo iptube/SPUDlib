@@ -46,3 +46,26 @@ CTEST(ls_queue, cleanup)
     }
     ls_queue_destroy(q);
 }
+
+static bool _oom_test(ls_err *err)
+{
+    ls_queue *q;
+    char *data = "data";
+    bool ret = true;
+
+    if (!ls_queue_create(NULL, &q, err)) {
+		return false;
+	}
+    if (!ls_queue_enq(q, data, err)) {
+        ret = false;
+    }
+    ls_queue_destroy(q);
+	return ret;
+}
+
+CTEST(ls_queue, oom)
+{
+    OOM_SIMPLE_TEST(_oom_test(&err));
+    OOM_TEST_INIT();
+    OOM_TEST(NULL, _oom_test(NULL));
+}
