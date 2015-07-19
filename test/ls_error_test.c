@@ -31,6 +31,8 @@ CTEST(ls_error, message_test)
     ASSERT_STR(msg, "protocol error");
     msg = ls_err_message(LS_ERR_TIMEOUT);
     ASSERT_STR(msg, "timed out");
+    msg = ls_err_message(LS_ERR_NO_IMPL);
+    ASSERT_STR(msg, "not implemented");
     msg = ls_err_message(LS_ERR_USER);
     ASSERT_STR(msg, "user-defined error");
 }
@@ -100,6 +102,14 @@ CTEST(ls_error, macro_test)
     LS_ERROR(err_ctx, LS_ERR_TIMEOUT);
     ASSERT_EQUAL(err_ctx->code, LS_ERR_TIMEOUT);
     ASSERT_STR(err_ctx->message, "timed out");
+    ASSERT_NOT_NULL(err_ctx->function );
+    ASSERT_NOT_NULL(err_ctx->file );
+    ASSERT_NOT_EQUAL(err_ctx->line , 0);
+
+    memset(err_ctx, 0, sizeof(ls_err));
+    LS_ERROR(err_ctx, LS_ERR_NO_IMPL);
+    ASSERT_EQUAL(err_ctx->code, LS_ERR_NO_IMPL);
+    ASSERT_STR(err_ctx->message, "not implemented");
     ASSERT_NOT_NULL(err_ctx->function );
     ASSERT_NOT_NULL(err_ctx->file );
     ASSERT_NOT_EQUAL(err_ctx->line , 0);
