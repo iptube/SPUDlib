@@ -114,6 +114,18 @@ static void test_cb(ls_event_data evt, void *arg){
     UNUSED_PARAM(arg);
 }
 
+CTEST2(tube, manager_getset_data)
+{
+	tube_manager *mgr = data->mgr;
+	char mgr_data[] = "the manager data";
+
+	ASSERT_NULL( tube_manager_get_data(mgr) );
+	tube_manager_set_data(mgr, mgr_data);
+	ASSERT_TRUE( tube_manager_get_data(mgr)== mgr_data );
+	tube_manager_set_data(mgr, NULL);
+	ASSERT_NULL( tube_manager_get_data(mgr) );
+}
+
 CTEST2(tube, manager_bind_event)
 {
     ASSERT_TRUE( tube_manager_bind_event(data->mgr, EV_LOOPSTART_NAME, test_cb, &data->err));

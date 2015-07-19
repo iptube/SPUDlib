@@ -9,11 +9,12 @@
 #include <string.h>
 
 #include "tube.h"
-#include "tube_manager.h"
 #include "ls_eventing.h"
 #include "ls_htable.h"
 #include "ls_log.h"
 #include "ls_sockaddr.h"
+
+#include "tube_manager_int.h"
 
 #define GHEAP_MALLOC ls_data_malloc
 #define GHEAP_FREE ls_data_free
@@ -28,27 +29,6 @@
 
 static tube_sendmsg_func _sendmsg_func = sendmsg;
 static tube_recvmsg_func _recvmsg_func = recvmsg;
-
-struct _tube_manager
-{
-  int sock4;
-  int sock6;
-  int pipe[2];
-  int max_fd;
-  ls_htable *tubes;
-  ls_event_dispatcher *dispatcher;
-  struct gpriority_queue *timer_q;
-  struct timeval last;
-  pthread_mutex_t lock;
-  ls_event *e_loopstart;
-  ls_event *e_running;
-  ls_event *e_data;
-  ls_event *e_close;
-  ls_event *e_add;
-  ls_event *e_remove;
-  tube_policies policy;
-  bool keep_going;
-};
 
 typedef struct _sig_context {
     int sig;
@@ -107,62 +87,60 @@ static int compare_id(const void *key1, const void *key2) {
     return ret;
 }
 
-LS_API bool tube_manager_create(int buckets,
-                                tube_manager **m,
-                                ls_err *err)
+// "friend" functions
+bool _tube_manager_init(tube_manager *m,
+                        int buckets,
+                        ls_err *err)
 {
-    tube_manager *ret = NULL;
-    assert(m != NULL);
-    ret = ls_data_calloc(1, sizeof(tube_manager));
-    if (ret == NULL) {
-        LS_ERROR(err, LS_ERR_NO_MEMORY);
-        return false;
+    m->initialized = false;
+    m->sock4 = -1;
+    m->sock6 = -1;
+    m->max_fd = -1;
+    m->keep_going = true;
+    for (size_t i = 0; i < sizeof(m->pipe); i++) {
+        m->pipe[i] = -1;
     }
-    ret->sock4 = -1;
-    ret->sock6 = -1;
-    ret->max_fd = -1;
-    ret->keep_going = true;
 
     if (buckets <= 0) {
         buckets = DEFAULT_HASH_SIZE;
     }
 
-    if (pthread_mutex_init(&ret->lock, NULL) != 0) {
+    if (pthread_mutex_init(&m->lock, NULL) != 0) {
         LS_ERROR(err, -errno);
         goto cleanup;
     }
 
-    if (!ls_htable_create(buckets, hash_id, compare_id, &ret->tubes, err)) {
+    if (!ls_htable_create(buckets, hash_id, compare_id, &m->tubes, err)) {
         goto cleanup;
     }
 
-    if (!ls_event_dispatcher_create(ret, &ret->dispatcher, err)) {
+    if (!ls_event_dispatcher_create(m, &m->dispatcher, err)) {
         goto cleanup;
     }
 
-    if (!ls_event_dispatcher_create_event(ret->dispatcher,
+    if (!ls_event_dispatcher_create_event(m->dispatcher,
                                           EV_LOOPSTART_NAME,
-                                          &ret->e_loopstart,
+                                          &m->e_loopstart,
                                           err) ||
-        !ls_event_dispatcher_create_event(ret->dispatcher,
+        !ls_event_dispatcher_create_event(m->dispatcher,
                                           EV_RUNNING_NAME,
-                                          &ret->e_running,
+                                          &m->e_running,
                                           err) ||
-        !ls_event_dispatcher_create_event(ret->dispatcher,
+        !ls_event_dispatcher_create_event(m->dispatcher,
                                           EV_DATA_NAME,
-                                          &ret->e_data,
+                                          &m->e_data,
                                           err) ||
-        !ls_event_dispatcher_create_event(ret->dispatcher,
+        !ls_event_dispatcher_create_event(m->dispatcher,
                                           EV_CLOSE_NAME,
-                                          &ret->e_close,
+                                          &m->e_close,
                                           err) ||
-        !ls_event_dispatcher_create_event(ret->dispatcher,
+        !ls_event_dispatcher_create_event(m->dispatcher,
                                           EV_ADD_NAME,
-                                          &ret->e_add,
+                                          &m->e_add,
                                           err) ||
-        !ls_event_dispatcher_create_event(ret->dispatcher,
+        !ls_event_dispatcher_create_event(m->dispatcher,
                                           EV_REMOVE_NAME,
-                                          &ret->e_remove,
+                                          &m->e_remove,
                                           err)) {
         goto cleanup;
     }
@@ -176,14 +154,14 @@ LS_API bool tube_manager_create(int buckets,
           .less_comparer_ctx = NULL,
           .item_mover = &_timer_move,
         };
-        ret->timer_q = gpriority_queue_create(&paged_binary_heap_ctx, _timer_del);
-        if (!ret->timer_q) {
+        m->timer_q = gpriority_queue_create(&paged_binary_heap_ctx, _timer_del);
+        if (!m->timer_q) {
             goto cleanup;
         }
     }
 
     // Prime the pump to make sure we always have the current time
-    if (gettimeofday(&ret->last, NULL) != 0) {
+    if (gettimeofday(&m->last, NULL) != 0) {
         LS_ERROR(err, -errno);
         goto cleanup;
     }
@@ -191,38 +169,38 @@ LS_API bool tube_manager_create(int buckets,
     {
         // Set pipe to non-blocking, both directions
         int i, flags;
-        if (pipe(ret->pipe) == -1) {
+        if (pipe(m->pipe) == -1) {
             LS_ERROR(err, -errno);
-            return false;
+            goto cleanup;
         }
 
         for (i=0; i<2; i++) {
-            ret->max_fd = MAX(ret->max_fd, ret->pipe[i]);
-            flags = fcntl(ret->pipe[i], F_GETFL);
+            m->max_fd = MAX(m->max_fd, m->pipe[i]);
+            flags = fcntl(m->pipe[i], F_GETFL);
             if (flags == -1) {
                 LS_ERROR(err, -errno);
-                return false;
+                goto cleanup;
             }
-            if (fcntl(ret->pipe[i], F_SETFL, flags|O_NONBLOCK) == -1) {
+            if (fcntl(m->pipe[i], F_SETFL, flags|O_NONBLOCK) == -1) {
                 LS_ERROR(err, -errno);
-                return false;
+                goto cleanup;
             }
         }
     }
-
-    *m = ret;
     return true;
 cleanup:
-    tube_manager_destroy(ret);
-    *m = NULL;
+    _tube_manager_finalize(m);
     return false;
 }
 
-LS_API void tube_manager_destroy(tube_manager *mgr) {
+void _tube_manager_finalize(tube_manager *mgr)
+{
     assert(mgr);
-
     mgr->keep_going = false;
-    tube_manager_interrupt(mgr, -1, NULL);
+    if (mgr->initialized) {
+        tube_manager_interrupt(mgr, -1, NULL);
+    }
+    mgr->initialized = false;
 
     if (pthread_mutex_destroy(&mgr->lock) != 0) {
         LS_LOG_PERROR("pthread_mutex_destroy");
@@ -238,7 +216,59 @@ LS_API void tube_manager_destroy(tube_manager *mgr) {
         ls_event_dispatcher_destroy(mgr->dispatcher);
         mgr->dispatcher = NULL;
     }
+    if (mgr->timer_q) {
+        gpriority_queue_delete(mgr->timer_q);
+        mgr->timer_q = NULL;
+    }
+}
+
+ls_event_dispatcher *_tube_manager_get_dispatcher(tube_manager *mgr)
+{
+    assert(mgr);
+    return mgr->dispatcher;
+}
+
+LS_API bool tube_manager_create(int buckets,
+                                tube_manager **m,
+                                ls_err *err)
+{
+    tube_manager *ret = NULL;
+    assert(m != NULL);
+    ret = ls_data_calloc(1, sizeof(tube_manager));
+    if (ret == NULL) {
+        LS_ERROR(err, LS_ERR_NO_MEMORY);
+        return false;
+    }
+    
+    if (!_tube_manager_init(ret, buckets, err)) {
+        ls_data_free(ret);
+        *m = ret = NULL;
+        return false;
+    }
+    ret->initialized = true;
+    *m = ret;
+    return true;
+}
+
+LS_API void tube_manager_destroy(tube_manager *mgr) {
+    if (NULL == mgr) {
+        // treat it as a no-op
+        return;
+    }
+    _tube_manager_finalize(mgr);
     ls_data_free(mgr);
+}
+
+LS_API void tube_manager_set_data(tube_manager *m, void *data)
+{
+    assert(m);
+    m->data = data;
+}
+
+LS_API void *tube_manager_get_data(tube_manager *m)
+{
+    assert(m);
+    return m->data;
 }
 
 LS_API bool tube_manager_socket(tube_manager *m,
@@ -381,12 +411,11 @@ LS_API bool tube_manager_bind_event(tube_manager *mgr,
                                     ls_err *err)
 {
     ls_event *ev;
-    assert(mgr);
-    assert(mgr->dispatcher);
+    ls_event_dispatcher *dispatcher = _tube_manager_get_dispatcher(mgr);
     assert(name);
     assert(cb);
 
-    ev = ls_event_dispatcher_get_event(mgr->dispatcher, name);
+    ev = ls_event_dispatcher_get_event(dispatcher, name);
     if (!ev) {
         LS_ERROR(err, LS_ERR_BAD_FORMAT);
         return false;
