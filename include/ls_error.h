@@ -35,6 +35,8 @@ typedef enum
     LS_ERR_TIMEOUT,
     /** can't find it */
     LS_ERR_NOT_FOUND,
+    /** Function or behavior not implemented. */
+    LS_ERR_NO_IMPL,
     /** user-defined errors */
     LS_ERR_USER
 } ls_errcode;
