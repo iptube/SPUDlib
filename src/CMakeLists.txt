@@ -18,6 +18,7 @@ set ( spud_srcs
       tube.c
       tube_manager.c
       tube_stream.c
+      map.c
 )
 
 add_definitions(-DUSE_CBOR_CONTEXT)

@@ -26,6 +26,7 @@ ls_test ( ls_timer )
 ls_test ( spud )
 ls_test ( tube )
 ls_test ( tube_stream )
+ls_test ( map )
 target_link_libraries ( tube_test PRIVATE pthread )
 
 include ( CTest )
