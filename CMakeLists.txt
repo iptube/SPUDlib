@@ -14,6 +14,9 @@ set ( SPUDLIB_VERSION "${SPUDLIB_VERSION_MAJOR}.${SPUDLIB_VERSION_MINOR}.${SPUDL
 
 project ( "spudlib" VERSION "${SPUDLIB_VERSION}")
 
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
+include ( Uncrustify )
+
 find_package(Doxygen)
 
 ## setup options
@@ -23,6 +26,7 @@ option ( fatal_warnings "Treat build warnings as errors" ON )
 option ( coveralls "Generate coveralls data" ON )
 option ( coveralls_send "Send data to coveralls site" OFF )
 option ( build_docs "Create docs using Doxygen" ${DOXYGEN_FOUND} )
+option ( uncrustify "Uncrustify the source code" ${UNCRUSTIFY_FOUND} )
 
 set ( dist_dir    ${CMAKE_BINARY_DIR}/dist )
 set ( prefix      ${CMAKE_INSTALL_PREFIX} )
@@ -122,8 +126,6 @@ set ( CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE" )
 
 include ( CPack )
 include ( CTest )
-
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 include ( LCov )
 
 if (build_docs)
@@ -144,6 +146,8 @@ if (build_docs)
 
     install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html DESTINATION share/doc)
 endif()
+
+UncrustifyTop(${uncrustify})
 
 Include(ExternalProject)
 ExternalProject_Add(

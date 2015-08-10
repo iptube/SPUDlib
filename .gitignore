@@ -72,3 +72,4 @@ build
 .kitchen/
 .kitchen.local.yml
 default-*/
+.uncrustify_time
