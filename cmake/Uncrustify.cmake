@@ -32,7 +32,6 @@ function(UncrustifyDir file_list_var)
     COMMENT "Uncrustifying ${THIS_DIR}")
   add_custom_target(
     "uncrustify-${THIS_DIR}"
-    ALL
     DEPENDS "${THIS_TS}")
   add_dependencies(uncrustify "uncrustify-${THIS_DIR}")
 endfunction()
