@@ -17,3 +17,13 @@ target_link_libraries ( spudload PRIVATE spud cn-cbor pthread m )
 add_definitions(-DUSE_CBOR_CONTEXT)
 include_directories ( ../include )
 link_directories ( ${CHECK_LIBRARY_DIRS} )
+
+set (crusty_files
+      adectest.c
+      gauss.c
+      gauss.h
+      spudecho.c
+      spudload.c
+      spudtest.c
+      timertest.c)
+UncrustifyDir(crusty_files)

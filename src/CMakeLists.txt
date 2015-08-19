@@ -5,7 +5,6 @@
 set ( spud_srcs
       ls_error.c
       ls_eventing.c
-      ls_eventing.h
       ls_htable.c
       ls_log.c
       ls_mem.c
@@ -19,6 +18,19 @@ set ( spud_srcs
       tube_manager.c
       tube_stream.c
 )
+
+set ( spud_headers
+      ls_eventing.h
+      ls_eventing_int.h
+      ls_log_int.h
+      ls_pool_types.h
+      ls_queue.h
+      ls_str.h
+      tube_manager_int.h
+)
+
+set (spud_all ${spud_srcs} ${spud_headers})
+UncrustifyDir(spud_all)
 
 add_definitions(-DUSE_CBOR_CONTEXT)
 add_library ( spud SHARED ${spud_srcs} )
