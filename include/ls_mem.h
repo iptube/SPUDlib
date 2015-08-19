@@ -56,7 +56,7 @@ typedef struct _ls_pool_int ls_pool;
  *                Typically the pointer about to be freed
  *                but it may be any user data.
  */
-typedef void (*ls_pool_cleaner)(void *arg);
+typedef void (* ls_pool_cleaner)(void* arg);
 
 /**
  * Callback signature used by ls_data_malloc.
@@ -64,7 +64,7 @@ typedef void (*ls_pool_cleaner)(void *arg);
  * \param[in] size Size of the memory to be allocated.
  * \retval void* Pointer to memory block created by ls_data_malloc
  */
-typedef void * (*ls_data_malloc_func)(size_t size);
+typedef void* (* ls_data_malloc_func)(size_t size);
 
 /**
  * Callback signature used by ls_data_realloc.
@@ -73,14 +73,15 @@ typedef void * (*ls_data_malloc_func)(size_t size);
  * \param[in] size Size of the final memory block.
  * \retval void* Pointer to memory block created by ls_data_realloc
  */
-typedef void * (*ls_data_realloc_func)(void *ptr, size_t size);
+typedef void* (* ls_data_realloc_func)(void*  ptr,
+                                       size_t size);
 
 /**
  * Callback signature used by ls_data_free.
  *
  * \param[in] ptr Pointer to memory block that will be freed.
  */
-typedef void (*ls_data_free_func)(void *ptr);
+typedef void (* ls_data_free_func)(void* ptr);
 
 /**
  * Replace memory allocators used by this library.
@@ -99,9 +100,10 @@ typedef void (*ls_data_free_func)(void *ptr);
  * \param[in] realloc_func Function to replace realloc
  * \param[in] free_func Function to replace free
  */
-LS_API void ls_data_set_memory_funcs(ls_data_malloc_func  malloc_func,
-                                     ls_data_realloc_func realloc_func,
-                                     ls_data_free_func    free_func);
+LS_API void
+ls_data_set_memory_funcs(ls_data_malloc_func  malloc_func,
+                         ls_data_realloc_func realloc_func,
+                         ls_data_free_func    free_func);
 
 /**
  * Release memory allocated by the JabberWerxC library.
@@ -115,7 +117,8 @@ LS_API void ls_data_set_memory_funcs(ls_data_malloc_func  malloc_func,
  *
  * \param[in] ptr The pointer to be freed. May be NULL.
  */
-LS_API void ls_data_free(void *ptr);
+LS_API void
+ls_data_free(void* ptr);
 
 /**
  * Allocate 'size' bytes of memory and return a pointer of the allocated memory.
@@ -123,7 +126,8 @@ LS_API void ls_data_free(void *ptr);
  * \param[in] size The number of bytes to allocate.
  * \retval void* Pointer to the allocated memory
  */
-LS_API void * ls_data_malloc(size_t size);
+LS_API void*
+ls_data_malloc(size_t size);
 
 /**
  * Changes the size of the memory block pointed to by 'ptr' to size 'size'.
@@ -133,7 +137,9 @@ LS_API void * ls_data_malloc(size_t size);
  * \param[in] size The number of bytes to reallocate.
  * \retval void* Pointer to the resized memory block.
  */
-LS_API void * ls_data_realloc(void *ptr, size_t size);
+LS_API void*
+ls_data_realloc(void*  ptr,
+                size_t size);
 
 /**
  * Contiguously allocates enough space for nmemb objects that are size bytes of
@@ -144,7 +150,9 @@ LS_API void * ls_data_realloc(void *ptr, size_t size);
  * \param[in] size The number of bytes to allocate per chunk.
  * \retval void* Pointer to the allocated memory
  */
-LS_API void * ls_data_calloc(size_t nmemb, size_t size);
+LS_API void*
+ls_data_calloc(size_t nmemb,
+               size_t size);
 
 /**
  * Duplicate a string by allocating memory
@@ -155,7 +163,8 @@ LS_API void * ls_data_calloc(size_t nmemb, size_t size);
  * \retval char * Returns the copy of the string, allocated with
  *                ls_data_malloc(), NULL if src is NULL
  */
-LS_API char * ls_data_strdup(const char *src);
+LS_API char*
+ls_data_strdup(const char* src);
 
 /**
  * Duplicate a string by allocating memory
@@ -170,8 +179,9 @@ LS_API char * ls_data_strdup(const char *src);
  *                (result additionally null terminated).
  *                Allocated with ls_data_malloc(), NULL if src is NULL
  */
-LS_API char * ls_data_strndup(const char *src,
-                              size_t      len);
+LS_API char*
+ls_data_strndup(const char* src,
+                size_t      len);
 
 /**
  * Create a new memory pool using the given block size.
@@ -186,9 +196,10 @@ LS_API char * ls_data_strndup(const char *src,
  * \retval bool Returns true if pool was successfully created,
  *              false otherwise.
  */
-LS_API bool ls_pool_create(size_t    size,
-                           ls_pool **pool,
-                           ls_err   *err);
+LS_API bool
+ls_pool_create(size_t    size,
+               ls_pool** pool,
+               ls_err*   err);
 /**
  * Free any memory allocated by the given pool, including the pool itself.
  *
@@ -197,7 +208,8 @@ LS_API bool ls_pool_create(size_t    size,
  * \invariant pool != NULL
  * \param pool The memory pool to free
  */
-LS_API void ls_pool_destroy(ls_pool *pool);
+LS_API void
+ls_pool_destroy(ls_pool* pool);
 
 /**
  * Associate a callback to be fired when the given pointer is freed during the
@@ -214,10 +226,11 @@ LS_API void ls_pool_destroy(ls_pool *pool);
  * \param[out] err The error information (provide NULL to ignore)
  * \retval bool Returns true if cleaner was successfully added, false otherwise.
  */
-LS_API bool ls_pool_add_cleaner(ls_pool        *pool,
-                                ls_pool_cleaner callback,
-                                void           *arg,
-                                ls_err         *err);
+LS_API bool
+ls_pool_add_cleaner(ls_pool*        pool,
+                    ls_pool_cleaner callback,
+                    void*           arg,
+                    ls_err*         err);
 
 /**
  * Allocate memory from the given pool.
@@ -233,10 +246,11 @@ LS_API bool ls_pool_add_cleaner(ls_pool        *pool,
  * \param[out] err The error information (provide NULL to ignore)
  * \retval bool Returns true if pool was successfully created, false otherwise.
  */
-LS_API bool ls_pool_malloc(ls_pool *pool,
-                           size_t   size,
-                           void   **ptr,
-                           ls_err  *err);
+LS_API bool
+ls_pool_malloc(ls_pool* pool,
+               size_t   size,
+               void**   ptr,
+               ls_err*  err);
 
 /**
  * Calculate memory needed and allocate in given pool.
@@ -254,11 +268,12 @@ LS_API bool ls_pool_malloc(ls_pool *pool,
  * \param[out] err The error information (provide NULL to ignore)
  * \retval bool Returns true if ptr was successfully allocated, false otherwise.
  */
-LS_API bool ls_pool_calloc(ls_pool *pool,
-                           size_t   num,
-                           size_t   size,
-                           void   **ptr,
-                           ls_err  *err);
+LS_API bool
+ls_pool_calloc(ls_pool* pool,
+               size_t   num,
+               size_t   size,
+               void**   ptr,
+               ls_err*  err);
 
 /**
  * Duplicate a string by allocating memory in the given pool.
@@ -274,7 +289,8 @@ LS_API bool ls_pool_calloc(ls_pool *pool,
  * \param[out] err The error information (provide NULL to ignore)
  * \retval bool Returns true if cpy was successfully created, false otherwise.
  */
-LS_API bool ls_pool_strdup(ls_pool    *pool,
-                           const char *src,
-                           char      **cpy,
-                           ls_err     *err);
+LS_API bool
+ls_pool_strdup(ls_pool*    pool,
+               const char* src,
+               char**      cpy,
+               ls_err*     err);

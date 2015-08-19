@@ -1,3 +1,4 @@
+/* *INDENT-OFF* */
 /**
  * \file
  * \brief
@@ -24,6 +25,7 @@
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 \endverbatim
  */
+/* *INDENT-ON* */
 
 #pragma once
 
@@ -37,29 +39,33 @@
 #define SPUD_TUBE_ID_SIZE               8
 
 /** Size of hex representation of tube ID (excludes terminator) */
-#define SPUD_ID_STRING_SIZE             (2*SPUD_TUBE_ID_SIZE)
+#define SPUD_ID_STRING_SIZE             (2 * SPUD_TUBE_ID_SIZE)
 
-/** SPUD magic number.  Chosen to be invalid in most other UDP-borne protocols. */
+/** SPUD magic number.  Chosen to be invalid in most other UDP-borne protocols.
+ * */
 #define SPUD_MAGIC_COOKIE_ARRAY         {0xd8, 0x00, 0x00, 0xd8}
-static const uint8_t SpudMagicCookie[]   = SPUD_MAGIC_COOKIE_ARRAY;
+static const uint8_t SpudMagicCookie[] = SPUD_MAGIC_COOKIE_ARRAY;
 
 /** Size of the magic number */
-#define SPUD_MAGIC_COOKIE_SIZE sizeof(SpudMagicCookie)/sizeof(SpudMagicCookie[0])
+#define SPUD_MAGIC_COOKIE_SIZE sizeof(SpudMagicCookie) / \
+  sizeof(SpudMagicCookie[0])
 
 /**
  * Codes for tube establishment/teardown.
  * OR with top byte of flags_id.
  */
+/* *INDENT-OFF* */
 typedef enum {
-    /** Tube already open */
-    SPUD_DATA  = 0x00 << 6,
-    /**  New tube */
-    SPUD_OPEN  = 0x01 << 6,
-    /** Delete this tube */
-    SPUD_CLOSE = 0x02 << 6,
-    /** Responder confirms open */
-    SPUD_ACK   = 0x03 << 6
+  /** Tube already open */
+  SPUD_DATA  = 0x00 << 6,
+  /**  New tube */
+  SPUD_OPEN  = 0x01 << 6,
+  /** Delete this tube */
+  SPUD_CLOSE = 0x02 << 6,
+  /** Responder confirms open */
+  SPUD_ACK   = 0x03 << 6
 } spud_command;
+/* *INDENT-ON* */
 
 /** Application-to-path declaration bit */
 #define SPUD_ADEC    0x20
@@ -72,21 +78,22 @@ typedef enum {
  *  (Note: Scope TBD)
  */
 typedef struct _spud_tube_id {
-    /* 64 bits */
-    uint8_t octet[SPUD_TUBE_ID_SIZE];
+  /* 64 bits */
+  uint8_t octet[SPUD_TUBE_ID_SIZE];
 } spud_tube_id;
 
 /**
- * SPUD fixed message header.  Everything following this is CBOR, including payload.
+ * SPUD fixed message header.  Everything following this is CBOR, including
+ * payload.
  */
 typedef struct _spud_header
 {
   /** magic number, should be 0xd8 00 00 d8 */
-    uint8_t magic[SPUD_MAGIC_COOKIE_SIZE];
+  uint8_t magic[SPUD_MAGIC_COOKIE_SIZE];
   /** tube identifier, scope TBD */
-    spud_tube_id tube_id;
+  spud_tube_id tube_id;
   /** command and direction flags */
-    uint8_t flags;
+  uint8_t flags;
 } spud_header;
 
 
@@ -95,9 +102,9 @@ typedef struct _spud_header
 typedef struct _spud_message
 {
   /** fixed header */
-    spud_header *header;
+  spud_header* header;
   /** CBOR map */
-    const cn_cbor *cbor;
+  const cn_cbor* cbor;
 } spud_message;
 
 /**
@@ -107,7 +114,9 @@ typedef struct _spud_message
  * \param[in] length Length of the payload.
  * \return true if length > fixed header and magic # is correct.
  */
-bool spud_is_spud(const uint8_t *payload, size_t length);
+LS_API bool
+spud_is_spud(const uint8_t* payload,
+             size_t         length);
 
 /**
  * Decode a packet into header and parsed CBOR structure.
@@ -118,14 +127,19 @@ bool spud_is_spud(const uint8_t *payload, size_t length);
  * \param[out] err  If non-NULL on input, indicates error when returning false
  * \return true on success.
  */
-bool spud_parse(const uint8_t *payload, size_t length, spud_message *msg, ls_err *err);
+LS_API bool
+spud_parse(const uint8_t* payload,
+           size_t         length,
+           spud_message*  msg,
+           ls_err*        err);
 
 /**
  * Deallocate memory allocated in parsing.
  *
  * \param[in] msg Pointer to a spud_msg previously parsed by spud_parse()
  */
-void spud_unparse(spud_message *msg);
+LS_API void
+spud_unparse(spud_message* msg);
 
 /**
  * Initialize the fixed part of a SPUD header.
@@ -135,7 +149,10 @@ void spud_unparse(spud_message *msg);
  * \param[out] err If non-NULL on input, indicates error when returning false
  * \return true on success, else false and err describes the problem.
  */
-bool spud_init(spud_header *hdr, spud_tube_id *id, ls_err *err);
+LS_API bool
+spud_init(spud_header*  hdr,
+          spud_tube_id* id,
+          ls_err*       err);
 
 /**
  * Create a new tube ID.
@@ -144,7 +161,9 @@ bool spud_init(spud_header *hdr, spud_tube_id *id, ls_err *err);
  * \param[out] err If non-NULL on input, indicates error when returning false
  * \return true on success.
  */
-bool spud_create_id(spud_tube_id *id, ls_err *err);
+LS_API bool
+spud_create_id(spud_tube_id* id,
+               ls_err*       err);
 
 /**
  * Compare tube IDs.
@@ -153,8 +172,9 @@ bool spud_create_id(spud_tube_id *id, ls_err *err);
  * \param[in] b  A tube ID
  * \return  true if ID's are the same
  */
-bool spud_is_id_equal(const spud_tube_id *a,
-                      const spud_tube_id *b);
+LS_API bool
+spud_is_id_equal(const spud_tube_id* a,
+                 const spud_tube_id* b);
 
 /**
  * Set tube ID field in header.
@@ -163,7 +183,10 @@ bool spud_is_id_equal(const spud_tube_id *a,
  * \param[out] err If non-NULL on input, indicates error when returning false
  * \return  true on success
  */
-bool spud_set_id(spud_header *hdr, const spud_tube_id *id, ls_err *err);
+LS_API bool
+spud_set_id(spud_header*        hdr,
+            const spud_tube_id* id,
+            ls_err*             err);
 
 /**
  * Convert id to hex string.
@@ -172,11 +195,16 @@ bool spud_set_id(spud_header *hdr, const spud_tube_id *id, ls_err *err);
  * \param[in] id The tube ID to convert
  * \return buf (input value) on success, else NULL
  */
-char* spud_id_to_string(char* buf, size_t len, const spud_tube_id *id);
+LS_API char*
+spud_id_to_string(char*               buf,
+                  size_t              len,
+                  const spud_tube_id* id);
 
 /**
  * Duplicate a tube ID.
  * \param[in] src The tube ID to copy, must be nonnull
  * \param[in] dest Where to put it, must be nonnull
  */
-void spud_copy_id(const spud_tube_id *src, spud_tube_id *dest);
+LS_API void
+spud_copy_id(const spud_tube_id* src,
+             spud_tube_id*       dest);

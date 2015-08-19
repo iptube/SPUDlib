@@ -17,12 +17,12 @@
  */
 typedef struct _oom_test_data_int
 {
-    int  ls_AllocCount;  //# of non-3rdparty allocation calls
-    //The most ls_ allocs allowed during a failure test, -1 disables limiting
-    int  ls_AllocLimit;
-    //the number of fail tests to be attempted. see OOM_RECORD_ALLOCS
-    int  failureAttempts;
-    int numMallocCalls, numReallocCalls, numFreeCalls;
+  int ls_AllocCount;     /* # of non-3rdparty allocation calls */
+  /* The most ls_ allocs allowed during a failure test, -1 disables limiting */
+  int ls_AllocLimit;
+  /* the number of fail tests to be attempted. see OOM_RECORD_ALLOCS */
+  int failureAttempts;
+  int numMallocCalls, numReallocCalls, numFreeCalls;
 } oom_test_data;
 
 /**
@@ -32,7 +32,8 @@ typedef struct _oom_test_data_int
  * \param enabled True to swap in oom testing allocation functions,
  *        false for default
  */
-void oom_set_enabled(bool enabled);
+void
+oom_set_enabled(bool enabled);
 
 /**
  * Get the oom_test_data associated with the current tests. User does not
@@ -41,7 +42,8 @@ void oom_set_enabled(bool enabled);
  * \retval oom_test_data the structure containing current oom testing data.
  *         will never return NULL.
  */
-oom_test_data *oom_get_data();
+oom_test_data*
+oom_get_data();
 
 /**
  * Several macros are defined to simplify out-of-memory testing.
@@ -55,16 +57,16 @@ oom_test_data *oom_get_data();
  * Tests expr result using ck_assert
  */
 #define OOM_RECORD_ALLOCS(expr) \
-{ \
+  { \
     bool _oom_result; \
     oom_set_enabled(true); \
-    _oom_result = (expr); \
+    _oom_result                     = (expr); \
     oom_get_data()->failureAttempts = oom_get_data()->ls_AllocCount; \
     oom_set_enabled(false); \
     ASSERT_TRUE(_oom_result); \
     ls_log(LS_LOG_INFO, "testing %u alloc failures for expression: '%s'", \
            oom_get_data()->failureAttempts, #expr); \
-}
+  }
 
 /**
  * Two macros work together to iterate over the failureAttempts.
@@ -88,37 +90,37 @@ oom_test_data *oom_get_data();
  *      ls_jid_context_destroy(ctx);
  */
 #define OOM_TEST_INIT() \
-{ \
-    oom_test_data *oom_data = oom_get_data(); \
+  { \
+    oom_test_data* oom_data = oom_get_data(); \
     for (int _oom_idx = 0; _oom_idx < oom_data->failureAttempts; ++_oom_idx) \
     { \
-        ls_log(LS_LOG_INFO, "starting OOM iteration %d of %d", \
-               _oom_idx + 1, oom_data->failureAttempts); \
-        oom_set_enabled(false); \
+      ls_log(LS_LOG_INFO, "starting OOM iteration %d of %d", \
+             _oom_idx + 1, oom_data->failureAttempts); \
+      oom_set_enabled(false); \
 
 #define OOM_TEST_CONDITIONAL_CHECK(err, expr, check_err) \
-        bool _oom_result; \
-        ls_err *_oom_err = err; \
-        if (_oom_err) { _oom_err->code = LS_ERR_NONE; } \
-        oom_set_enabled(true); \
-        oom_data->ls_AllocLimit = _oom_idx; \
-        _oom_result = (expr); \
-        ASSERT_TRUE(!check_err || !_oom_result); \
-        if (check_err && _oom_err) { \
-            if (_oom_err->code != LS_ERR_NO_MEMORY) { \
-                ls_log(LS_LOG_ERROR, \
-                       "unexpected error value (%d) on iteration %d", \
-                       _oom_err->code, _oom_idx + 1); \
-            } \
-            ASSERT_EQUAL(_oom_err->code, LS_ERR_NO_MEMORY);\
-        } \
+  bool _oom_result; \
+  ls_err* _oom_err = err; \
+  if (_oom_err) { _oom_err->code = LS_ERR_NONE; } \
+  oom_set_enabled(true); \
+  oom_data->ls_AllocLimit = _oom_idx; \
+  _oom_result             = (expr); \
+  ASSERT_TRUE(!check_err || !_oom_result); \
+  if (check_err && _oom_err) { \
+    if (_oom_err->code != LS_ERR_NO_MEMORY) { \
+      ls_log(LS_LOG_ERROR, \
+             "unexpected error value (%d) on iteration %d", \
+             _oom_err->code, _oom_idx + 1); \
     } \
-    oom_set_enabled(false); \
-}
+    ASSERT_EQUAL(_oom_err->code, LS_ERR_NO_MEMORY); \
+  } \
+  } \
+  oom_set_enabled(false); \
+  }
 
 #define OOM_TEST(err, expr) OOM_TEST_CONDITIONAL_CHECK(err, (expr), true)
 #define OOM_TEST_NO_CHECK(err, expr) \
-        OOM_TEST_CONDITIONAL_CHECK(err, (expr), false)
+  OOM_TEST_CONDITIONAL_CHECK(err, (expr), false)
 
 /**
  * OOM_SIMPLE_TEST is given the expression to test and assumes no intermediate
@@ -134,16 +136,16 @@ oom_test_data *oom_get_data();
  *  ls_dom_context_destroy(ctx);
  */
 #define OOM_SIMPLE_TEST_CONDITIONAL_CHECK(expr, check_err) \
-{ \
+  { \
     ls_err err; \
-    OOM_RECORD_ALLOCS((expr)) \
+    OOM_RECORD_ALLOCS( (expr) ) \
     OOM_TEST_INIT() \
     OOM_TEST_CONDITIONAL_CHECK(&err, (expr), check_err) \
-}
+  }
 
-#define OOM_SIMPLE_TEST(expr) OOM_SIMPLE_TEST_CONDITIONAL_CHECK((expr), true)
+#define OOM_SIMPLE_TEST(expr) OOM_SIMPLE_TEST_CONDITIONAL_CHECK( (expr), true )
 #define OOM_SIMPLE_TEST_NO_CHECK(expr) \
-        OOM_SIMPLE_TEST_CONDITIONAL_CHECK((expr), false)
+  OOM_SIMPLE_TEST_CONDITIONAL_CHECK( (expr), false )
 
 
 /**
@@ -153,19 +155,23 @@ oom_test_data *oom_get_data();
  * logic gets fully excercised.
  */
 #define OOM_POOL_TEST_BGN \
-    for(size_t itrs=0; itrs < 2; ++itrs) \
-    { \
-        ls_pool_enable_paging(itrs == 0); \
+  for (size_t itrs = 0; itrs < 2; ++itrs) \
+  { \
+    ls_pool_enable_paging(itrs == 0); \
 
 /**
  * The end pair of OOM_POOL_TEST_BGN
  */
 #define OOM_POOL_TEST_END \
-    } \
-    ls_pool_enable_paging(true);
+  } \
+  ls_pool_enable_paging(true);
 
-// generic memory allocation/free counting functions
-void     _test_init_counting_memory_funcs();
-uint32_t _test_get_malloc_count();
-uint32_t _test_get_free_count();
-void     _test_uninit_counting_memory_funcs();
+/* generic memory allocation/free counting functions */
+void
+_test_init_counting_memory_funcs();
+uint32_t
+_test_get_malloc_count();
+uint32_t
+_test_get_free_count();
+void
+_test_uninit_counting_memory_funcs();

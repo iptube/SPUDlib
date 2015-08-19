@@ -21,5 +21,6 @@
  * \param deallocator the deallocator to use (pass NULL to use the default:
  *   ls_data_free)
  */
-void _ls_log_set_memory_funcs(ls_data_malloc_func allocator,
-                              ls_data_free_func   deallocator);
+void
+_ls_log_set_memory_funcs(ls_data_malloc_func allocator,
+                         ls_data_free_func   deallocator);

@@ -37,9 +37,9 @@ typedef struct _ls_event_trigger_t ls_event_trigger_data;
  *            otherwise
  * \param[in] arg The user-provided data when the event was triggered
  */
-typedef void (*ls_event_result_callback)(ls_event_data evt,
-                                         bool          result,
-                                         void         *arg);
+typedef void (* ls_event_result_callback)(ls_event_data* evt,
+                                          bool           result,
+                                          void*          arg);
 
 /**
  * Creates a new ls_event_dispatcher for the given source.
@@ -54,9 +54,10 @@ typedef void (*ls_event_result_callback)(ls_event_data evt,
  * \param[out] err The error information (provide NULL to ignore)
  * \retval bool True if the dispatcher was created successfully.
  */
-LS_API bool ls_event_dispatcher_create(void                 *source,
-                                       ls_event_dispatcher **dispatch,
-                                       ls_err               *err);
+LS_API bool
+ls_event_dispatcher_create(void*                 source,
+                           ls_event_dispatcher** dispatch,
+                           ls_err*               err);
 
 /**
  * Destroys the given dispatcher and frees its resources.  If the handler for
@@ -68,11 +69,12 @@ LS_API bool ls_event_dispatcher_create(void                 *source,
  * \invariant dispatch != NULL
  * \param[in] dispatch The event dispatcher
  */
-LS_API void ls_event_dispatcher_destroy(ls_event_dispatcher *dispatch);
+LS_API void
+ls_event_dispatcher_destroy(ls_event_dispatcher* dispatch);
 
 /**
- * Retrieves the event notifier from the dispatcher for the given name. Events are
- * matched using an ASCII case-insensitive lookup.
+ * Retrieves the event notifier from the dispatcher for the given name. Events
+ * are matched using an ASCII case-insensitive lookup.
  *
  * \invariant dispatch != NULL
  * \invariant name != NULL
@@ -80,9 +82,9 @@ LS_API void ls_event_dispatcher_destroy(ls_event_dispatcher *dispatch);
  * \param[in] name The event name
  * \retval ls_event_notifier The event notifier, or NULL if not found
  */
-LS_API ls_event *ls_event_dispatcher_get_event(
-        ls_event_dispatcher *dispatch,
-        const char          *name);
+LS_API ls_event*
+ls_event_dispatcher_get_event(ls_event_dispatcher* dispatch,
+                              const char*          name);
 
 /**
  * Create a new event for the given dispatcher and event name. When
@@ -108,11 +110,11 @@ LS_API ls_event *ls_event_dispatcher_get_event(
  * \param[out] err The error information (provide NULL to ignore)
  * \retval bool True if the event was created successfully.
  */
-LS_API bool ls_event_dispatcher_create_event(
-        ls_event_dispatcher *dispatch,
-        const char          *name,
-        ls_event           **event,
-        ls_err              *err);
+LS_API bool
+ls_event_dispatcher_create_event(ls_event_dispatcher* dispatch,
+                                 const char*          name,
+                                 ls_event**           event,
+                                 ls_err*              err);
 
 /**
  * Retrieves the name of this event. The value returned by this function is
@@ -122,7 +124,8 @@ LS_API bool ls_event_dispatcher_create_event(
  * \param[in] event The event
  * \retval const char * The name of the event
  */
-LS_API const char *ls_event_get_name(ls_event *event);
+LS_API const char*
+ls_event_get_name(ls_event* event);
 
 /**
  * Retrieves the source for the given event.
@@ -131,7 +134,8 @@ LS_API const char *ls_event_get_name(ls_event *event);
  * \param[in] event The event
  * \retval void * The event source
  */
-LS_API const void *ls_event_get_source(ls_event *event);
+LS_API const void*
+ls_event_get_source(ls_event* event);
 
 /**
  * Binds the given callback to the event.
@@ -151,10 +155,11 @@ LS_API const void *ls_event_get_source(ls_event *event);
  * \param[out] err The error information (provide NULL to ignore)
  * \retval bool True if the callback was successfully bound.
  */
-LS_API bool ls_event_bind(ls_event                *event,
-                          ls_event_notify_callback cb,
-                          void                    *arg,
-                          ls_err                  *err);
+LS_API bool
+ls_event_bind(ls_event*                event,
+              ls_event_notify_callback cb,
+              void*                    arg,
+              ls_err*                  err);
 
 /**
  * Unbinds the given event callback. If {cb} is not currently bound to the
@@ -165,8 +170,9 @@ LS_API bool ls_event_bind(ls_event                *event,
  * \param[in] event The event
  * \param[in] cb The callback to unbind
  */
-LS_API void ls_event_unbind(ls_event                *event,
-                            ls_event_notify_callback cb);
+LS_API void
+ls_event_unbind(ls_event*                event,
+                ls_event_notify_callback cb);
 
 /**
  * Fires an event on all registered callbacks, with the given data.
@@ -185,11 +191,12 @@ LS_API void ls_event_unbind(ls_event                *event,
  * \param[out] err The error information (provide NULL to ignore)
  * \retval bool True if the callback was successfully bound.
  */
-LS_API bool ls_event_trigger(ls_event                *event,
-                             void                    *data,
-                             ls_event_result_callback result_cb,
-                             void                    *result_arg,
-                             ls_err                  *err);
+LS_API bool
+ls_event_trigger(ls_event*                event,
+                 void*                    data,
+                 ls_event_result_callback result_cb,
+                 void*                    result_arg,
+                 ls_err*                  err);
 
 /**
  * Same as ls_event_trigger except that no internal allocation takes place,
@@ -204,12 +211,12 @@ LS_API bool ls_event_trigger(ls_event                *event,
  * \param[in] trigger_data The preallocated structures to use for the callback.
  *                         This will be cleaned up by the triggering mechanism.
  */
-LS_API void ls_event_trigger_prepared(
-        ls_event                *event,
-        void                    *data,
-        ls_event_result_callback result_cb,
-        void                    *result_arg,
-        ls_event_trigger_data   *trigger_data);
+LS_API void
+ls_event_trigger_prepared(ls_event*                event,
+                          void*                    data,
+                          ls_event_result_callback result_cb,
+                          void*                    result_arg,
+                          ls_event_trigger_data*   trigger_data);
 
 /**
  * Pre-allocates the data structures for a single call to
@@ -224,8 +231,10 @@ LS_API void ls_event_trigger_prepared(
  * \param[out] err The error information (provide NULL to ignore)
  * \retval bool True if the structures were successfully allocated
  */
-LS_API bool ls_event_prepare_trigger(ls_event_dispatcher *dispatch,
-        ls_event_trigger_data **trigger_data, ls_err *err);
+LS_API bool
+ls_event_prepare_trigger(ls_event_dispatcher*    dispatch,
+                         ls_event_trigger_data** trigger_data,
+                         ls_err*                 err);
 
 /**
  * Destroys unused trigger data.  Trigger data is normally destroyed by
@@ -235,5 +244,5 @@ LS_API bool ls_event_prepare_trigger(ls_event_dispatcher *dispatch,
  * \invariant trigger_data != NULL
  * \param[in] trigger_data The structure to be destroyed
  */
-LS_API void ls_event_unprepare_trigger(
-        ls_event_trigger_data *trigger_data);
+LS_API void
+ls_event_unprepare_trigger(ls_event_trigger_data* trigger_data);

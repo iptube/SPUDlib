@@ -4,4 +4,6 @@
 
 #pragma once
 
-double gauss(double mean, double stddev);
+double
+gauss(double mean,
+      double stddev);

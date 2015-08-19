@@ -20,7 +20,9 @@
  * \param def The default value to return
  * \retval int The integer representation of a, or def if NULL
  */
-LS_API int ls_atoi(const char *a, int def);
+LS_API int
+ls_atoi(const char* a,
+        int         def);
 
 /**
  * Determines the length of the given string. This function
@@ -29,7 +31,8 @@ LS_API int ls_atoi(const char *a, int def);
  * \param a The string to determine the length of
  * \retval size_t The length of a, or 0 if a is NULL
  */
-LS_API size_t ls_strlen(const char *a);
+LS_API size_t
+ls_strlen(const char* a);
 
 /**
  * Determines the length of the given string. This function
@@ -39,7 +42,9 @@ LS_API size_t ls_strlen(const char *a);
  * \param len The maximum length to consider
  * \retval size_t The length of a, or 0 if a is NULL
  */
-LS_API size_t ls_strnlen(const char *a, size_t len);
+LS_API size_t
+ls_strnlen(const char* a,
+           size_t      len);
 
 /**
  * Compares two NULL-terminated strings (case-sensitive), allowing for either
@@ -52,7 +57,9 @@ LS_API size_t ls_strnlen(const char *a, size_t len);
  *             greater than 0 if a is after b;
  *             0 if a and be are equal
  */
-LS_API int ls_strcmp(const char *a, const char *b);
+LS_API int
+ls_strcmp(const char* a,
+          const char* b);
 
 /**
  * Compares two NULL-terminated strings (case-insensitive), allowing for either
@@ -65,7 +72,9 @@ LS_API int ls_strcmp(const char *a, const char *b);
  *             greater than 0 if a is after b;
  *             0 if a and be are equal
  */
-LS_API int ls_strcasecmp(const char *a, const char *b);
+LS_API int
+ls_strcasecmp(const char* a,
+              const char* b);
 
 /**
  * Compares part of two NULL-terminated strings, allowing for either to be
@@ -79,7 +88,10 @@ LS_API int ls_strcasecmp(const char *a, const char *b);
  *             greater than 0 if a is after b;
  *             0 if a and be are equal
  */
-LS_API int ls_strncmp(const char *a, const char *b, size_t n);
+LS_API int
+ls_strncmp(const char* a,
+           const char* b,
+           size_t      n);
 
 /**
  * Compares two NULL-terminated strings (case-insensitive), allowing for either
@@ -93,4 +105,7 @@ LS_API int ls_strncmp(const char *a, const char *b, size_t n);
  *             greater than 0 if a is after b;
  *             0 if a and be are equal
  */
-LS_API int ls_strncasecmp(const char *a, const char *b, size_t n);
+LS_API int
+ls_strncasecmp(const char* a,
+               const char* b,
+               size_t      n);
