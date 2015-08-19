@@ -25,7 +25,7 @@
  * Page specific unit tests (in mem_test.c) are not included when
  * DISABLE_POOL_PAGES is defined.
  */
-//#define DISABLE_POOL_PAGES
+/* #define DISABLE_POOL_PAGES */
 
 /**
  * Enable/disable memory pool paging by setting the pool's page size to 0.
@@ -33,9 +33,11 @@
  * NOTE: Page size is only checked during construction, exisiting pools are not
  * effected by this function.
  *
- * \param[in] enable enable or disable pool paging for newly constructed ls_pools.
+ * \param[in] enable enable or disable pool paging for newly constructed
+ *            ls_pools.
  */
-void ls_pool_enable_paging(bool enable);
+void
+ls_pool_enable_paging(bool enable);
 
 /**
  * Pools use "page"s, blocks of allocated mem, for allocation
@@ -58,11 +60,11 @@ void ls_pool_enable_paging(bool enable);
  */
 typedef struct pool_page
 {
-    void*  block;
-    size_t size;
-    size_t used;
-    struct pool_page *next;
-} *_pool_page;
+  void*             block;
+  size_t            size;
+  size_t            used;
+  struct pool_page* next;
+} _pool_page;
 
 /**
  * pool_cleaners are callbacks fired when a pool is being destroyed.
@@ -74,10 +76,10 @@ typedef struct pool_page
  */
 typedef struct pool_cleaner_ctx
 {
-    ls_pool_cleaner cleaner;
-    void*           arg;
-    struct pool_cleaner_ctx *next;
-} *_pool_cleaner_ctx;
+  ls_pool_cleaner          cleaner;
+  void*                    arg;
+  struct pool_cleaner_ctx* next;
+} _pool_cleaner_ctx;
 
 /**
  * A pool is a head pointer to the page linked list, a head
@@ -87,9 +89,9 @@ typedef struct pool_cleaner_ctx
  */
 typedef struct _ls_pool_int
 {
-    size_t size;
-    size_t page_size;
-    struct pool_cleaner_ctx *cleaners;
-    struct pool_cleaner_ctx *tail;
-    struct pool_page        *pages;
+  size_t             size;
+  size_t             page_size;
+  _pool_cleaner_ctx* cleaners;
+  _pool_cleaner_ctx* tail;
+  struct pool_page*  pages;
 } _ls_pool;

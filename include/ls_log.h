@@ -18,36 +18,39 @@
 /** Convenience macro for tracing a function entry where no arguments need to be
  *  logged */
 #define LS_LOG_TRACE_FUNCTION_NO_ARGS \
-        ls_log(LS_LOG_TRACE, "entering: %s", __func__)
+  ls_log(LS_LOG_TRACE, "entering: %s", __func__)
+
 /** Convenience macro for tracing a function entry with logged arguments.
  * The space after __func__ but before the comma is intentional as recommended
  * at http://gcc.gnu.org/onlinedocs/cpp/Variadic-Macros.html for compatibility
  */
 #define LS_LOG_TRACE_FUNCTION(fmt, ...) \
-        ls_log(LS_LOG_TRACE, "entering: %s; args=("fmt")", \
-        __func__ , __VA_ARGS__)
+  ls_log(LS_LOG_TRACE, \
+         "entering: %s; args=("fmt ")", \
+         __func__, \
+         __VA_ARGS__)
 
 /**
  * Enumeration of defined log levels
  */
 typedef enum
 {
-    /** Log level that indicates no messages should be output */
-    LS_LOG_NONE = 0,
-    /** Logging error-level messages */
-    LS_LOG_ERROR,
-    /** Logging warn-level messages */
-    LS_LOG_WARN,
-    /** Logging info-level messages */
-    LS_LOG_INFO,
-    /** Logging verbose-level messages */
-    LS_LOG_VERBOSE,
-    /** Logging debug-level messages */
-    LS_LOG_DEBUG,
-    /** Logging trace-level messages */
-    LS_LOG_TRACE,
-    /** Logging memory allocation-level messages */
-    LS_LOG_MEMTRACE
+  /** Log level that indicates no messages should be output */
+  LS_LOG_NONE = 0,
+  /** Logging error-level messages */
+  LS_LOG_ERROR,
+  /** Logging warn-level messages */
+  LS_LOG_WARN,
+  /** Logging info-level messages */
+  LS_LOG_INFO,
+  /** Logging verbose-level messages */
+  LS_LOG_VERBOSE,
+  /** Logging debug-level messages */
+  LS_LOG_DEBUG,
+  /** Logging trace-level messages */
+  LS_LOG_TRACE,
+  /** Logging memory allocation-level messages */
+  LS_LOG_MEMTRACE
 } ls_loglevel;
 
 /**
@@ -69,8 +72,10 @@ typedef enum
  *      set.
  * \param[in] arg The user-supplied pointer passed to ls_log_chunked().
  */
-typedef void (*ls_log_generator_fn)(
-        const char **chunk, size_t *len, ls_data_free_func *free_fn, void *arg);
+typedef void (* ls_log_generator_fn)(const char**       chunk,
+                                     size_t*            len,
+                                     ls_data_free_func* free_fn,
+                                     void*              arg);
 
 /**
  * Retrieve the string version of the ls_loglevel enum.
@@ -78,7 +83,8 @@ typedef void (*ls_log_generator_fn)(
  * \param level The log level to lookup
  * \retval const char * The message for {level}
  */
-LS_API const char *ls_log_level_name(ls_loglevel level);
+LS_API const char*
+ls_log_level_name(ls_loglevel level);
 
 /**
  * Function like vfprintf to be used for logging.
@@ -92,8 +98,9 @@ LS_API const char *ls_log_level_name(ls_loglevel level);
  * \param ap Additional parameters to interpolate into {fmt}.
  * \retval Number of bytes written.
  */
-typedef int (*ls_log_vararg_function)(
-                FILE *stream, const char *format, va_list ap);
+typedef int (* ls_log_vararg_function)(FILE*       stream,
+                                       const char* format,
+                                       va_list     ap);
 
 /**
  * Set the logging function.
@@ -105,7 +112,8 @@ typedef int (*ls_log_vararg_function)(
  *
  * \param fn The vfprintf-like function to use.
  */
-LS_API void ls_log_set_function(ls_log_vararg_function fn);
+LS_API void
+ls_log_set_function(ls_log_vararg_function fn);
 
 /**
  * Set the current log level, defaults to LS_LOG_INFO.
@@ -116,14 +124,16 @@ LS_API void ls_log_set_function(ls_log_vararg_function fn);
  *
  * \param level The new log level.
  */
-LS_API void ls_log_set_level(ls_loglevel level);
+LS_API void
+ls_log_set_level(ls_loglevel level);
 
 /**
  * Get the current log level.
  *
  * \retval The current log level.
  */
-LS_API ls_loglevel ls_log_get_level(void);
+LS_API ls_loglevel
+ls_log_get_level(void);
 
 /**
  * Enables or disables printing the NDC prefix for log messages.  By default,
@@ -131,7 +141,8 @@ LS_API ls_loglevel ls_log_get_level(void);
  *
  * \param[in] enabled true if the NDC should be output; otherwise false.
  */
-LS_API void ls_log_set_ndc_enabled(bool enabled);
+LS_API void
+ls_log_set_ndc_enabled(bool enabled);
 
 /**
  * Pushes a nested diagnostic context onto the NDC stack.  The given message
@@ -147,8 +158,10 @@ LS_API void ls_log_set_ndc_enabled(bool enabled);
  * a malformed format string), an appropriate warning will be printed and 0
  * will be returned.
  */
-LS_API int ls_log_push_ndc(const char *fmt, ...)
-        __attribute__ ((__format__ (__printf__, 1, 2)));
+LS_API int
+ls_log_push_ndc(const char* fmt,
+                ...)
+__attribute__ ( ( __format__(__printf__, 1, 2) ) );
 
 /**
  * Pops a nested diagnostic context from the NDC stack.
@@ -158,7 +171,8 @@ LS_API int ls_log_push_ndc(const char *fmt, ...)
  * the stack will be reduced to the expected depth.  If 0 is passed in, this
  * function is a noop.
  */
-LS_API void ls_log_pop_ndc(int ndc_depth);
+LS_API void
+ls_log_pop_ndc(int ndc_depth);
 
 /**
  * Log at the given level to stderr.
@@ -178,8 +192,11 @@ LS_API void ls_log_pop_ndc(int ndc_depth);
  * \param[in] fmt The printf-style format to log
  * \param[in] ... Extra parameters to interpolate into {fmt}.
  */
-LS_API void ls_log(ls_loglevel level, const char *fmt, ...)
-        __attribute__ ((__format__ (__printf__, 2, 3)));
+LS_API void
+ls_log(ls_loglevel level,
+       const char* fmt,
+       ...)
+__attribute__ ( ( __format__(__printf__, 2, 3) ) );
 
 /**
  * Log an error, with extra information.  If the error is NULL,
@@ -194,8 +211,11 @@ LS_API void ls_log(ls_loglevel level, const char *fmt, ...)
  * \param[in] fmt The printf-style format to log
  * \param[in] ... Extra parameters to interpolate into {fmt}.
  */
-LS_API void ls_log_err(ls_loglevel level, ls_err *err,
-        const char *fmt, ...) __attribute__ ((__format__ (__printf__, 3, 4)));
+LS_API void
+ls_log_err(ls_loglevel level,
+           ls_err*     err,
+           const char* fmt,
+           ...) __attribute__ ( ( __format__(__printf__, 3, 4) ) );
 
 /**
  * Log a message with content provided by a generator function.  The content
@@ -212,9 +232,12 @@ LS_API void ls_log_err(ls_loglevel level, ls_err *err,
  * \param[in] fmt The printf-style format to log.  If NULL, equivalent to "".
  * \param[in] ... Extra parameters to interpolate into {fmt}.
  */
-LS_API void ls_log_chunked(ls_loglevel level,
-        ls_log_generator_fn generator_fn, void *arg,
-        const char *fmt, ...) __attribute__ ((__format__ (__printf__, 4, 5)));
+LS_API void
+ls_log_chunked(ls_loglevel         level,
+               ls_log_generator_fn generator_fn,
+               void*               arg,
+               const char*         fmt,
+               ...) __attribute__ ( ( __format__(__printf__, 4, 5) ) );
 
 /**
  * Log the specified time in human-readable form.
@@ -222,7 +245,9 @@ LS_API void ls_log_chunked(ls_loglevel level,
  * @param[in] tv  The time to log
  * @param[in] tag A string describing the logged time
  */
-LS_API void ls_log_format_timeval(struct timeval *tv, const char *tag);
+LS_API void
+ls_log_format_timeval(struct timeval* tv,
+                      const char*     tag);
 
 /**
  * Log the specified error, with the current information, where the error came
@@ -231,11 +256,25 @@ LS_API void ls_log_format_timeval(struct timeval *tv, const char *tag);
  * @param[in]  err     The error to log
  * @param[in]  what    A string describing what failed
  */
-#define LS_LOG_ERR(err, what) ls_log(LS_LOG_ERROR, "%s:%d->%s%zu (%s) %d, %s", __FILE__, __LINE__, (err).file, (err).line, (what), (err).code, (err).message)
+#define LS_LOG_ERR(err, what) ls_log(LS_LOG_ERROR, \
+                                     "%s:%d->%s%zu (%s) %d, %s", \
+                                     __FILE__, \
+                                     __LINE__, \
+                                     (err).file, \
+                                     (err).line, \
+                                     (what), \
+                                     (err).code, \
+                                     (err).message)
 
 /**
  * ls_log equivalent of perror
  *
  * @param[in]  what    A string describing what failed
  */
-#define LS_LOG_PERROR(what) ls_log(LS_LOG_ERROR, "%s:%d (%s) %d, %s", __FILE__, __LINE__, (what), errno, strerror(errno))
+#define LS_LOG_PERROR(what) ls_log( LS_LOG_ERROR, \
+                                    "%s:%d (%s) %d, %s", \
+                                    __FILE__, \
+                                    __LINE__, \
+                                    (what), \
+                                    errno, \
+                                    strerror(errno) )

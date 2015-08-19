@@ -18,7 +18,7 @@
 #include "ls_sockaddr.h"
 #include "tube_manager.h"
 
-// ### TUBE STREAM INTERFACE ### //
+/* ### TUBE STREAM INTERFACE ### */
 /**
  * Handle for a tube stream.
  */
@@ -34,15 +34,17 @@ typedef struct _tube_stream tube_stream;
  * \param[out] err If non-NULL on input, describes error if false is returned
  * \return true: m points to the manager.  false: see err.
  */
-LS_API bool tube_stream_create(tube_stream **s,
-                               ls_err *err);
+LS_API bool
+tube_stream_create(tube_stream** s,
+                   ls_err*       err);
 /**
  * Deallocate an existing tube stream.
  *
  * \invariant s != NULL
  * \param[in] s  The tube stream to be reclaimed.
  */
-LS_API void tube_stream_destroy(tube_stream *s);
+LS_API void
+tube_stream_destroy(tube_stream* s);
 
 /**
  * Binds this stream to a tube.
@@ -54,11 +56,12 @@ LS_API void tube_stream_destroy(tube_stream *s);
  * \param[out] err If non-NULL on input, describes error if false is returned
  * \return true: tube bound to this stream.  false: see err.
  */
-LS_API bool tube_stream_bind(tube_stream *s,
-                             tube *t,
-                             ls_err *err);
+LS_API bool
+tube_stream_bind(tube_stream* s,
+                 tube*        t,
+                 ls_err*      err);
 
-// QUESTION: amount readable now?
+/* QUESTION: amount readable now? */
 /**
  * Reads data from the tube stream.
  *
@@ -70,8 +73,10 @@ LS_API bool tube_stream_bind(tube_stream *s,
  * \param[in] len The size of data
  * \result The amount of data read and placed into data
  */
-LS_API ssize_t tube_stream_read(tube_stream *s,
-                                uint8_t *data, size_t len);
+LS_API ssize_t
+tube_stream_read(tube_stream* s,
+                 uint8_t*     data,
+                 size_t       len);
 /**
  * Writes data to the tube stream.
  *
@@ -83,9 +88,11 @@ LS_API ssize_t tube_stream_read(tube_stream *s,
  * \param[out] err If non-NULL on input, describes error if false is returned
  * \return true: data is written.  false: see err.
  */
-LS_API bool tube_stream_write(tube_stream *s,
-                              uint8_t *data, size_t len,
-                              ls_err *err);
+LS_API bool
+tube_stream_write(tube_stream* s,
+                  uint8_t*     data,
+                  size_t       len,
+                  ls_err*      err);
 
 /**
  * Close the tube stream.
@@ -94,25 +101,26 @@ LS_API bool tube_stream_write(tube_stream *s,
  * \param[out] err If non-NULL on input, describes error if false is returned
  * \return true: tube stream is closed.  false: see err.
  */
-LS_API bool tube_stream_close(tube_stream *s,
-                              ls_err *err);
+LS_API bool
+tube_stream_close(tube_stream* s,
+                  ls_err*      err);
 
 
-// ### TUBE STREAM MANAGER INTERFACE ### //
+/* ### TUBE STREAM MANAGER INTERFACE ### */
 /**
  * Handle for a tube stream manager. Inherits tube manager.
  */
 typedef struct _tube_stream_manager tube_stream_manager;
 
-// #### TUBE STREAM EVENTS #### //
+/* #### TUBE STREAM EVENTS #### */
 /**
  * Type of tube stream event data; passed to event handler.
  */
 typedef struct _tube_stream_event_data {
-    /** The tube stream the event applies to */
-    struct _tube_stream *s;
-    /** the tube stream manager of the tube stream the event applies to */
-    struct _tube_stream_manager *s_mgr;
+  /** The tube stream the event applies to */
+  struct _tube_stream* s;
+  /** the tube stream manager of the tube stream the event applies to */
+  struct _tube_stream_manager* s_mgr;
 } tube_stream_event_data;
 
 /** Tube stream received data */
@@ -134,16 +142,18 @@ typedef struct _tube_stream_event_data {
  * \param[out] err If non-NULL on input, describes error if false is returned
  * \return true: New tube stream manager created.  false: see err.
  */
-LS_API bool tube_stream_manager_create(int buckets,
-                                       tube_stream_manager **sm,
-                                       ls_err *err);
+LS_API bool
+tube_stream_manager_create(int                   buckets,
+                           tube_stream_manager** sm,
+                           ls_err*               err);
 /**
  * Destroys a tube stream manager. All tube streams are closed and released.
  *
  * \param[in] sm The previously-created tube stream manager to be terminated.
  * \warning sm should not be dereferenced after return.
  */
-LS_API void tube_stream_manager_destroy(tube_stream_manager *sm);
+LS_API void
+tube_stream_manager_destroy(tube_stream_manager* sm);
 
 /**
  * Connects a tube stream to the given socket address.
@@ -156,10 +166,11 @@ LS_API void tube_stream_manager_destroy(tube_stream_manager *sm);
  * \param[out] err If non-NULL on input, describes error if false is returned
  * \return true: stream tube connected.  false: see err.
  */
-LS_API bool tube_stream_manager_connect(tube_stream_manager *sm,
-                                        struct sockaddr *dest,
-                                        tube_stream **s,
-                                        ls_err *err);
+LS_API bool
+tube_stream_manager_connect(tube_stream_manager* sm,
+                            struct sockaddr*     dest,
+                            tube_stream**        s,
+                            ls_err*              err);
 
 /**
  * Retrieves the tube manager for this tube stream manager.
@@ -168,7 +179,8 @@ LS_API bool tube_stream_manager_connect(tube_stream_manager *sm,
  * \param[in] sm The tube stream
  * \return The tube manager for sm
  */
-LS_API tube_manager *tube_stream_manager_get_manager(tube_stream_manager *sm);
+LS_API tube_manager*
+tube_stream_manager_get_manager(tube_stream_manager* sm);
 
 /**
  * Start listening for incoming tube stream connections.
@@ -176,8 +188,9 @@ LS_API tube_manager *tube_stream_manager_get_manager(tube_stream_manager *sm);
  * \invariant sm != NULL
  * \param[in] sm The tube stream manager
  */
-LS_API bool tube_stream_manager_listen(tube_stream_manager *sm,
-                                       ls_err *err);
+LS_API bool
+tube_stream_manager_listen(tube_stream_manager* sm,
+                           ls_err*              err);
 
 /**
  * Bind an event handler (callback) to an event.
@@ -192,7 +205,8 @@ LS_API bool tube_stream_manager_listen(tube_stream_manager *sm,
  * \param[out] err If non-NULL on input, describes error if false is returned
  * \return true: event bound.  false: see err.
  */
-LS_API bool tube_stream_manager_bind_event(tube_stream_manager *sm,
-                                           const char *name,
-                                           ls_event_notify_callback *cb,
-                                           ls_err *err);
+LS_API bool
+tube_stream_manager_bind_event(tube_stream_manager*      sm,
+                               const char*               name,
+                               ls_event_notify_callback* cb,
+                               ls_err*                   err);

@@ -23,12 +23,12 @@
 #endif
 
 #ifndef UNUSED_PARAM
-  /**
-   * \def UNUSED_PARAM(p);
-   *
-   * A macro for quelling compiler warnings about unused variables.
-   */
-#  define UNUSED_PARAM(p) ((void)&(p))
+/**
+ * \def UNUSED_PARAM(p);
+ *
+ * A macro for quelling compiler warnings about unused variables.
+ */
+#  define UNUSED_PARAM(p) ( (void)&(p) )
 #endif /* UNUSED_PARM */
 
 #include <stdbool.h>

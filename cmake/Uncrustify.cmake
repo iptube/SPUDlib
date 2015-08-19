@@ -27,7 +27,7 @@ function(UncrustifyDir file_list_var)
     OUTPUT "${THIS_TS}"
     COMMAND "${UNCRUSTIFY_EXE}" --replace --no-backup -c "${uncrustify_cfg}" ${${file_list_var}}
     COMMAND touch "${THIS_TS}"
-    DEPENDS ${${file_list_var}}
+    DEPENDS ${${file_list_var}} "${uncrustify_cfg}"
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     COMMENT "Uncrustifying ${THIS_DIR}")
   add_custom_target(

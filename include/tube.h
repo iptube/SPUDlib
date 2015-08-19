@@ -47,23 +47,29 @@ typedef struct _tube tube;
  * \return  true: *t points to the new tube.
  *       false: see err
  */
-LS_API bool tube_create(tube **t, ls_err *err);
+LS_API bool
+tube_create(tube**  t,
+            ls_err* err);
 
 /**
  * Deallocate an existing tube.
  * \invariant t != NULL
  * \param[in] t  The tube to be reclaimed.
  */
-LS_API void tube_destroy(tube *t);
+LS_API void
+tube_destroy(tube* t);
 
 /**
  * Print local address of tube to stdout in the format "[address]:port".
  * \invariant t != NULL
  * \param[in] t  The tube to be printed
  * \param[out] err  If non-NULL on input, points to error when false is returned
- * \return true: print succeeded. false: getsockname, getnameinfo or printf failed.
+ * \return true: print succeeded. false: getsockname, getnameinfo or printf
+ * failed.
  */
-LS_API bool tube_print(const tube *t, ls_err *err);
+LS_API bool
+tube_print(const tube* t,
+           ls_err*     err);
 
 /**
  * Send a DATA packet.  Adds fixed header and encodes payload into CBOR map.
@@ -77,19 +83,24 @@ LS_API bool tube_print(const tube *t, ls_err *err);
  * \param[out] err  If non-NULL on input, points to error when false is returned
  * \return true: packet successfully sent. false: see err.
  */
-LS_API bool tube_data(tube *t, uint8_t *data, size_t len, ls_err *err);
+LS_API bool
+tube_data(tube*    t,
+          uint8_t* data,
+          size_t   len,
+          ls_err*  err);
 
 /**
  * Create a CBOR map containing the mandatory pdec keys
  */
-LS_API bool path_mandatory_keys_create(uint8_t *ipadress,
-                                       size_t iplen,
-                                       uint8_t *token,
-                                       size_t tokenlen,
-                                       char* url,
-                                       cn_cbor_context *ctx,
-                                       cn_cbor **map,
-                                       ls_err *err);
+LS_API bool
+path_mandatory_keys_create(uint8_t*         ipadress,
+                           size_t           iplen,
+                           uint8_t*         token,
+                           size_t           tokenlen,
+                           char*            url,
+                           cn_cbor_context* ctx,
+                           cn_cbor**        map,
+                           ls_err*          err);
 
 /**
  * Send a path declaration on the given tube.
@@ -101,7 +112,11 @@ LS_API bool path_mandatory_keys_create(uint8_t *ipadress,
  * \param[in] reflect  The value to place in the ADEC flag
  * \param[out] err  If non-NULL on input, points to error when false is returned
  */
-LS_API bool tube_send_pdec(tube *t, cn_cbor *cbor, bool reflect, ls_err *err);
+LS_API bool
+tube_send_pdec(tube*    t,
+               cn_cbor* cbor,
+               bool     reflect,
+               ls_err*  err);
 
 /**
  * Close a tube.  Sends an (empty) CLOSE packet and sets tube state to UNKNOWN.
@@ -110,7 +125,9 @@ LS_API bool tube_send_pdec(tube *t, cn_cbor *cbor, bool reflect, ls_err *err);
  * \param[out] err  If non-NULL on input, points to error when false is returned
  * \return true: tube closed.  false: see err.
  */
-LS_API bool tube_close(tube *t, ls_err *err);
+LS_API bool
+tube_close(tube*   t,
+           ls_err* err);
 
 /**
  * Construct and send a fully-specified SPUD packet.
@@ -126,12 +143,15 @@ LS_API bool tube_close(tube *t, ls_err *err);
  * \param[out] err If non-NULL on input, points to error when false is returned
  * \return true: success.  false: see err.
  */
-LS_API bool tube_send(tube *t,
-                      spud_command cmd,
-                      bool adec, bool pdec,
-                      uint8_t **data, size_t *len,
-                      int num,
-                      ls_err *err);
+LS_API bool
+tube_send(tube*        t,
+          spud_command cmd,
+          bool         adec,
+          bool         pdec,
+          uint8_t**    data,
+          size_t*      len,
+          int          num,
+          ls_err*      err);
 
 /**
  * Serialize the given CBOR, and send it to the tube's peer.
@@ -145,22 +165,26 @@ LS_API bool tube_send(tube *t,
  * @param[out] err  If non-NULL on input, points to error when false is returned
  * @return     true: success.  false: see err.
  */
-LS_API bool tube_send_cbor(tube *t,
-                           spud_command cmd,
-                           bool adec,
-                           bool pdec,
-                           cn_cbor *cbor,
-                           ls_err *err);
+LS_API bool
+tube_send_cbor(tube*        t,
+               spud_command cmd,
+               bool         adec,
+               bool         pdec,
+               cn_cbor*     cbor,
+               ls_err*      err);
 
 /**
  * Set the data associated with a tube.
  */
-LS_API void tube_set_data(tube *t, void *data);
+LS_API void
+tube_set_data(tube* t,
+              void* data);
 
 /**
  * Returns the data associated with a tube.
  */
-LS_API void *tube_get_data(tube *t);
+LS_API void*
+tube_get_data(tube* t);
 
 /**
  * Set the local address of a tube.
@@ -170,7 +194,10 @@ LS_API void *tube_get_data(tube *t);
  * \param[out] err If non-NULL on input, points to error when false is returned
  * \return true: success.  false: see err.
  */
-LS_API bool tube_set_local(tube *t, ls_pktinfo *info, ls_err *err);
+LS_API bool
+tube_set_local(tube*       t,
+               ls_pktinfo* info,
+               ls_err*     err);
 
 /**
  * Print the ID of a tube (on stdout) as a 16-digit hex string.
@@ -180,7 +207,10 @@ LS_API bool tube_set_local(tube *t, ls_pktinfo *info, ls_err *err);
  * \param[in] len  Size of the buffer
  * \return buf on success, else NULL.
  */
-LS_API char *tube_id_to_string(tube *t, char* buf, size_t len);
+LS_API char*
+tube_id_to_string(tube*  t,
+                  char*  buf,
+                  size_t len);
 
 /**
  * Return the state of a tube.
@@ -188,7 +218,8 @@ LS_API char *tube_id_to_string(tube *t, char* buf, size_t len);
  * \param[in] t  The tube whose state is to be retrieved.
  * \return The state of the tube (see definition)
  */
-LS_API tube_states_t tube_get_state(tube *t);
+LS_API tube_states_t
+tube_get_state(tube* t);
 
 /**
  * Set the current state of the tube.
@@ -196,7 +227,9 @@ LS_API tube_states_t tube_get_state(tube *t);
  * @param[in] t     The tube to modify
  * @param[in] state The new tube state
  */
-LS_API void tube_set_state(tube *t, tube_states_t state);
+LS_API void
+tube_set_state(tube*         t,
+               tube_states_t state);
 
 /**
  * Return the ID associated with a tube.
@@ -206,7 +239,9 @@ LS_API void tube_set_state(tube *t, tube_states_t state);
  * \param[in] t  The tube whose id is returned
  * \param[out] id  On return, contains the internal tube ID pointer.
  */
-LS_API void tube_get_id(tube *t, spud_tube_id **id);
+LS_API void
+tube_get_id(tube*          t,
+            spud_tube_id** id);
 
 /**
  * Set various pieces of information about the tube.
@@ -217,7 +252,8 @@ LS_API void tube_get_id(tube *t, spud_tube_id **id);
  * @param[in] peer   The tube's new peer address (if != NULL)
  * @param[in] id     The tube id (if != NULL)
  */
-LS_API void tube_set_info(tube *t,
-                          int socket,
-                          const struct sockaddr *peer,
-                          spud_tube_id *id);
+LS_API void
+tube_set_info(tube*                  t,
+              int                    socket,
+              const struct sockaddr* peer,
+              spud_tube_id*          id);
