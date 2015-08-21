@@ -110,10 +110,8 @@ _tube_manager_init(tube_manager* m,
   m->sock6       = -1;
   m->max_fd      = -1;
   m->keep_going  = true;
-  for (size_t i = 0; i < sizeof(m->pipe); i++)
-  {
-    m->pipe[i] = -1;
-  }
+  m->pipe[0]     = -1;
+  m->pipe[1]     = -1;
 
   if (buckets <= 0)
   {
@@ -176,6 +174,7 @@ _tube_manager_init(tube_manager* m,
     m->timer_q = gpriority_queue_create(&paged_binary_heap_ctx, _timer_del);
     if (!m->timer_q)
     {
+      LS_ERROR(err, LS_ERR_NO_MEMORY);
       goto cleanup;
     }
   }

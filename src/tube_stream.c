@@ -106,7 +106,7 @@ tube_stream_close(tube_stream* s,
 
 struct _tube_stream_manager
 {
-  tube_manager tm;
+  tube_manager tm; /* MUST COME FIRST */
   ls_event*    e_open;
   ls_event*    e_close;
   ls_event*    e_data;
@@ -119,9 +119,11 @@ tube_stream_manager_create(int                   buckets,
                            tube_stream_manager** sm,
                            ls_err*               err)
 {
+  tube_stream_manager* ret;
+  ls_event_dispatcher* dispatcher;
+
   assert(sm);
 
-  tube_stream_manager* ret;
   ret = ls_data_calloc( 1, sizeof(tube_stream_manager) );
   if (NULL == ret)
   {
@@ -137,8 +139,7 @@ tube_stream_manager_create(int                   buckets,
   }
 
   /* setup events */
-  ls_event_dispatcher* dispatcher = _tube_manager_get_dispatcher(
-    (tube_manager*)ret);
+  dispatcher = _tube_manager_get_dispatcher((tube_manager*)ret);
   if ( !ls_event_dispatcher_create_event(dispatcher,
                                          EV_STREAM_OPEN_NAME,
                                          &ret->e_open,
