@@ -60,8 +60,8 @@ CTEST2(tube_stream, bind)
   tube*        t;
   bool         retval;
 
-  tube_create(&t, &data->err);
-  tube_stream_create(&s, &data->err);
+  ASSERT_TRUE(tube_create(&t, &data->err));
+  ASSERT_TRUE(tube_stream_create(&s, &data->err));
 
   retval = tube_stream_bind(s, t, &data->err);
   ASSERT_FALSE(retval);
@@ -110,5 +110,19 @@ CTEST2(tube_stream, close)
   ASSERT_FALSE(retval);
   ASSERT_EQUAL(data->err.code, LS_ERR_NO_IMPL);
 
+  tube_stream_destroy(s);
+}
+
+CTEST(tube_stream_manager_oom, create_oom)
+{
+  tube_stream_manager* sm = NULL;
+  OOM_SIMPLE_TEST( tube_stream_manager_create(3, &sm, &err) );
+  tube_stream_manager_destroy(sm);
+}
+
+CTEST(tube_stream_oom, create_oom)
+{
+  tube_stream* s = NULL;
+  OOM_SIMPLE_TEST( tube_stream_create(&s, &err) );
   tube_stream_destroy(s);
 }

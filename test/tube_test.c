@@ -8,6 +8,13 @@
 #include "tube_manager.h"
 #include "ls_sockaddr.h"
 
+CTEST(tube_manager_oom, create_oom)
+{
+  tube_manager* tm = NULL;
+  OOM_SIMPLE_TEST( tube_manager_create(3, &tm, &err) );
+  tube_manager_destroy(tm);
+}
+
 enum {
   /* Number of tubes to create for the foreach test. */
   TMGR_FOREACH_NUMTUBES = 3
