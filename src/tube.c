@@ -342,7 +342,7 @@ tube_send_cbor(tube*        t,
 
   assert(t);
 
-  sz = cbor_encoder_write(buf, 0, MAXBUFLEN, cbor);
+  sz = cn_cbor_encoder_write(buf, 0, MAXBUFLEN, cbor);
   if (sz < 0)
   {
     LS_ERROR(err, LS_ERR_OVERFLOW);
