@@ -104,7 +104,7 @@ typedef struct _spud_message
   /** fixed header */
   spud_header* header;
   /** CBOR map */
-  const cn_cbor* cbor;
+  cn_cbor* cbor;
 } spud_message;
 
 /**
