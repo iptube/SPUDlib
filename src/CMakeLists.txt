@@ -17,6 +17,7 @@ set ( spud_srcs
       tube.c
       tube_manager.c
       tube_stream.c
+      map.c
 )
 
 set ( spud_headers
